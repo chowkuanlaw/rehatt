@@ -37,14 +37,14 @@
     'Music': 'Muzik', 'Devices': 'Peranti', 'Focus': 'Fokus', 'Mirror': 'Cermin', 'Home': 'Utama', 'Island': 'Island', 'Empty': 'Kosong',
     '🔇 Sound off': '🔇 Bunyi dimatikan', 'Write it down': 'Tulis', 'Last copies': 'Salinan terakhir', 'Your last copies': 'Salinan terakhir anda',
     'Colours, sound': 'Warna, bunyi', 'Colours, sound and more': 'Warna, bunyi dan banyak lagi', 'Jot something down': 'Catat sesuatu',
-    'Nothing playing': 'Tiada yang dimainkan', 'Nothing is playing': 'Tiada yang dimainkan', 'opens Kopi Island anywhere': 'membuka Kopi Island di mana-mana', 'TIP': 'TIP',
-    'Everything Kopi Island can do · Ctrl+Alt+1–6 = shortcut': 'Semua yang Kopi Island boleh buat · Ctrl+Alt+1–6 = pintasan',
+    'Nothing playing': 'Tiada yang dimainkan', 'Nothing is playing': 'Tiada yang dimainkan', 'opens Rehatt anywhere': 'membuka Rehatt di mana-mana', 'TIP': 'TIP',
+    'Everything Rehatt can do · Ctrl+Alt+1–6 = shortcut': 'Semua yang Rehatt boleh buat · Ctrl+Alt+1–6 = pintasan',
     'Tap to write something down': 'Ketik untuk mencatat sesuatu', 'Copy something and it shows up here': 'Salin sesuatu dan ia muncul di sini',
     'Drag to move  ·  + for new widgets': 'Seret untuk alih  ·  + untuk widget baharu', 'Pick an app and a size, or a ready-made layout': 'Pilih aplikasi dan saiz, atau susun atur siap',
     'Small': 'Kecil', 'Wide': 'Lebar', 'Large': 'Besar', 'Standard': 'Standard', '2 large': '2 besar', '8 small': '8 kecil', '4 wide': '4 lebar',
     'No room': 'Tiada ruang', 'No room to make it bigger': 'Tiada ruang untuk membesarkannya', 'Already there': 'Sudah ada', 'Add': 'Tambah',
     'Max 4 · remove one first': 'Maksimum 4 · buang satu dahulu', 'Shortcuts': 'Pintasan', 'Your favourite apps': 'Aplikasi kegemaran anda',
-    'Edit': 'Ubah', 'Kopi Island follows it by itself': 'Kopi Island mengikutinya sendiri', 'Start focus': 'Mula fokus', 'Ready to start': 'Sedia untuk bermula',
+    'Edit': 'Ubah', 'Rehatt follows it by itself': 'Rehatt mengikutinya sendiri', 'Start focus': 'Mula fokus', 'Ready to start': 'Sedia untuk bermula',
     'Stay focused': 'Kekal fokus', 'Stay focused, Kopi is watching': 'Kekal fokus, Kopi memerhati', 'Focus running': 'Fokus berjalan', 'Today': 'Hari ini',
     // Spotify
     'Connect Spotify': 'Sambungkan Spotify', 'Playing now': 'Sedang dimainkan', 'Play on': 'Main pada', 'This PC': 'PC ini', '⏮  Previous song': '⏮  Lagu sebelumnya',
@@ -77,7 +77,7 @@
     'Log in on the official page in your browser and choose your workspace.': 'Log masuk di halaman rasmi dalam pelayar anda dan pilih ruang kerja anda.',
     'Finish signing in in your browser.': 'Selesaikan log masuk dalam pelayar anda.', 'Install Codex once in your project folder:': 'Pasang Codex sekali dalam folder projek anda:',
     'The AI settings could not be saved.': 'Tetapan AI tidak dapat disimpan.', 'This request failed.': 'Permintaan ini gagal.',
-    'New key; the existing key is not shown': 'Kunci baharu; kunci sedia ada tidak ditunjukkan', 'Make Kopi Island all yours': 'Jadikan Kopi Island milik anda sepenuhnya',
+    'New key; the existing key is not shown': 'Kunci baharu; kunci sedia ada tidak ditunjukkan', 'Make Rehatt all yours': 'Jadikan Rehatt milik anda sepenuhnya',
     // island settings: Character
     'Name': 'Nama', 'What’s his name?': 'Siapa namanya?', 'He says it when he says hi': 'Dia menyebutnya apabila dia menyapa', 'Save': 'Simpan', 'Look': 'Rupa',
     'Eye colour': 'Warna mata', 'When nothing is going on': 'Apabila tiada apa-apa berlaku', 'Cup colour': 'Warna cawan', 'Pick what suits him': 'Pilih yang sesuai dengannya',
@@ -118,19 +118,19 @@
     'Volume bar': 'Bar kelantangan', 'Shows the volume in the island when you change it': 'Menunjukkan kelantangan dalam island apabila anda mengubahnya',
     'Battery warning': 'Amaran bateri', 'Laptop and Bluetooth (headphones, mouse) almost empty': 'Komputer riba dan Bluetooth (fon kepala, tetikus) hampir habis',
     'Reset everything': 'Set semula semuanya', 'Set all these choices back to default': 'Kembalikan semua pilihan ini kepada lalai', 'Reset': 'Set semula',
-    'Start with Windows': 'Mula bersama Windows', 'Kopi Island starts by itself when you turn on your PC': 'Kopi Island bermula sendiri apabila anda menghidupkan PC',
-    'Restart': 'Mula semula', 'Closes Kopi Island and starts it again right away': 'Menutup Kopi Island dan memulakannya semula dengan segera', 'Quit': 'Keluar',
-    'Quits Kopi Island completely. Also possible via Kopi next to the clock.': 'Keluar sepenuhnya dari Kopi Island. Juga boleh melalui Kopi di sebelah jam.',
-    'Quit Kopi Island?': 'Keluar dari Kopi Island?', 'Yes, quit': 'Ya, keluar', 'No': 'Tidak', 'On': 'Hidup', 'Off': 'Mati', 'General': 'Umum', 'Character': 'Watak',
+    'Start with Windows': 'Mula bersama Windows', 'Rehatt starts by itself when you turn on your PC': 'Rehatt bermula sendiri apabila anda menghidupkan PC',
+    'Restart': 'Mula semula', 'Closes Rehatt and starts it again right away': 'Menutup Rehatt dan memulakannya semula dengan segera', 'Quit': 'Keluar',
+    'Quits Rehatt completely. Also possible via Kopi next to the clock.': 'Keluar sepenuhnya dari Rehatt. Juga boleh melalui Kopi di sebelah jam.',
+    'Quit Rehatt?': 'Keluar dari Rehatt?', 'Yes, quit': 'Ya, keluar', 'No': 'Tidak', 'On': 'Hidup', 'Off': 'Mati', 'General': 'Umum', 'Character': 'Watak',
     '👋 Start up': '👋 Mula', '😴 Shut down': '😴 Tutup', '🟠 Claude working': '🟠 Claude bekerja', '❓ Claude asks': '❓ Claude bertanya', '🟢 Claude done': '🟢 Claude siap',
     '🔴 Claude error': '🔴 Ralat Claude', '🎵 Fake music': '🎵 Muzik palsu', '⏱️ Focus 1 min': '⏱️ Fokus 1 min', '🧹 Stop everything': '🧹 Hentikan semua',
     'E.g. Puchong': 'Cth. Puchong', 'Type here…': 'Taip di sini…',
     // focus, tray, clipboard, note, mirror
-    'Choose how long you want to focus': 'Pilih berapa lama anda mahu fokus', 'You are focusing. Kopi Island keeps the time.': 'Anda sedang fokus. Kopi Island menjaga masa.',
+    'Choose how long you want to focus': 'Pilih berapa lama anda mahu fokus', 'You are focusing. Rehatt keeps the time.': 'Anda sedang fokus. Rehatt menjaga masa.',
     'Music and Claude stay visible in the small island.': 'Muzik dan Claude kekal kelihatan dalam island kecil.', 'Stop': 'Henti', 'Hours': 'Jam', 'Minutes': 'Minit', 'Seconds': 'Saat',
     '1 hour': '1 jam', 'Focus done!': 'Fokus siap!', 'Drag a file out, or click to open it': 'Seret fail keluar, atau klik untuk membukanya',
     'Drop files on the island to keep them for a bit': 'Letakkan fail pada island untuk menyimpannya sebentar', 'Your tray is empty': 'Dulang anda kosong',
-    'Drag a file onto Kopi Island to keep it for a bit': 'Seret fail ke atas Kopi Island untuk menyimpannya sebentar', 'Let go, I’ll catch it!': 'Lepaskan, saya tangkap!',
+    'Drag a file onto Rehatt to keep it for a bit': 'Seret fail ke atas Rehatt untuk menyimpannya sebentar', 'Let go, I’ll catch it!': 'Lepaskan, saya tangkap!',
     '🧺 Let go, I’ll catch it!': '🧺 Lepaskan, saya tangkap!', 'In your tray': 'Dalam dulang anda', 'The file goes into your tray': 'Fail masuk ke dalam dulang anda',
     'Your last copied text · click to copy it again': 'Teks terakhir yang anda salin · klik untuk menyalinnya semula', 'Clear': 'Kosongkan',
     'Nothing copied yet': 'Belum ada yang disalin', 'Copy something (Ctrl + C) and it shows up here.': 'Salin sesuatu (Ctrl + C) dan ia muncul di sini.',
@@ -140,13 +140,13 @@
     // project mode
     'How can I help?': 'Apa yang boleh saya bantu?', 'Assistant': 'Pembantu', 'Project': 'Projek', 'Search': 'Cari', 'For example:': 'Contohnya:', '← Results': '← Hasil',
     'Choose project folder': 'Pilih folder projek', 'Other folder': 'Folder lain', 'Choose folder': 'Pilih folder', 'No project chosen yet': 'Belum ada projek dipilih',
-    'Kopi Island only reads the folder you choose.': 'Kopi Island hanya membaca folder yang anda pilih.', 'Scanning project...': 'Mengimbas projek...',
+    'Rehatt only reads the folder you choose.': 'Rehatt hanya membaca folder yang anda pilih.', 'Scanning project...': 'Mengimbas projek...',
     'Opening file...': 'Membuka fail...', 'Fetching the real local code...': 'Mengambil kod tempatan sebenar...', 'Searching the code...': 'Mencari dalam kod...',
     'This was read straight from your local project.': 'Ini dibaca terus dari projek tempatan anda.', 'Sound effects': 'Kesan bunyi', 'Undo': 'Buat asal',
     'Connect a project': 'Sambungkan projek', 'PROJECT · WHOLE FOLDER': 'PROJEK · SELURUH FOLDER', 'What do you want to change?': 'Apa yang anda mahu ubah?',
     'Connect your project folder': 'Sambungkan folder projek anda', 'Open Settings → AI': 'Buka Tetapan → AI', 'Checking the project…': 'Menyemak projek…',
-    'Describe your idea. Kopi Island picks the right files itself, opens them in VS Code and carries out your request.': 'Terangkan idea anda. Kopi Island memilih fail yang betul sendiri, membukanya dalam VS Code dan melaksanakan permintaan anda.',
-    'Choose one local folder. Then you talk with Kopi Island about the whole project.': 'Pilih satu folder tempatan. Kemudian anda berbual dengan Kopi Island tentang seluruh projek.',
+    'Describe your idea. Rehatt picks the right files itself, opens them in VS Code and carries out your request.': 'Terangkan idea anda. Rehatt memilih fail yang betul sendiri, membukanya dalam VS Code dan melaksanakan permintaan anda.',
+    'Choose one local folder. Then you talk with Rehatt about the whole project.': 'Pilih satu folder tempatan. Kemudian anda berbual dengan Rehatt tentang seluruh projek.',
     'For example: make the Spotify bar calmer': 'Contohnya: jadikan bar Spotify lebih tenang', '✓ Changes saved': '✓ Perubahan disimpan', '✓ Analysis done': '✓ Analisis siap',
     '✓ Previous job undone': '✓ Kerja sebelumnya dibuat asal', 'The job was stopped.': 'Kerja itu dihentikan.', 'Undo was stopped.': 'Buat asal dihentikan.',
     'Checking backups…': 'Menyemak sandaran…', 'Progress of the steps': 'Kemajuan langkah',
@@ -167,9 +167,9 @@
     'This question was already answered, maybe in the terminal.': 'Soalan ini sudah dijawab, mungkin di terminal.', 'This plan was already answered, maybe in the terminal.': 'Pelan ini sudah dijawab, mungkin di terminal.',
     'There is no open question any more.': 'Tiada lagi soalan terbuka.', 'There is no open plan any more.': 'Tiada lagi pelan terbuka.',
     'Type an answer of at most 5000 characters.': 'Taip jawapan tidak lebih daripada 5000 aksara.', 'Not available.': 'Tidak tersedia.',
-    'Kopi Island is still starting up.': 'Kopi Island masih bermula.', 'The terminal window was not found. Is it still open?': 'Tetingkap terminal tidak dijumpai. Adakah ia masih terbuka?',
-    'Windows didn’t let Kopi Island bring the window to the front. Click the terminal in your taskbar.': 'Windows tidak membenarkan Kopi Island membawa tetingkap ke hadapan. Klik terminal pada bar tugas anda.',
-    'Kopi Island doesn’t know yet which window belongs to this session. He learns it after Claude’s first answer.': 'Kopi Island belum tahu tetingkap mana milik sesi ini. Dia akan tahu selepas jawapan pertama Claude.',
+    'Rehatt is still starting up.': 'Rehatt masih bermula.', 'The terminal window was not found. Is it still open?': 'Tetingkap terminal tidak dijumpai. Adakah ia masih terbuka?',
+    'Windows didn’t let Rehatt bring the window to the front. Click the terminal in your taskbar.': 'Windows tidak membenarkan Rehatt membawa tetingkap ke hadapan. Klik terminal pada bar tugas anda.',
+    'Rehatt doesn’t know yet which window belongs to this session. He learns it after Claude’s first answer.': 'Rehatt belum tahu tetingkap mana milik sesi ini. Dia akan tahu selepas jawapan pertama Claude.',
     'The answer could not be sent.': 'Jawapan tidak dapat dihantar.', 'Sending not confirmed. Check the chat before you send again.': 'Penghantaran tidak disahkan. Semak sembang sebelum menghantar semula.',
     'Connect Claude Code or Codex first, then I can answer.': 'Sambungkan Claude Code atau Codex dahulu, kemudian saya boleh menjawab.',
     'Spotify is not set up in this build yet.': 'Spotify belum disediakan dalam binaan ini.', 'Spotify is not connected yet.': 'Spotify belum disambungkan.',
@@ -263,7 +263,7 @@
   // ---- Windows notifications and dates ----
   if (window.Notification) {
     const N = window.Notification;
-    window.Notification = class extends N { constructor(title, options = {}) { super(tr(title), { icon: './assets/icon-256.png', ...options, body: options.body && tr(options.body) }); } }; // with the Kopi Island icon
+    window.Notification = class extends N { constructor(title, options = {}) { super(tr(title), { icon: './assets/icon-256.png', ...options, body: options.body && tr(options.body) }); } }; // with the Rehatt icon
   }
   for (const fn of ['toLocaleDateString', 'toLocaleTimeString', 'toLocaleString']) {
     const base = Date.prototype[fn];

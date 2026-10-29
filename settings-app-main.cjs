@@ -1,4 +1,4 @@
-// Kopi Island Settings: settings as their own app, with a big live Kopi who shows off every choice.
+// Rehatt Settings: settings as their own app, with a big live Kopi who shows off every choice.
 // Opened from the island's gear (settings-bridge-ui.js) or from the tray menu (tray-main.cjs).
 // The settings code itself stays in the island: this window asks it for the lists and passes clicks on.
 const { app, BrowserWindow, ipcMain, nativeTheme, net, shell, dialog } = require('electron');
@@ -6,7 +6,7 @@ const path = require('node:path');
 
 let win = null, dirty = false, closing = false;
 // Its own app for Windows: own name, own icon, own taskbar button (tray-main.cjs makes the Start menu shortcut).
-const APP_ID = 'com.chowkuanlaw.kopiisland.settings', APP_NAME = 'Kopi Island Settings', ICON = path.join(__dirname, 'assets', 'settings-icon.ico');
+const APP_ID = 'com.chowkuanlaw.rehatt.settings', APP_NAME = 'Rehatt Settings', ICON = path.join(__dirname, 'assets', 'settings-icon.ico');
 // light or dark, chosen in the app (the window's own buttons top right follow it)
 const THEMES = { dark: { bg: '#0e0f11', symbol: '#e6e6ea' }, light: { bg: '#f6f6f8', symbol: '#1a1b1e' } };
 const island = () => BrowserWindow.getAllWindows().find(w => !w.isDestroyed() && /mascot\.html/.test(w.webContents.getURL()));
@@ -16,7 +16,7 @@ const faceWanted = on => island()?.webContents.executeJavaScript(`window.__kopiF
 
 let theme = 'dark', appLang = 'en';
 const lang = () => appLang;
-const TABS = ['home', 'connect', 'apps', 'news', 'character', 'wardrobe', 'general', 'ai'];
+const TABS = ['home', 'connect', 'stretch', 'usage', 'apps', 'news', 'character', 'wardrobe', 'general'];
 function open(tab) {
   tab = TABS.includes(tab) ? tab : '';
   if (win && !win.isDestroyed()) {
@@ -49,7 +49,7 @@ function open(tab) {
     if (!dirty || closing) return;
     e.preventDefault();
     const ms = lang() === 'ms';
-    dialog.showMessageBox(win, { type: 'question', title: 'Kopi Island', noLink: true, defaultId: 0, cancelId: 2,
+    dialog.showMessageBox(win, { type: 'question', title: 'Rehatt', noLink: true, defaultId: 0, cancelId: 2,
       buttons: ms ? ['Simpan', 'Jangan simpan', 'Batal'] : ['Save', 'Don\'t save', 'Cancel'],
       message: ms ? 'Ada perubahan yang belum disimpan.' : 'You have changes that are not saved yet.',
       detail: ms ? 'Simpan sebelum tutup?' : 'Save them before closing?' })
@@ -70,7 +70,7 @@ function open(tab) {
 // Ask the island: a list, or a click on one of its options (it answers with the fresh list).
 async function relay(req) {
   const isl = island();
-  if (!isl) return { ok: false, error: 'Kopi Island is still starting up.' };
+  if (!isl) return { ok: false, error: 'Rehatt is still starting up.' };
   try { return { ok: true, ...(await isl.webContents.executeJavaScript(`window.__kopiRemoteSettings(${JSON.stringify(req)})`)) }; }
   catch (error) { return { ok: false, error: String(error?.message || error).slice(0, 200) }; }
 }
@@ -91,53 +91,50 @@ ipcMain.handle('settings-app:get', async (e, req) => {
   if (r?.info) { dirty = !!r.info.dirty; appLang = r.info.lang === 'ms' ? 'ms' : 'en'; }
   return r;
 });
-ipcMain.on('settings-app:dirty', (e, on) => { if (fromApp(e)) dirty = !!on; }); // the AI choice is a draft in the app itself
+ipcMain.on('settings-app:dirty', (e, on) => { if (fromApp(e)) dirty = !!on; });
 ipcMain.on('settings-app:theme', (e, name) => {
   if (!fromApp(e) || !THEMES[name]) return;
   theme = name;
   try { win.setTitleBarOverlay({ color: THEMES[name].bg, symbolColor: THEMES[name].symbol, height: 44 }); win.setBackgroundColor(THEMES[name].bg); } catch {}
 });
-ipcMain.on('settings-app:frame', (e, url) => { // the app's own Kopi, drawn by the island from your draft (buddy-ui.js)
+ipcMain.on('settings-app:frame', (e, url) => { // the app's own Kopi, drawn by the island from your draft
   if (fromIsland(e) && win && !win.isDestroyed() && typeof url === 'string' && url.startsWith('data:image/')) win.webContents.send('settings-app:face', url);
 });
-app.on('kopi-open-settings', () => open()); // tray menu, or the Start menu shortcut while Kopi Island runs
+app.on('kopi-open-settings', tab => open(tab)); // tray menu, or the Start menu shortcut while Rehatt runs
 if (process.argv.includes('--settings')) app.whenReady().then(() => setTimeout(() => open(), 1200)); // started from the Start menu shortcut
 
-// Home and Connections: your name, what your AI did, and which AIs Kopi Island follows (ai-monitor-main.cjs).
+// Home and Connections: your name, what your AI did, and which coding agents Rehatt follows (agents-main.cjs).
 const os = require('node:os'), fs = require('node:fs');
 const userName = () => { const n = String(os.userInfo().username || '').replace(/[._-]+/g, ' ').trim(); return n ? n[0].toUpperCase() + n.slice(1) : ''; };
 async function connections() {
   const m = app.kopiMonitor; if (!m) return { ok: false };
-  const view = m.view(), auto = (await m.handlers['ai-monitor:auto-get']()).auto;
+  const view = m.view();
   const by = id => view.providers.find(p => p.provider === id) || {};
-  const item = (id, on, available, p) => ({ id, on: !!on, available, soon: !!p.soon, state: p.connected ? (p.permission ? 'question' : p.state) : 'off', detail: p.detail || '', project: p.source?.title || '' });
+  const item = (id, on, available, p) => ({ id, on: !!on, available, state: p.connected ? p.state : 'off', detail: p.detail || '', project: p.source?.title || '', statusTaken: Boolean(p.statusTaken) });
   return { ok: true, list: [
     item('claudecode', by('claudecode').hooksInstalled, fs.existsSync(path.join(os.homedir(), '.claude')), by('claudecode')),
-    item('codex', by('codex').hooksInstalled, by('codex').available !== false, by('codex')),
-    item('claude', auto.claude, true, by('claude')),
-    item('chatgpt', auto.chatgpt, true, by('chatgpt'))
+    item('codex', by('codex').hooksInstalled, by('codex').available !== false, by('codex'))
   ] };
 }
 async function connect(id, on) {
-  const h = app.kopiMonitor?.handlers; if (!h) throw new Error('Kopi Island is still starting up.');
-  if (id === 'claudecode' || id === 'codex') await h[on ? 'ai-monitor:hooks-install' : 'ai-monitor:hooks-uninstall']({ agent: id === 'codex' ? 'codex' : 'claude' });
-  else if (id === 'claude' || id === 'chatgpt') { const r = await h['ai-monitor:auto-set']({ provider: id, on }); if (on && !r.found) return { ...(await connections()), waiting: id }; }
+  const h = app.kopiMonitor?.handlers; if (!h) throw new Error('Rehatt is still starting up.');
+  await h[on ? 'ai-monitor:hooks-install' : 'ai-monitor:hooks-uninstall']({ agent: id === 'codex' ? 'codex' : 'claude' });
   return connections();
 }
 ipcMain.handle('settings-app:home', e => fromApp(e) ? { ok: true, user: userName(), history: app.kopiMonitor?.history() || [] } : null);
 ipcMain.handle('settings-app:connections', e => fromApp(e) ? connections() : null);
 ipcMain.handle('settings-app:connect', async (e, req) => {
-  if (!fromApp(e) || !['claudecode', 'codex', 'claude', 'chatgpt'].includes(req?.id)) return null;
+  if (!fromApp(e) || !['claudecode', 'codex'].includes(req?.id)) return null;
   try { return await connect(req.id, req.on === true); } catch (error) { return { ok: false, error: String(error?.message || error) }; }
 });
 
-// News: our updates, straight from the releases on GitHub (the same place you download Kopi Island).
-const RELEASES = 'https://api.github.com/repos/chowkuanlaw/kopi-island/releases?per_page=12';
+// News: our updates, straight from the releases on GitHub (the same place you download Rehatt).
+const RELEASES = 'https://api.github.com/repos/chowkuanlaw/rehatt/releases?per_page=12';
 let news = null, newsAt = 0;
 async function getNews() {
   if (news && Date.now() - newsAt < 10 * 60 * 1000) return news;
   try {
-    const res = await net.fetch(RELEASES, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'Kopi Island' } });
+    const res = await net.fetch(RELEASES, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'Rehatt' } });
     if (!res.ok) throw new Error('GitHub ' + res.status);
     const list = (await res.json()).filter(r => !r.draft).map(r => ({
       tag: String(r.tag_name || ''), name: String(r.name || r.tag_name || ''), body: String(r.body || '').slice(0, 8000),
@@ -149,61 +146,6 @@ async function getNews() {
 }
 ipcMain.handle('settings-app:news', e => fromApp(e) ? getNews() : null);
 // only our own pages (a release, the download, the site)
-ipcMain.on('settings-app:open-url', (e, url) => { if (fromApp(e) && /^https:\/\/(github\.com\/chowkuanlaw\/kopi-island)(\/|$)/.test(String(url))) shell.openExternal(url); });
+ipcMain.on('settings-app:open-url', (e, url) => { if (fromApp(e) && /^https:\/\/(github\.com\/chowkuanlaw\/rehatt)(\/|$)/.test(String(url))) shell.openExternal(url); });
 
 module.exports = { open };
-
-// tests: SETTINGS_DEBUG=<folder> opens the app on Home and Connections and saves pictures (never touches Claude Code or Codex files)
-if (process.env.SETTINGS_DEBUG) app.whenReady().then(() => setTimeout(async () => {
-  const fs = require('node:fs'), wait = ms => new Promise(r => setTimeout(r, ms));
-  const shot = async name => { const img = await win.webContents.capturePage(); fs.writeFileSync(path.join(process.env.SETTINGS_DEBUG, name + '.png'), img.toPNG()); console.log('SETTINGS shot', name); };
-  const js = code => win.webContents.executeJavaScript(code);
-  open(); await wait(4000); await js(`setTheme('dark'); 1`); await wait(300); await shot('h1-home');
-  await js(`document.querySelector('nav button[data-tab="connect"]').click(); 1`); await wait(1500); await shot('h2-connect');
-  await js(`document.querySelector('[data-cx="chatgpt"]')?.click(); 1`); await wait(3000); await shot('h3-chatgpt-on');
-  console.log('SETTINGS cx', await js(`JSON.stringify(cxs.list.map(c => c.id + ':' + c.on + ':' + c.state))`));
-  await js(`document.querySelector('[data-cx="chatgpt"]')?.click(); 1`); await wait(1000);
-  await js(`document.querySelector('nav button[data-tab="ai"]').click(); 1`); await wait(2500); await shot('h4-ai');
-  console.log('SETTINGS done'); app.exit(0);
-}, 6000));
-
-// tests: SETTINGS_TOUR=<folder> saves a picture of every page, dark and light (only looks, never clicks options)
-if (process.env.SETTINGS_TOUR) app.whenReady().then(() => setTimeout(async () => {
-  const fs = require('node:fs'), wait = ms => new Promise(r => setTimeout(r, ms)), out = process.env.SETTINGS_TOUR;
-  const js = code => win.webContents.executeJavaScript(code);
-  open(); await wait(4000);
-  for (const mode of (process.env.SETTINGS_TOUR_THEMES || 'dark,light').split(',')) {
-    await js(`setTheme(${JSON.stringify(mode)}); 1`);
-    for (const t of TABS) {
-      await js(`document.querySelector('nav [data-tab="${t}"]')?.click(); 1`); await wait(t === 'news' ? 3500 : 1600);
-      const img = await win.webContents.capturePage(); fs.writeFileSync(path.join(out, `${mode}-${t}.png`), img.toPNG());
-    }
-  }
-  console.log('TOUR done'); app.exit(0);
-}, 6000));
-
-// video: VIDEO_REC=<folder> opens the app and plays a short tour while saving every frame (for the Kopi Island reel).
-// Only the test profile is used for this; Claude Code and Codex are never switched (that would change their files).
-if (process.env.VIDEO_REC) app.whenReady().then(() => setTimeout(async () => {
-  const fs = require('node:fs'), out = process.env.VIDEO_REC, wait = ms => new Promise(r => setTimeout(r, ms));
-  fs.mkdirSync(path.join(out, 'app'), { recursive: true });
-  const js = code => win.webContents.executeJavaScript(code);
-  open(); await wait(4500);
-  await js(`setTheme('dark'); 1`); await wait(500);
-  const marks = [], frames = [], t0 = Date.now(); let n = 0, rec = true;
-  const mark = name => { marks.push({ name, t: (Date.now() - t0) / 1000 }); console.log('VIDEO', name); };
-  (async () => { while (rec) { const img = await win.webContents.capturePage(); const file = String(n++).padStart(5, '0') + '.jpg'; fs.writeFileSync(path.join(out, 'app', file), img.toJPEG(92)); frames.push((Date.now() - t0) / 1000); } })();
-  const click = sel => js(`document.querySelector(${JSON.stringify(sel)})?.click(); 1`);
-  mark('home'); await wait(4200);
-  mark('connect'); await click('nav button[data-tab="connect"]'); await wait(1600);
-  await click('[data-cx="chatgpt"]'); await wait(1300); await click('[data-cx="claude"]'); await wait(2200);
-  mark('wardrobe'); await click('nav button[data-tab="wardrobe"]'); await wait(1400);
-  await click('.paint[data-value="rose"]'); await wait(1100); await click('.outfit[data-value="hat"]'); await wait(1100);
-  await click('.outfit[data-value="shades"]'); await wait(1100); await click('.outfit[data-value="crown"]'); await wait(1100);
-  await click('.paint[data-value="sky"]'); await wait(1300);
-  mark('theme'); await click('nav button[data-tab="home"]'); await wait(1200); await js(`setTheme('light'); 1`); await wait(2000); await js(`setTheme('dark'); 1`); await wait(1500);
-  mark('end'); rec = false; await wait(400);
-  fs.writeFileSync(path.join(out, 'app.json'), JSON.stringify({ marks, frames }));
-  await js(`cancelAll && cancelAll(); 1`).catch(() => {}); await click('[data-cx="chatgpt"]'); await click('[data-cx="claude"]'); await wait(800);
-  app.exit(0);
-}, 6000));

@@ -1,39 +1,35 @@
 {
-  "name": "kopi-island",
-  "productName": "Kopi Island",
-  "version": "0.1.1",
-  "description": "Kopi Island: a Dynamic Island for Windows that follows Claude Code and Codex.",
+  "name": "rehatt",
+  "productName": "Rehatt",
+  "version": "0.1.0",
+  "description": "Rehatt: a Dynamic Island for Windows. Kopi nudges you when Claude Code or Codex has a question or is done, reminds you to stretch and drink water, and shows your Claude usage as a glass of teh tarik.",
   "main": "main.js",
   "scripts": {
-    "test": "node --test tests/monitor.test.cjs tests/windows-check.test.cjs tests/claude-code-hooks.test.cjs tests/extras.test.cjs",
+    "test": "node --test tests/*.test.cjs",
     "start": "electron .",
-    "check:windows": "node check-windows.cjs",
     "dist:zip": "electron-builder --win zip",
     "dist:store": "electron-builder --win appx"
   },
   "keywords": [],
   "author": "Chow Kuan",
-  "homepage": "https://github.com/chowkuanlaw/kopi-island",
+  "homepage": "https://github.com/chowkuanlaw/rehatt",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
     "electron": "^44.5.1",
     "electron-builder": "^26.0.12"
   },
-  "dependencies": {
-    "@openai/codex": "^0.160.0"
-  },
   "build": {
-    "appId": "com.chowkuanlaw.kopiisland",
-    "productName": "Kopi Island",
+    "appId": "com.chowkuanlaw.rehatt",
+    "productName": "Rehatt",
     "copyright": "Copyright (c) 2026 Chow Kuan",
     "files": [
       "**/*",
       "!tests/**",
       "!tools/**",
-      "!vscode-editor/**",
       "!*.cmd",
-      "!dist/**"
+      "!dist/**",
+      "!smoke/**"
     ],
     "extraFiles": [
       {
@@ -49,17 +45,18 @@
       ]
     },
     "appx": {
-      "applicationId": "KopiIsland",
+      "applicationId": "Rehatt",
       "identityName": "REPLACE_WITH_PARTNER_CENTER_IDENTITY_NAME",
       "publisher": "CN=REPLACE_WITH_PARTNER_CENTER_PUBLISHER_ID",
       "publisherDisplayName": "Chow Kuan",
-      "displayName": "Kopi Island",
+      "displayName": "Rehatt",
       "backgroundColor": "#0F0F10",
       "languages": [
-        "en-US"
+        "en-US",
+        "ms-MY"
       ]
     },
     "asar": false,
-    "artifactName": "KopiIsland-${version}-win.${ext}"
+    "artifactName": "Rehatt-${version}-win.${ext}"
   }
 }

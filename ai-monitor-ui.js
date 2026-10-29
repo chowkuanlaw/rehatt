@@ -4,17 +4,16 @@
   if (!api?.aiMonitorGet) return;
   // English, or Bahasa Melayu when chosen in Settings → General → Language.
   const MS = () => window.__kopiPrefs?.().lang === 'ms', EN = () => !MS(), T = (ms, en) => MS() ? ms : en, LOCALE = () => MS() ? 'ms-MY' : 'en-GB';
-  const names = { chatgpt: 'ChatGPT', claude: 'Claude', claudecode: 'Claude Code', codex: 'Codex' };
-  // The four AIs Kopi Island can follow: the coding agents (hooks) and the chat apps (their window).
-  const PICKS = [['claudecode', 'Claude Code'], ['codex', 'Codex'], ['claude', 'Claude'], ['chatgpt', 'ChatGPT']];
+  const names = { claudecode: 'Claude Code', codex: 'Codex' };
+  // The two coding agents Rehatt follows (through their hooks): it nudges you when one has a question or is done.
+  const PICKS = [['claudecode', 'Claude Code'], ['codex', 'Codex']];
   const colours = { running: '#ff9a1f', sending: '#ff9a1f', question: '#ff9a1f', error: '#ff3b3b',
     stopped: '#ff3b3b', unavailable: '#ff3b3b', done: '#22e05a', ready: '#b8c0b5',
     connecting: '#b8c0b5', disconnected: '#7e887a', login: '#7e887a' };
   const labels = { running: 'Working', sending: 'Sending', question: 'Question', error: 'Error', stopped: 'Stopped',
     unavailable: 'Unavailable', done: 'Done', ready: 'Ready', connecting: 'Connecting', disconnected: 'Not connected', login: 'Log in' };
   let state = { providers: Object.keys(names).map(provider => ({ provider, name: names[provider], state: 'disconnected', detail: 'Connect your conversation' })) };
-  let selected = null, choosing = false, windows = [], error = '', pending = false, lastSignature = '';
-  const drafts = new Map();
+  let selected = null, error = '', pending = false, lastSignature = '';
   const root = document.createElement('section'); root.id = 'kopi-ai-monitor'; document.body.appendChild(root);
   const statusReader = document.createElement('div'); statusReader.id = 'kopi-ai-monitor-status';
   statusReader.setAttribute('role', 'status'); statusReader.setAttribute('aria-live', 'polite'); document.body.appendChild(statusReader);
@@ -374,7 +373,7 @@
     if (!exact && provider === 'claudecode' && top() && top().provider !== 'claudecode') provider = top().provider;
     const next = Object.hasOwn(names, provider) ? provider : 'claudecode';
     if (next !== selected) markSeen();
-    selected = next; choosing = false; error = ''; render();
+    selected = next; error = ''; render();
     setView('monitor'); setMode('expanded'); lastActivity = performance.now();
   }
   function small() {
@@ -390,46 +389,14 @@
     }).join('')}</div>`;
   }
   function render() {
-    const p = current(), input = root.querySelector('textarea');
-    const focused = Boolean(input && input === document.activeElement), start = input?.selectionStart, end = input?.selectionEnd;
-    const sub = p?.kind === 'hooks' ? (p.connected ? (p.source?.title ? `Project: ${p.source.title}` : T(`Mengikuti semua sesi ${p.name} anda`, `Following all your ${p.name} sessions`)) : T('Belum disambungkan', 'Not connected yet')) : '';
-    root.innerHTML = p?.kind === 'hooks' ? `<div class="am-shell">${hooksPage(p, sub)}${error ? `<div class="am-error" role="alert">${escape(error)}</div>` : ''}</div>`
-      : `<div class="am-shell"><div class="tc-page-head"><div><p class="tc-page-title">${escape(p?.name || 'Claude Code')}</p><p class="tc-page-sub">${escape(sub)}</p></div><button type="button" id="am-small">${T('Kecil', 'Small')}</button></div>${
-      choosing ? `<div class="am-hint">${T(`Buka ${escape(names[selected])} dalam pelayar atau aplikasi desktop dan log masuk. Biarkan sembang terbuka dalam tetingkapnya sendiri. Kemudian pilih tetingkap itu.`, `Open ${escape(names[selected])} in your browser or desktop app and log in. Keep the chat open in its own window. Then choose that window.`)}</div><div class="am-body">${windows.length ? windows.map((win, index) => `<button type="button" class="am-window" data-window="${index}" ${pending ? 'disabled' : ''}>${escape(win.title)} <span class="am-hint">· ${escape(win.process)}</span></button>`).join('') : `<div class="am-hint">${T('Belum ada tetingkap yang sesuai. Biarkan sembang laman web dalam tetingkapnya sendiri.', 'No suitable window found yet. Keep a website chat in its own window.')}</div>`}</div><div class="am-row"><button type="button" id="am-launch">Open ${escape(names[selected])}</button><button type="button" id="am-scan" ${pending ? 'disabled' : ''}>${T('Muat semula', 'Refresh')}</button><button type="button" id="am-cancel">${T('Kembali', 'Back')}</button></div>` :
-      p?.kind === 'hooks' ? hooksPage(p) :
-      p?.soon ? `<div class="am-body"><p><strong>${T(`${escape(names[selected])} akan datang`, `${escape(names[selected])} is coming soon`)}</strong></p><p class="am-hint">${T('Buat masa ini Kopi mengikuti Claude Code dan Codex.', 'For now Kopi follows Claude Code and Codex.')}</p></div>` :
-      !p?.connected ? `<div class="am-body"><p><strong>${T(`Ikuti ${escape(names[selected])} dengan Kopi`, `Follow ${escape(names[selected])} with Kopi`)}</strong></p><p class="am-hint">${T(`Hidupkan ${escape(names[selected])} dalam Kopi Island → Sambungan. Kopi Island mencari sembang anda sendiri; anda tidak perlu memilih tetingkap.`, `Turn on ${escape(names[selected])} in Kopi Island → Connections. Kopi Island finds your chat by itself; you don’t need to choose a window.`)}</p></div><div class="am-row"><button type="button" class="am-primary" id="am-open-connect">${T('Buka Sambungan', 'Open Connections')}</button></div>` : false ? `<div class="am-body"><p><strong>${T('Sambungkan sembang anda', 'Connect your chat')}</strong></p><p class="am-hint">${T(`Gunakan pelayar atau aplikasi desktop yang anda sudah log masuk. Kata laluan anda kekal dengan ${escape(names[selected])}.`, `Use the browser or desktop app you are logged in to. Your password stays with ${escape(names[selected])}.`)}</p><p class="am-hint">${T('Biarkan sembang terbuka dalam tetingkapnya sendiri semasa anda bekerja.', 'Keep the chat open in its own window while you work.')}</p></div><div class="am-row"><button type="button" class="am-primary" id="am-connect">${T('Pilih tetingkap anda', 'Choose your window')}</button><button type="button" id="am-launch">Open ${escape(names[selected])}</button></div>` :
-      `<div class="am-row">${lamp(p)}<strong>${escape(p.detail || labels[p.state])}</strong><span class="am-clock">${p.elapsed || 0}s</span></div>${busy(p) ? `<div class="am-track" role="status" aria-label="${T('AI sedang bekerja', 'AI is working')}"><div class="am-wave"></div></div>` : ''}<div class="am-hint am-source" title="${escape(p.source?.title)}">${escape(p.source?.process)} · ${escape(p.source?.title)}</div><div class="am-body">${p.state === 'question' ? `<div class="am-question">${escape(p.question)}</div>` : `<p class="am-hint">${p.state === 'done' ? T('Jawapan anda sudah sedia dalam sembang.', 'Your answer is ready in the chat.') : p.state === 'ready' ? T('Sedia. Tanya soalan anda dalam sembang; island akan mengikuti statusnya.', 'Ready. Ask your question in the chat; the island follows the status.') : p.state === 'unavailable' ? T('Sembang tidak boleh dibaca lagi. Biarkan ia terbuka, pulihkan tetingkap jika ia diminimumkan, atau sambung semula.', 'The chat is no longer readable. Keep it open, restore the window if it is minimised, or connect again.') : busy(p) ? T('Teruskan kerja dalam aplikasi lain. Biarkan tetingkap sembang ini terbuka; island akan memberitahu soalan atau jawapan yang siap.', 'Keep working in another app. Leave this chat window open; the island tells you about a question or a finished answer.') : T('Buka sembang untuk menyemak keadaan.', 'Open the chat to check the situation.')}</p>`}</div>${p.canReply ? `<div class="am-compose"><textarea id="am-answer" maxlength="5000" placeholder="${T('Jawapan anda…', 'Your answer…')}" aria-label="${T('Jawapan kepada soalan', 'Answer to the question')}"></textarea><button type="button" class="am-primary" id="am-send">${T('Hantar', 'Send')}</button></div>` : ''}<div class="am-row"><button type="button" id="am-launch">${T('Buka sembang', 'Open chat')}</button><button type="button" id="am-connect">${T('Sambung semula', 'Reconnect')}</button><button type="button" id="am-disconnect">${T('Putuskan', 'Disconnect')}</button></div>`
-    }${error ? `<div class="am-error" role="alert">${escape(error)}</div>` : ''}</div>`;
-    bind('am-small', small); bind('am-connect', choose);
-    bind('am-scan', scan); bind('am-launch', launch); bind('am-cancel', () => { choosing = false; error = ''; render(); });
-    bind('am-disconnect', async () => { const result = await api.aiMonitorDisconnect(selected); if (result.ok) update(result); else { error = result.error; render(); } });
-    bind('am-send', reply);
-    bind('am-open-connect', () => { window.kopi.settingsOpen?.('connect'); small(); }); // connecting lives in the Kopi Island app now
-    bind('am-hooks-install', () => hooks('aiMonitorHooksInstall', current()?.agent)); bind('am-hooks-uninstall', () => hooks('aiMonitorHooksUninstall', current()?.agent));
-    root.querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', () => { if (b.dataset.pick !== selected) { markSeen(); selected = b.dataset.pick; choosing = false; error = ''; render(); } }));
-    // Show the end of Claude's message (the question) when the answer box takes space.
-    if (p?.kind === 'hooks' && !p.plan && !p.ask) { const body = root.querySelector('.am-body'); if (body) body.scrollTop = body.scrollHeight; }
-    if (p?.ask) bindAsk(p);
-    bind('am-plan-ok', () => hooks('aiMonitorHooksPlan', p?.sessionId, true, ''));
-    bind('am-plan-no', () => hooks('aiMonitorHooksPlan', p?.sessionId, false, root.querySelector('#am-plan-note')?.value || ''));
+    const p = current() || providers().find(x => x.provider === 'claudecode');
+    root.innerHTML = p ? `<div class="am-shell">${hooksPage(p)}${error ? `<div class="am-error" role="alert">${escape(error)}</div>` : ''}</div>` : '';
+    bind('am-small', small);
+    bind('am-open-connect', () => { window.kopi.settingsOpen?.('connect'); small(); }); // connecting lives in the Rehatt app
     bind('am-jump', () => hooks('aiMonitorHooksJump', p?.sessionId));
-    bind('am-model', () => { modelMenu = !modelMenu; render(); });
-    for (const b of root.querySelectorAll('[data-model]')) b.addEventListener('click', () => { modelMenu = false; hooks('aiMonitorHooksModel', b.dataset.model); });
-    root.querySelector('#am-plan-note')?.addEventListener('focus', () => { projectInputFocused = true; sendInteractive(true); });
-    bind('am-allow',() => hooks('aiMonitorHooksDecide', p?.sessionId, 'allow')); bind('am-deny', () => hooks('aiMonitorHooksDecide', p?.sessionId, 'deny'));
+    root.querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', () => { if (b.dataset.pick !== selected) { markSeen(); selected = b.dataset.pick; error = ''; render(); } }));
     for (const button of root.querySelectorAll('[data-provider]')) button.addEventListener('click', () => open(button.dataset.provider));
-    for (const button of root.querySelectorAll('[data-window]')) button.addEventListener('click', () => connect(windows[Number(button.dataset.window)]?.id));
-    const fresh = root.querySelector('textarea');
-    if (fresh) {
-      fresh.value = drafts.get(key(p)) || ''; fresh.disabled = pending;
-      fresh.addEventListener('input', () => drafts.set(key(current()), fresh.value));
-      fresh.addEventListener('focus', () => { projectInputFocused = true; sendInteractive(true); });
-      fresh.addEventListener('blur', () => { projectInputFocused = false; });
-      fresh.addEventListener('keydown', event => { if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); reply(); } });
-      if (focused) { fresh.focus(); if (typeof fresh.setSelectionRange === 'function') fresh.setSelectionRange(start, end); }
-      const send = root.querySelector('#am-send'); if (send) send.disabled = pending;
-    } else projectInputFocused = false;
+    const body = root.querySelector('.ch-chat'); if (body) body.scrollTop = 0; // column-reverse: 0 = the newest message
   }
   // "5 hr: 23% · full again at 14:30 · week: 41%" under the status.
   function usageLine(p) {
@@ -441,7 +408,7 @@
     return parts.length ? `<div class="am-hint am-usage">${parts.join(' · ')}</div>` : '';
   }
   // Claude page, like an iPhone Live Activity:
-  // left a big card with a real traffic light (Kopi Island's idea), what Claude does now, a live timer and your question;
+  // left a big card with a real traffic light (Rehatt's idea), what Claude does now, a live timer and your question;
   // right the activity feed (one line per step, with an icon) and your 5-hour limit.
   // Questions, plans and permissions get the full width, so answering is easy.
   const ICON_PATHS = {
@@ -466,22 +433,9 @@
     for (const el of root.querySelectorAll('.cx-timer[data-live="1"]')) el.textContent = clock(Number(el.dataset.base) + Math.floor((Date.now() - Number(el.dataset.at)) / 1000));
   }, 1000);
 
-  // Which Claude model Claude Code uses (written to Claude Code's settings.json by the main process).
-  const MODEL_INFO = { get default() { return [T('Lalai', 'Default'), T('Apa yang Claude Code pilih sendiri', 'What Claude Code picks itself')]; }, get opus() { return ['Opus', T('Paling bijak, untuk kerja sukar', 'The smartest, for hard jobs')]; }, get sonnet() { return ['Sonnet', T('Pantas dan bijak, untuk kebanyakan kerja', 'Fast and smart, for most things')]; },
-    get haiku() { return ['Haiku', T('Sangat pantas, untuk kerja kecil', 'Super fast, for small things')]; }, get opusplan() { return ['Opus plan', T('Opus merancang, Sonnet membina', 'Opus plans, Sonnet builds')]; } };
-  let modelMenu = false;
-  function modelPicker(p) {
-    const current = p.model || 'default', label = (current === 'default' ? T('Lalai', 'Default') : null) || MODEL_INFO[current]?.[0] || String(current).replace(/^custom:/, '');
-    const button = `<button type="button" class="ch-model" id="am-model" aria-expanded="${modelMenu}" title="${T('Pilih model Claude yang digunakan oleh Claude Code', 'Choose which Claude model Claude Code uses')}">${svg('agent', 12)}${escape(label)}<span>▾</span></button>`;
-    const menu = !modelMenu ? '' : `<div class="ch-model-menu" role="menu"><div class="ch-model-head">${T('Model mana yang Claude guna?', 'Which model does Claude use?')}${p.modelNow ? `<small>${T('Sedang digunakan', 'In use now')}: ${escape(p.modelNow)}</small>` : ''}</div>${
-      Object.entries(MODEL_INFO).map(([key, [name, info]]) => `<button type="button" role="menuitemradio" aria-checked="${key === current}" class="${key === current ? 'on' : ''}" data-model="${key}"><b>${name}</b><small>${info}</small>${key === current ? '<i>✓</i>' : ''}</button>`).join('')
-    }<p>${T('Untuk sesi baharu · dalam sembang yang sedang berjalan', 'For new sessions · in a running chat')}: <code>/model</code></p></div>`;
-    return { button, menu };
-  }
-
   function hooksPage(p) {
     const off = pending ? 'disabled' : '';
-    const st = p.permission ? 'question' : p.state;
+    const st = p.state;
     const project = p.source?.title && p.source.title !== 'No active session' ? p.source.title : '';
     const statusText = MS() ? ({ running: 'Sedang bekerja', sending: 'Sedang bekerja', question: 'Menunggu anda', done: 'Siap', error: 'Ralat', stopped: 'Berhenti' }[st] || 'Rehat')
       : ({ running: 'Working', sending: 'Working', question: 'Waiting for you', done: 'Done', error: 'Error', stopped: 'Stopped' }[st] || 'Idle');
@@ -490,15 +444,15 @@
     const calm = p.agent === 'codex' ? '#5b9bff' : '#e8865a', lampOf = x => ['ready', 'disconnected', 'connecting'].includes(x) ? calm : colourOf(x); // quiet = the AI's own colour, not grey
     const pill = p.connected ? `<span class="ch-status" style="--lamp:${lampOf(st)}"><i class="${busy(p) ? 'am-blink' : ''}"></i>${statusText}${timer}</span>` : '';
     const jump = p.canJump ? `<button type="button" class="cx-jump" id="am-jump" title="${T(`Bawa tetingkap ${escape(p.name)} ke hadapan`, `Bring the ${escape(p.name)} window to the front`)}">${T('Ke terminal', 'To terminal')} <span>↗</span></button>` : '';
-    const picker = p.connected && p.agent !== 'codex' ? modelPicker(p) : { button: '', menu: '' }; // the Claude model choice is for Claude Code only
+    const picker = { button: '', menu: '' };
     const head = p.connected
       ? `<div class="tc-page-head"><div class="cc-pill"><i style="--lamp:${lampOf(st)}" class="${busy(p) ? 'am-blink' : ''}"></i>${escape(project || p.name)}${project ? `<span>· ${escape(p.name)}</span>` : ''}</div><div class="ch-head-right">${picker.button}${pill}${jump}</div></div>${picker.menu}`
       : `<div class="tc-page-head"><div><p class="cc-kicker">${escape(p.name)}</p><p class="tc-page-title">${escape(project || p.name)}</p></div><div class="ch-head-right">${picker.button}${pill}${jump}</div></div>${picker.menu}`;
     if (!p.connected) {
       if (p.agent === 'codex' && p.available === false) return head + `<div class="cc-card cc-wide"><p class="cc-big">${T('Codex belum ada dalam PC ini', 'Codex is not on this PC yet')}</p><p class="am-hint">${T('Pasang Codex (pembantu pengaturcaraan AI daripada OpenAI) dan buka sekali. Kemudian kembali ke sini untuk menyambungkannya.', 'Install Codex (the AI coding helper from OpenAI) and open it once. Then come back here to connect it.')}</p></div>`;
-      return head + `<div class="cc-card cc-wide"><p class="cc-big">${T(`Lihat terus apa yang ${escape(p.name)} sedang buat`, `See right away what ${escape(p.name)} is doing`)}</p><p class="am-hint">${T('Sedang bekerja, ada soalan, siap atau ralat: Kopi Island tunjukkan semuanya', 'Working, a question, done or an error: Kopi Island shows it')}${p.agent === 'codex' ? T(', semasa anda buat kerja lain', ', while you do something else') : T(', walaupun anda mengawal Claude Code dari telefon', ', even when you drive Claude Code from your phone')}.</p>${
-        p.error ? `<p class="am-error">${escape(p.error)}</p>` : p.hooksInstalled ? `<p class="am-hint">${T('Disambungkan. Tunggu sebentar sehingga Kopi Island siap bermula.', 'Connected. Wait a moment until Kopi Island has finished starting.')}</p>`
-          : `<button type="button" class="am-primary" id="am-open-connect">${T('Sambungkan dalam Kopi Island', 'Connect in Kopi Island')}</button><p class="am-hint">${T('Satu suis dalam Kopi Island → Sambungan. Kopi Island uruskan selebihnya.', 'One switch in Kopi Island → Connections. Kopi Island does the rest.')}</p>`}</div>`;
+      return head + `<div class="cc-card cc-wide"><p class="cc-big">${T(`Lihat terus apa yang ${escape(p.name)} sedang buat`, `See right away what ${escape(p.name)} is doing`)}</p><p class="am-hint">${T('Sedang bekerja, ada soalan, siap atau ralat: Rehatt tunjukkan semuanya', 'Working, a question, done or an error: Kopi tells you')}${p.agent === 'codex' ? T(', semasa anda buat kerja lain', ', while you do something else') : T(', walaupun anda mengawal Claude Code dari telefon', ', even when you drive Claude Code from your phone')}.</p>${
+        p.error ? `<p class="am-error">${escape(p.error)}</p>` : p.hooksInstalled ? `<p class="am-hint">${T('Disambungkan. Tunggu sebentar sehingga Rehatt siap bermula.', 'Connected. Wait a moment until Rehatt has finished starting.')}</p>`
+          : `<button type="button" class="am-primary" id="am-open-connect">${T('Sambungkan dalam Rehatt', 'Connect in Rehatt')}</button><p class="am-hint">${T('Satu suis dalam Rehatt → Sambungan. Rehatt uruskan selebihnya.', 'One switch in Rehatt → Connections. Rehatt does the rest.')}</p>`}</div>`;
     }
 
     // ---- the conversation, like the Claude app: you on the right, Claude on the left ----
@@ -507,15 +461,12 @@
     const steps = (p.steps || []).slice(-6);
     if (steps.length) msgs.push(`<div class="ch-steps">${steps.map(s => `<div class="ch-step ${s.state}"><span class="ch-ico">${svg(s.kind, 12)}</span><em>${(s.state === 'running' ? NOW : PAST)[s.kind] || PAST.other}</em><small>${escape(shortWhat(s.kind, s.what))}</small>${s.state === 'running' ? '<b class="cc-spin"></b>' : s.state === 'failed' ? '<b class="cx-bad">✕</b>' : '<b class="cx-ok">✓</b>'}</div>`).join('')}</div>`);
     const claude = (inner, cls = '') => `<div class="ch-row"><span class="ch-avatar">${svg('run', 13)}</span><div class="ch-bubble ${cls}">${inner}</div></div>`;
-    if (p.ask) msgs.push(claude(askForm(p), 'wide'));
-    else if (p.plan) msgs.push(claude(`<div class="ch-label">Plan</div><div class="am-plan">${planHtml(p.plan)}</div><div class="cc-actions"><button type="button" class="am-primary" id="am-plan-ok" ${off}>${T('Luluskan', 'Approve')}</button><input id="am-plan-note" class="am-note" maxlength="4000" placeholder="${T('Apa yang perlu diubah?', 'What should change?')}"><button type="button" id="am-plan-no" ${off}>${T('Ubah', 'Change')}</button></div>`, 'wide'));
-    else if (p.permission) msgs.push(claude(`<div class="ch-label">${T('Boleh saya buat ini?', 'May I do this?')}</div><b>${escape(p.permission.tool)}</b>${p.permission.what ? `<code class="cx-code">${escape(p.permission.what)}</code>` : ''}<div class="cc-actions"><button type="button" class="am-primary" id="am-allow" ${off}>${T('Benarkan', 'Allow')}</button><button type="button" id="am-deny" ${off}>${T('Tolak', 'Deny')}</button></div>`, 'wide'));
-    else if (st === 'question') msgs.push(claude(md(p.question || p.lastMessage || T('Claude memerlukan anda di terminal.', 'Claude needs you in the terminal.')), 'ask md'));
+    if (st === 'question') msgs.push(claude(`<div class="ch-label">${T('Jawab dalam terminal', 'Answer in the terminal')}</div>` + md(p.question || p.lastMessage || T('Claude memerlukan anda di terminal.', 'Claude needs you in the terminal.')), 'ask md'));
     else if (st === 'done' && p.lastMessage) msgs.push(claude(md(p.lastMessage), 'md'));
     else if (st === 'error' || st === 'stopped') msgs.push(claude(`<b>${escape(p.detail || T('Ada yang tidak kena', 'Something went wrong'))}</b><br><span class="ch-dim">${T('Lihat di terminal apa yang tidak kena.', 'Check the terminal to see what went wrong.')}</span>`, 'error'));
     else if (busy(p)) msgs.push(claude(`<span class="ch-typing"><i></i><i></i><i></i></span><span class="ch-dim">${escape((s => s ? `${NOW[s.kind] || T('Sedang bekerja', 'Working')} ${shortWhat(s.kind, s.what)}` : T('Claude sedang bekerja', 'Claude is working'))((p.steps || []).filter(x => x.state === 'running').pop()))}</span>`, 'typing'));
     // ---- always a summary at the end: what Claude did, which files changed ----
-    if (['done', 'error', 'stopped'].includes(st) || (st === 'question' && !p.ask && !p.plan && !p.permission)) {
+    if (['done', 'error', 'stopped', 'question'].includes(st)) {
       const n = p.stats || {}, chip = (icon, count, one, many) => count ? `<span>${svg(icon, 12)}${count} ${count === 1 ? one : many}</span>` : '';
       const chips = EN() ? [chip('edit', n.edit, 'file edited', 'files edited'), chip('read', n.read, 'file read', 'files read'), chip('run', n.run, 'command', 'commands'), chip('search', (n.search || 0) + (n.web || 0), 'search', 'searches')].join('')
         : [chip('edit', n.edit, 'fail disunting', 'fail disunting'), chip('read', n.read, 'fail dibaca', 'fail dibaca'),
@@ -538,9 +489,7 @@
     // ---- bottom: reply box (when Claude waits for you) or a small limit line ----
     const u = p.usage?.fiveHour;
     const limit = u ? `<span class="ch-limit">${T('Had 5 jam', '5-hour limit')} <b>${u.used}%</b><i><s style="width:${Math.min(100, u.used)}%;background:${ringColour(u.used)}"></s></i></span>` : '';
-    const footer = p.canReply && !p.ask && !p.plan && !p.permission
-      ? `<div class="ch-compose"><textarea id="am-answer" maxlength="5000" placeholder="${st === 'question' ? T('Jawapan anda…', 'Your answer…') : T('Taip sesuatu untuk Claude…', 'Type something for Claude…')}" aria-label="${T('Mesej kepada Claude Code', 'Message to Claude Code')}"></textarea><button type="button" class="am-primary" id="am-send" aria-label="${T('Hantar', 'Send')}" title="${T('Hantar (Enter)', 'Send (Enter)')}">↑</button></div>`
-      : `<div class="ch-foot"><span>${busy(p) ? T('Claude sedang bekerja. Anda akan diberitahu apabila ia siap.', 'Claude is working. You’ll get a ping when it’s done.') : st === 'done' ? T('Mahu teruskan? Taip dalam terminal anda.', 'Keep going? Type in your terminal.') : ''}</span>${limit}</div>`;
+    const footer = `<div class="ch-foot"><span>${busy(p) ? T('Claude sedang bekerja. Masa untuk regangan sekejap?', 'Claude is working. Time for a quick stretch?') : st === 'question' ? T('Klik "Ke terminal" untuk menjawab.', 'Click "To terminal" to answer.') : st === 'done' ? T('Mahu teruskan? Taip dalam terminal anda.', 'Keep going? Type in your terminal.') : ''}</span>${limit}</div>`;
     return head + `<div class="ch-chat"><div class="ch-inner">${msgs.join('')}</div></div>${footer}`; // column-reverse: always shows the newest message
   }
   // "read 3 · edited 2 · commands 1" for this turn.
@@ -549,77 +498,10 @@
     const parts = Object.entries(names).filter(([k]) => stats[k]).map(([k, label]) => `${label} <b>${stats[k]}</b>`);
     return parts.length ? `<div class="am-hint am-usage">🛠 ${parts.join(' · ')}</div>` : '';
   }
-  // Multiple-choice questions: click an option (or several), or type your own answer.
-  let askKey = '', askPick = {}, askOther = {};
-  function askForm(p) {
-    const keyNow = p.sessionId + JSON.stringify(p.ask);
-    if (keyNow !== askKey) { askKey = keyNow; askPick = {}; askOther = {}; }
-    return p.ask.map((q, qi) => `<div class="am-ask"><div class="am-said">${q.header ? `<span class="am-tag">${escape(q.header)}</span>` : ''}${escape(q.question)}${q.multiSelect ? ` <i>${T('(pilih lebih daripada satu)', '(choose more than one)')}</i>` : ''}</div><div class="am-options">${
-      q.options.map((o, oi) => `<button type="button" class="am-option ${(askPick[qi] || []).includes(o.label) ? 'on' : ''}" data-q="${qi}" data-o="${oi}" title="${escape(o.description)}"><b>${escape(o.label)}</b>${o.description ? `<small>${escape(o.description)}</small>` : ''}</button>`).join('')
-    }</div><div class="cc-inline"><input class="am-note" data-other="${qi}" maxlength="2000" placeholder="${T('Atau taip jawapan anda sendiri…', 'Or type your own answer…')}" value="${escape(askOther[qi] || '')}">${qi === p.ask.length - 1 ? `<button type="button" class="am-primary" id="am-ask-send" ${pending ? 'disabled' : ''}>${T('Hantar', 'Send')}</button>` : ''}</div></div>`).join('');
-  }
-  function bindAsk(p) {
-    for (const b of root.querySelectorAll('[data-q]')) b.addEventListener('click', () => {
-      const qi = Number(b.dataset.q), q = p.ask[qi], label = q.options[Number(b.dataset.o)].label, list = askPick[qi] || [];
-      askPick[qi] = q.multiSelect ? (list.includes(label) ? list.filter(x => x !== label) : [...list, label]) : [label];
-      askOther[qi] = '';
-      // One single-choice question: one click is enough.
-      if (p.ask.length === 1 && !q.multiSelect) sendAsk(p); else render();
-    });
-    for (const input of root.querySelectorAll('[data-other]')) {
-      input.addEventListener('input', () => { askOther[Number(input.dataset.other)] = input.value; });
-      input.addEventListener('focus', () => { projectInputFocused = true; sendInteractive(true); });
-      input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); sendAsk(p); } });
-    }
-    bind('am-ask-send', () => sendAsk(p));
-  }
-  function sendAsk(p) {
-    const answers = {};
-    p.ask.forEach((q, qi) => { answers[q.question] = (askOther[qi] || '').trim() || (q.multiSelect ? askPick[qi] || [] : (askPick[qi] || [])[0] || ''); });
-    hooks('aiMonitorHooksAnswer', p.sessionId, answers);
-  }
-  // Plans are Markdown: show headings, lists and code in a readable way.
-  function planHtml(md) {
-    return escape(md).split('\n').map(line => {
-      const inline = s => s.replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
-      if (/^#{1,6}\s/.test(line)) return `<h4>${inline(line.replace(/^#+\s*/, ''))}</h4>`;
-      if (/^\s*([-*]|\d+\.)\s/.test(line)) return `<div class="am-li">• ${inline(line.replace(/^\s*([-*]|\d+\.)\s/, ''))}</div>`;
-      return line.trim() ? `<p>${inline(line)}</p>` : '';
-    }).join('');
-  }
   async function hooks(method, ...args) {
     if (pending) return; pending = true; error = ''; render();
     try { const result = await api[method](...args); if (result.ok) update(result); else error = result.error; }
     catch (failure) { error = failure.message; } finally { pending = false; render(); }
-  }
-  async function launch() {
-    const result = await api.aiMonitorOpenSource(selected);
-    if (!result.ok) { error = result.error; render(); }
-  }
-  async function choose() { choosing = true; error = ''; render(); await scan(); }
-  async function scan() {
-    if (pending) return; pending = true; render();
-    try { const result = await api.aiMonitorWindows(); windows = result.windows || []; error = result.ok ? '' : result.error; }
-    catch (failure) { error = failure.message; } finally { pending = false; render(); }
-  }
-  async function connect(targetId) {
-    if (pending || !targetId) return; const provider = selected; pending = true; error = ''; render();
-    try {
-      const result = await api.aiMonitorConnect(provider, targetId);
-      if (result.ok) { choosing = false; update(result); } else error = result.error;
-    } catch (failure) { error = failure.message; } finally { pending = false; render(); }
-  }
-  async function reply() {
-    const p = current(), text = (drafts.get(key(p)) || '').trim();
-    if (pending || !p?.canReply || !text) return;
-    const provider = p.provider, questionId = p.questionId, draftKey = key(p);
-    pending = true; error = ''; render();
-    try {
-      // Claude Code: the answer wakes Claude through the asyncRewake Stop hook.
-      const result = p.kind === 'hooks' ? await api.aiMonitorHooksReply(p.sessionId, text) : await api.aiMonitorReply(provider, questionId, text);
-      if (result.ok && p.kind === 'hooks') update(result);
-      if (result.ok) drafts.delete(draftKey); else error = result.error;
-    } catch (failure) { error = failure.message; } finally { pending = false; render(); }
   }
   function update(next) {
     if (!next?.ok || !Array.isArray(next.providers)) return;
@@ -654,18 +536,11 @@
   setView = function (next) { if (next !== 'monitor') markSeen(); return oldSetView(next); };
 
   // ---- Three sizes: small (rest), medium (compact: music), large (expanded) ----
-  const music = () => Boolean(spotifyConnected && spotifyState.is_playing && spotifyState.track);
+  const music = () => false; // (no music player in Rehatt)
   // Medium size stays while music plays or a focus timer runs.
   // ...and while it shows a short message (startup "Hoi!", volume bar, battery), so that isn't closed right away.
-  const needsAnswer = () => { const p = top(); return Boolean(p && (p.permission || p.state === 'question')); };
-  // While music plays the island shows it at medium size. The little button on it tucks the music away
-  // (the island stays small, the line under it still shows how far the song is); hover the island and press it again to bring it back.
-  let musicTucked = false; try { musicTucked = localStorage.getItem('kopi:music-tucked') === '1'; } catch {}
-  function tuckMusic(on) {
-    musicTucked = on; try { localStorage.setItem('kopi:music-tucked', on ? '1' : '0'); } catch {}
-    window.__kopiChime?.('pop'); oldSetMode(on ? 'rest' : 'compact', false); if (on) holdClosed = true;
-  }
-  const medium = () => (music() && !musicTucked) || Boolean(window.__kopiFocus?.active()) || Boolean(window.__kopiCompactMessage?.()) || needsAnswer();
+  const needsAnswer = () => { const p = top(); return Boolean(p && p.state === 'question'); };
+  const medium = () => Boolean(window.__kopiFocus?.active()) || Boolean(window.__kopiStretchNudge?.()) || Boolean(window.__kopiCompactMessage?.()) || needsAnswer();
   window.__kopiStatus = () => top();
   let holdClosed = false;
   window.__kopiHoldClosed = () => { holdClosed = true; };
@@ -674,12 +549,11 @@
   function askSize() {
     const want = needsAnswer();
     if (want === wideFor) return; wideFor = want;
-    UI.COMPACT_W = want ? 440 : 300;
     if (want && mode !== 'expanded') oldSetMode('compact', false);
     else if (!want && mode === 'compact') { oldSetMode('compact', false); settleSize(); }
   }
   const oldTargetHeight = targetHeight, oldSetMode = setMode, oldDrawExpanded = drawExpanded, oldDrawSmall = drawSmall, oldHover = updateHover;
-  targetHeight = function () { return ['monitor', 'assistant'].includes(currentView) ? 300 : oldTargetHeight(); };
+  targetHeight = function () { return currentView === 'monitor' ? 300 : oldTargetHeight(); };
   // While music plays, the island rests at medium size so the sound wave stays visible.
   setMode = function (next, playSound = true) { return oldSetMode(next === 'rest' && medium() ? 'compact' : next, playSound); };
   function settleSize() {
@@ -688,14 +562,14 @@
     else if (!medium() && mode === 'compact') oldSetMode('rest', false);
   }
   window.__kopiSettleSize = settleSize;
-  setInterval(async () => { await refreshSpotify(); settleSize(); }, 4000);
+  setInterval(settleSize, 4000);
   drawExpanded = function (alpha) {
     if (currentView === 'shortcuts') { drawHeader(alpha); drawShortcuts(contentRect()); return; }
-    if (!['monitor', 'assistant'].includes(currentView)) return oldDrawExpanded(alpha);
-    drawHeader(alpha); // the Claude page uses the full width (no Kopi Island, usage is shown in the page itself)
+    if (currentView !== 'monitor') return oldDrawExpanded(alpha);
+    drawHeader(alpha); // the Claude page uses the full width (no Rehatt, usage is shown in the page itself)
     // Claude Code / Codex: Kopi's stage, warm orange for Claude, violet for Codex (like the chat, chat-ui.js)
     // ...and it glows in your traffic-light colour of the moment: busy, a question, done or an error
-    const p = current(), st = p?.permission ? 'question' : p?.state;
+    const p = current(), st = p?.state;
     if (p?.kind === 'hooks' && p.connected) window.__kopiKopiStage?.(contentRect(), p.agent === 'codex' ? 'codex' : 'claude', busy(p), ['running', 'sending', 'question', 'done', 'error', 'stopped'].includes(st) ? window.__kopiStateColour?.(st) : null);
   };
   function drawLamp(p, x, y) {
@@ -714,8 +588,8 @@
     ctx.restore();
   }
   // Medium island: music (or status text) on the left, the ghost with traffic-light eyes far right.
-  // Medium island, one clear layout: [left: cover or icon] [middle: wave or text] [right: Kopi Island].
-  // Kopi Island's eyes always show Claude's state; a focus timer is the ring around him.
+  // Medium island, one clear layout: [left: cover or icon] [middle: wave or text] [right: Rehatt].
+  // Rehatt's eyes always show Claude's state; a focus timer is the ring around him.
   // Priority for the middle: short message > Claude needs you > music > focus timer > Claude working.
   let attentionState = '', attentionUntil = 0;
   // The sound wave shows only REAL sound from this PC. Silent (or the sound can't be read) → flat little dots,
@@ -736,24 +610,6 @@
     ctx.restore();
   }
   window.__kopiBars = bars; // also used by the big Spotify player
-  // Medium island (36 px high): [album cover] [real sound wave] [Kopi Island], like the iPhone's Dynamic Island.
-  // While Spotify plays (here or on your phone): a thin line along the bottom of the small island shows how far the song is.
-  function songLine() {
-    if (!music() || !spotifyState.duration_ms) return;
-    const pos = Math.min(spotifyState.duration_ms, (spotifyState.progress_ms || 0) + (spotifyState.is_playing ? performance.now() - spotifySyncAt : 0));
-    const ib = islandBounds, inset = Math.min(14, ib.width * 0.18), x0 = ib.x + inset, w = ib.width - inset * 2, y = ib.height - 3;
-    ctx.save();
-    ctx.fillStyle = 'rgba(255,255,255,.14)'; ctx.beginPath(); ctx.roundRect(x0, y, w, 2, 1); ctx.fill();
-    ctx.fillStyle = window.__kopiAlbumColour || '#1ed760'; ctx.beginPath(); ctx.roundRect(x0, y, Math.max(2, w * pos / spotifyState.duration_ms), 2, 1); ctx.fill();
-    ctx.restore();
-  }
-  // the music button on the medium island: caught on pointerdown (window, capture), before the island reacts to the press
-  let swallowTuckClick = false, tuckBox = null; // where the button is (kept between frames)
-  window.addEventListener('pointerdown', e => {
-    if (mode !== 'compact' || !music() || !inside(e.clientX, e.clientY, tuckBox)) return;
-    e.preventDefault(); e.stopImmediatePropagation(); swallowTuckClick = true; tuckMusic(!musicTucked);
-  }, true);
-  for (const type of ['pointerup', 'mousedown', 'mouseup', 'click']) window.addEventListener(type, e => { if (!swallowTuckClick) return; e.preventDefault(); e.stopImmediatePropagation(); if (type === 'click') swallowTuckClick = false; }, true);
   function smallStatus(p) {
     if (!EN()) return p.detail || labels[p.state];
     const step = (p.steps || []).filter(x => x.state === 'running').pop();
@@ -774,17 +630,13 @@
     text(`${level}%`, right - 4, cy + 4, 11.5, '#f2f5ed', 700, 'right');
   }
   drawSmall = function () {
-    hit.musicTuck = null; if (mode !== 'compact') tuckBox = null;
-    if (mode !== 'compact') { oldDrawSmall(); songLine(); return; }
-    songLine();
+    if (mode !== 'compact') { oldDrawSmall(); return; }
     const H = islandBounds.height, cy = H / 2, right = islandBounds.x + islandBounds.width, left = islandBounds.x + 12;
     const cover = Math.max(16, H - 12), mid0 = left + cover + 12;
     const p = top(), focus = window.__kopiFocus, now = performance.now();
-    const message = window.__kopiCompactMessage?.(), needsYou = p && (p.state === 'question' || p.permission);
-    // While music plays the island belongs to the music: no Kopi Island, Claude's traffic light becomes a small dot.
-    const musicOnly = music() && !message && !(p && (needsYou || now < attentionUntil));
-    const mid1 = musicOnly ? right - (p ? 34 : 16) : right - 52;
-    if (!musicOnly) { drawGhost(right - 26, cy + 3, Math.min(22, H - 12)); hit.ghost = { x: right - 48, y: 0, width: 44, height: H }; } else hit.ghost = null;
+    const message = window.__kopiCompactMessage?.(), needsYou = p && p.state === 'question';
+    const mid1 = right - 52;
+    drawGhost(right - 26, cy + 3, Math.min(22, H - 12)); hit.ghost = { x: right - 48, y: 0, width: 44, height: H };
     if (p && p.state !== attentionState) { attentionState = p.state; if (['question', 'done', 'error'].includes(p.state)) attentionUntil = now + 4000; }
     if (!p) attentionState = '';
     const icon = name => window.__kopiIcon?.(name, left + cover / 2, cy, 17);
@@ -798,47 +650,12 @@
     if (p && (needsYou || now < attentionUntil)) {
       ctx.save(); ctx.globalAlpha = 0.75 + 0.25 * Math.sin(now / 180);
       ctx.beginPath(); ctx.arc(left + cover / 2, cy, 5, 0, Math.PI * 2); ctx.fillStyle = colourOf(p.state); ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 10; ctx.fill(); ctx.restore();
-      // Claude asks permission: answer right here, without opening the island.
-      if (p.permission && !p.ask && !p.plan && p.permission.kind === 'tool') {
-        const yesW = 70, noW = 74, bh = 24, by = cy - bh / 2, noX = mid1 - noW, yesX = noX - yesW - 6;
-        line(`${T('Benarkan', 'Allow')}: ${p.permission.what ? p.permission.what.split(/[\\/]/).pop() : p.permission.tool}?`, '#f2f5ed', mid0); // the real command / file, so you know what you allow
-        const btn = (x, w, label, key, primary) => { const over = inside(pointer.x, pointer.y, { x, y: by, width: w, height: bh });
-          ctx.save(); ctx.beginPath(); ctx.roundRect(x, by, w, bh, bh / 2); ctx.fillStyle = primary ? (over ? '#d9f7b3' : '#c6e994') : (over ? '#3a2b29' : '#2a2321'); ctx.fill(); ctx.restore();
-          text(label, x + w / 2, by + 16, 11, primary ? '#10180c' : '#ffb3a8', 700, 'center'); hit[key] = { x, y: by, width: w, height: bh }; };
-        // keep the question text clear of the buttons
-        ctx.save(); ctx.fillStyle = '#000'; ctx.fillRect(yesX - 30, 2, mid1 - yesX + 30, H - 4); ctx.restore();
-        btn(yesX, yesW, T('Benarkan', 'Allow'), 'cAllow', true); btn(noX, noW, T('Tolak', 'Deny'), 'cDeny', false);
-        return;
-      }
-      if (p.state === 'question' && !p.permission && !p.ask && !p.plan) return line(T('Claude ada soalan untuk anda', 'Claude has a question for you')); // hover or click opens it
-      if (p.ask || p.plan) {
-        line(p.ask ? T('Claude bertanya sesuatu', 'Claude asks something') : T('Pelan siap: luluskan?', 'Plan ready: approve?'), '#f2f5ed', mid0);
-        const w = 64, bh = 24, x = mid1 - w, over = inside(pointer.x, pointer.y, { x, y: cy - bh / 2, width: w, height: bh });
-        ctx.save(); ctx.beginPath(); ctx.roundRect(x, cy - bh / 2, w, bh, bh / 2); ctx.fillStyle = over ? '#d9f7b3' : '#c6e994'; ctx.fill(); ctx.restore();
-        text(T('Lihat', 'View'), x + w / 2, cy + 4, 11, '#10180c', 700, 'center'); hit.cOpen = { x, y: cy - bh / 2, width: w, height: bh };
-        return;
-      }
+      const who = p.provider === 'codex' ? 'Codex' : 'Claude';
+      if (p.state === 'question') return line(T(`${who} ada soalan untuk anda`, `${who} has a question for you`)); // hover or click opens it
       return line(`Claude · ${smallStatus(p)}`);
     }
-    if (music()) {
-      if (albumImage?.complete && albumImage.naturalWidth) {
-        ctx.save(); ctx.beginPath(); ctx.roundRect(left, cy - cover / 2, cover, cover, 7); ctx.clip(); ctx.drawImage(albumImage, left, cy - cover / 2, cover, cover); ctx.restore();
-      } else { box(left, cy - cover / 2, cover, cover, 7, '#1b211a'); icon('music'); }
-      // the song, not a fake sound wave (the wave could never follow the real beat)
-      const tr = spotifyState.track || {}, timer = (focus?.active() ? 60 : 0) + 26;
-      text(tr.name || 'Spotify', mid0, cy + 4, 11.5, '#f2f5ed', 700, 'left', Math.max(40, (mid1 - mid0 - timer) * 0.62));
-      const nameW = Math.min((mid1 - mid0 - timer) * 0.62, (ctx.measureText ? (ctx.font = '700 11.5px "Segoe UI"', ctx.measureText(tr.name || 'Spotify').width) : 80));
-      if (tr.artist) text(tr.artist, mid0 + nameW + 8, cy + 4, 11, 'rgba(235,240,230,.5)', 600, 'left', Math.max(0, mid1 - timer - mid0 - nameW - 8));
-      if (focus?.active()) text(focus.label(), mid1 - 26, cy + 4, 11.5, '#ffd28a', 700, 'right');
-      if (p) drawLamp(p, right - 20, cy);
-      // a small chevron: up = make it small, down = keep showing the music
-      const tx = right - (p ? 40 : 18), over = inside(pointer.x, pointer.y, { x: tx - 11, y: cy - 11, width: 22, height: 22 });
-      ctx.save(); if (over) { ctx.beginPath(); ctx.arc(tx, cy, 10, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.fill(); }
-      ctx.strokeStyle = over ? '#fff' : 'rgba(235,240,230,.55)'; ctx.lineWidth = 1.8; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath();
-      const d = musicTucked ? 1 : -1; ctx.moveTo(tx - 4, cy - d * 2); ctx.lineTo(tx, cy + d * 2); ctx.lineTo(tx + 4, cy - d * 2); ctx.stroke(); ctx.restore();
-      hit.musicTuck = tuckBox = { x: tx - 12, y: 0, width: 24, height: H };
-      return;
-    }
+    // a stretch break is due (stretch-ui.js): the kuih's nudge
+    if (window.__kopiStretchNudge?.()) { window.__kopiStretchSmall?.(left, cy, cover, mid0, mid1); return; }
     if (focus?.active()) {
       // Timer: a small progress ring + the time left
       const r = cover / 2 - 2, done = 1 - focus.left() / focus.length();
@@ -851,7 +668,7 @@
     }
     if (p) { icon('terminal'); line(smallStatus(p)); }
   };  updateHover = function (now) {
-    if (['monitor', 'assistant'].includes(currentView)) {
+    if (currentView === 'monitor') {
       if (mode !== 'expanded') return;
       // Only stay open while you are really typing here (window focused), or while a reply is being sent.
       const typing = document.hasFocus() && root.contains(document.activeElement) && /^(TEXTAREA|INPUT)$/.test(document.activeElement.tagName);
@@ -863,14 +680,9 @@
     }
     // Folded in with the collapse button: stay closed until the mouse has left the island once.
     if (holdClosed) { if (pointer.known && inside(pointer.x, pointer.y, islandBounds)) { hoverStartedAt = null; return; } holdClosed = false; }
-    // Claude waits for an answer: the small island stays small under your mouse, so you can click Allow / Deny.
-    // On the music button the island stays as it is, so you can press it (it would open on hover otherwise)
-    if (mode === 'compact' && pointer.known && inside(pointer.x, pointer.y, tuckBox)) { hoverStartedAt = null; return; }
-    const pa = top(); // (only when there are buttons to press; a plain question just opens on hover)
-    if (mode === 'compact' && pa && (pa.permission || pa.ask || pa.plan) && pointer.known && inside(pointer.x, pointer.y, islandBounds)) { hoverStartedAt = null; return; }
     return oldHover(now);
   };
-  // ---- Home: a small dashboard. Kopi Island on the left, three live widgets: music, Claude, focus ----
+  // ---- Home: a small dashboard. Rehatt on the left, three live widgets: music, Claude, focus ----
   const baseHomeHeight = targetHeight;
   targetHeight = function () { return currentView === 'home' ? (window.__kopiGalleryOpen?.() ? 300 : 200) : currentView === 'shortcuts' ? (editShortcuts ? 286 : 248) : baseHomeHeight(); };
   // A widget card: soft gradient, thin rim, lifts a little on hover. Returns whether the pointer is on it.
@@ -903,13 +715,13 @@
     ctx.strokeStyle = 'rgba(255,255,255,.06)'; ctx.lineWidth = 1; ctx.stroke(); ctx.restore();
     if (key) hit[key] = bounds; return over;
   }
-  // App icon: Kopi Island's own line icon on a soft coloured tile.
+  // App icon: Rehatt's own line icon on a soft coloured tile.
   // App icons are little Kopi stickers: Kopi himself does something with each app (headphones for Spotify,
   // a laptop for Claude Code, a stopwatch for Focus, peeking out of a box for the Tray …) on a bright tile.
   // Live bits: music notes dance while a song plays, his eyes turn orange while Claude works, the gear turns,
   // the alarm clock shows the real time.
   const ICON_BG = { music: ['#5be38c', '#1fae55'], terminal: ['#ffb38a', '#e8744a'], timer: ['#ffd27a', '#ff9a3d'], tray: ['#8fb8ff', '#4c7ff0'], copy: ['#7fe6d8', '#22b3a3'],
-    note: ['#ffe58a', '#f5b92e'], gear: ['#c9b3ff', '#8b6cf0'], clock: ['#9fc2ff', '#6c7ff0'], home: ['#d8f5a8', '#9fd45a'], pen: ['#ffb3d6', '#f0609e'] };
+    note: ['#ffe58a', '#f5b92e'], gear: ['#c9b3ff', '#8b6cf0'], stretch: ['#ffb3c9', '#f06a95'], glass: ['#f6cf9f', '#c98a4b'], clock: ['#9fc2ff', '#6c7ff0'], home: ['#d8f5a8', '#9fd45a'], pen: ['#ffb3d6', '#f0609e'] };
   // Hover: Kopi climbs a bit out of his tile, grows and looks ready (happy eyes, glowing light).
   // Click: he squashes and bounces back with a few sparkles.
   const iconAnim = new Map();
@@ -925,7 +737,7 @@
     const over = Boolean(hot) && !homeEdit && pointer.known && inside(pointer.x, pointer.y, hotRect);
     st.h += ((over ? 1 : 0) - st.h) * 0.2; st.rect = hot ? hotRect : null; st.seen = now;
     const h = st.h, since = now - st.pressAt, press = since < 700 ? Math.exp(-since / 170) * Math.sin(since / 38) : 0, tilePress = since < 220 ? Math.sin(Math.min(1, since / 220) * Math.PI) : 0;
-    const p = icon === 'terminal' ? top() : null, working = p && busy(p), playing = icon === 'music' && music() && Boolean(window.__kopiHearing); // notes only bob when sound really plays here
+    const p = icon === 'terminal' ? top() : null, working = p && busy(p);
     c.save(); c.translate(x, y); c.scale(u, u);
     if (tilePress) { c.translate(24, 24); c.scale(1 - 0.12 * tilePress, 1 - 0.12 * tilePress); c.translate(-24, -24); }
     // tile
@@ -965,7 +777,7 @@
     if (icon === 'music') { // headphones + dancing notes
       c.strokeStyle = ink; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath(); c.arc(hx, hy + 2, 15.5, Math.PI * 1.08, Math.PI * 1.92); c.stroke();
       c.fillStyle = '#1aa34c'; c.strokeStyle = ink; c.lineWidth = 1.2; for (const s of [-1, 1]) { c.beginPath(); c.roundRect(hx + s * 15.5 - 3, hy - 3, 6, 10, 3); c.fill(); c.stroke(); }
-      const bob = playing ? Math.sin(now / 180) * 2 : 0, bob2 = playing ? Math.sin(now / 180 + 2) * 2 : 0;
+      const bob = 0, bob2 = 0;
       c.fillStyle = '#ffffff'; c.strokeStyle = '#ffffff'; c.lineWidth = 1.4;
       c.beginPath(); c.ellipse(39, 12 + bob, 2.2, 1.7, -0.4, 0, Math.PI * 2); c.fill(); c.beginPath(); c.moveTo(41, 11.5 + bob); c.lineTo(41, 5 + bob); c.lineTo(44, 6 + bob); c.stroke();
       c.globalAlpha = 0.85; c.beginPath(); c.ellipse(8, 9 + bob2, 1.8, 1.4, -0.4, 0, Math.PI * 2); c.fill(); c.beginPath(); c.moveTo(9.6, 8.6 + bob2); c.lineTo(9.6, 3.5 + bob2); c.stroke(); c.globalAlpha = 1;
@@ -1000,6 +812,16 @@
       const hand = (ang, len, w) => { c.lineWidth = w; c.beginPath(); c.moveTo(cx2, cy2); c.lineTo(cx2 + Math.sin(ang) * len, cy2 - Math.cos(ang) * len); c.stroke(); };
       c.strokeStyle = ink; c.lineCap = 'round'; hand(((d.getHours() % 12) + d.getMinutes() / 60) / 12 * Math.PI * 2, 3.5, 1.6); hand(d.getMinutes() / 60 * Math.PI * 2, 5.2, 1.1);
     }
+    if (icon === 'stretch') { // arms up, stretching (they wave a little higher on hover)
+      const up = 3 * h + Math.sin(now / 420) * 1.2; c.strokeStyle = '#ffffff'; c.lineWidth = 2.6; c.lineCap = 'round';
+      c.beginPath(); c.moveTo(hx - 13, hy + 2); c.lineTo(hx - 19, hy - 12 - up); c.moveTo(hx + 13, hy + 2); c.lineTo(hx + 19, hy - 12 - up); c.stroke();
+      c.fillStyle = '#ffffff'; for (const s of [-1, 1]) { c.beginPath(); c.arc(hx + s * 19.5, hy - 13.5 - up, 2.4, 0, Math.PI * 2); c.fill(); }
+    }
+    if (icon === 'glass') { // holding a glass of teh tarik
+      const gx = 33, gy = 29; c.fillStyle = 'rgba(255,255,255,.85)'; c.beginPath(); c.moveTo(gx, gy); c.lineTo(gx + 11, gy); c.lineTo(gx + 9.5, gy + 15); c.lineTo(gx + 1.5, gy + 15); c.closePath(); c.fill();
+      c.fillStyle = '#b8743a'; c.beginPath(); c.moveTo(gx + 0.9, gy + 5); c.lineTo(gx + 10.1, gy + 5); c.lineTo(gx + 9.2, gy + 14); c.lineTo(gx + 1.8, gy + 14); c.closePath(); c.fill();
+      c.fillStyle = '#f3e2c7'; c.fillRect(gx + 0.9, gy + 3.5, 9.2, 2);
+    }
     if (icon === 'home') { // a little roof as a hat
       c.fillStyle = '#e4572e'; c.beginPath(); c.moveTo(hx - 13, hy - 9); c.lineTo(hx, hy - 20); c.lineTo(hx + 13, hy - 9); c.closePath(); c.fill(); c.fillStyle = '#b8401f'; c.fillRect(hx + 5, hy - 19, 3, 6);
     }
@@ -1022,11 +844,11 @@
   // − removes, the arrow badge changes the size, hold and drag to move, empty spots get a + to add a widget.
   const SIZES = { S: [1, 1], W: [2, 1], L: [2, 2] }, SIZE_NAME = { S: 'Small', W: 'Wide', L: 'Large' }, COLS = 4, ROWS = 2;
   const PRESETS = [
-    { name: 'Standard', list: [['claude', 'L'], ['spotify', 'S'], ['focus', 'S'], ['tray', 'S'], ['settings', 'S']] },
-    { name: '8 small', list: ['claude', 'spotify', 'focus', 'clock', 'tray', 'clips', 'note', 'settings'].map(id => [id, 'S']) },
-    { name: '2 large', list: [['claude', 'L'], ['spotify', 'L']] },
-    { name: '4 wide', list: [['claude', 'W'], ['spotify', 'W'], ['focus', 'W'], ['note', 'W']] },
-    { name: 'Music', list: [['spotify', 'L'], ['claude', 'W'], ['clock', 'S'], ['focus', 'S']] }
+    { name: 'Standard', list: [['claude', 'L'], ['stretch', 'W'], ['meter', 'S'], ['focus', 'S']] },
+    { name: '8 small', list: ['claude', 'stretch', 'meter', 'focus', 'clock', 'tray', 'clips', 'note'].map(id => [id, 'S']) },
+    { name: '2 large', list: [['claude', 'L'], ['stretch', 'L']] },
+    { name: '4 wide', list: [['claude', 'W'], ['stretch', 'W'], ['meter', 'W'], ['focus', 'W']] },
+    { name: 'Rehat', list: [['stretch', 'L'], ['meter', 'W'], ['claude', 'W']] }
   ];
   let homeEdit = false, gallery = null, drag = null, swallowClick = false, longPress = null, homeGeo = null, widgets = null, cell = { w: 171, h: 64, gap: 8 };
   const anim = {};
@@ -1126,9 +948,9 @@
 
   // ---- the widgets themselves ----
   function claudeInfo() {
-    const p = top(), st = p ? (p.permission ? 'question' : p.state) : 'ready';
+    const p = top(), st = p ? p.state : 'ready';
     const agentName = p?.name || 'AI', project = p?.source?.title && p.source.title !== 'No active session' ? p.source.title : agentName;
-    const statusText = !p ? 'Waiting for your AI' : p.permission || st === 'question' ? 'Waiting for you' : busy(p) ? (p.detail || 'Working') : st === 'done' ? 'Done' : st === 'error' ? (p.detail || 'Error') : 'Idle';
+    const statusText = !p ? 'Waiting for your AI' : st === 'question' ? 'Waiting for you' : busy(p) ? (p.detail || 'Working') : st === 'done' ? 'Done' : st === 'error' ? (p.detail || 'Error') : 'Idle';
     const lastLine = p?.code && busy(p) ? '+ ' + (p.code.lines.find(l => l.t !== '-')?.text || p.code.file) : p?.run ? (p.run.out.slice(-1)[0] || '$ ' + p.run.command) : String(p?.lastMessage || '').split('\n').filter(Boolean)[0] || '';
     return { p, st, project, statusText, dot: p ? colourOf(st) : '#4a504c', lastLine };
   }
@@ -1137,14 +959,14 @@
     else if (p && busy(p)) { ctx.save(); ctx.translate(x, y); ctx.rotate(performance.now() / 160); ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 1.4); ctx.strokeStyle = dot; ctx.lineWidth = 1.8; ctx.lineCap = 'round'; ctx.stroke(); ctx.restore(); }
     else { ctx.save(); ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.strokeStyle = dot; ctx.lineWidth = 1.5; ctx.stroke(); ctx.restore(); }
   }
-  // Each AI has its own colour (the same as in Kopi Island → Connections).
-  const AI_COLOUR = { claudecode: '#d97757', codex: '#3b82f6', claude: '#e8a87c', chatgpt: '#10a37f' };
+  // Each AI has its own colour (the same as in Rehatt → Connections).
+  const AI_COLOUR = { claudecode: '#d97757', codex: '#3b82f6' };
   // All chats going on at once, across AIs: every Claude Code / Codex session, plus the ChatGPT and Claude chats.
   function activeChats() {
     const out = [];
     for (const q of providers().filter(shown)) {
       if (q.kind === 'hooks' && q.list?.length) q.list.forEach(s => out.push({ provider: q.provider, id: s.id, state: s.state, name: q.name, project: s.project }));
-      else out.push({ provider: q.provider, id: q.provider, state: q.permission ? 'question' : q.state, name: q.name, project: q.source?.title || '' });
+      else out.push({ provider: q.provider, id: q.provider, state: q.state, name: q.name, project: q.source?.title || '' });
     }
     return out.sort((a, b) => PRIORITY.indexOf(a.state) - PRIORITY.indexOf(b.state));
   }
@@ -1171,32 +993,12 @@
       text(`${T('Terakhir', 'Last')}: ${last.prompt}`, tx, y + 50, 11, '#c9d0cb', 600, 'left', tw - 70);
       text(word, tx + tw, y + 50, 10.5, colour, 700, 'right');
       text(`${at}${last.project ? ' · ' + last.project : ''}`, tx, y + 65, 10, '#7d847f', 500, 'left', tw);
-    } else text(watching.length ? T('Kopi akan beritahu apabila AI anda siap atau bertanya sesuatu.', 'Kopi tells you when your AI is done or asks something.') : T('Sambungkan AI anda dalam Kopi Island → Sambungan.', 'Connect your AI in Kopi Island → Connections.'), tx, y + 50, 11, '#8a918c', 500, 'left', tw);
+    } else text(watching.length ? T('Kopi akan beritahu apabila AI anda siap atau bertanya sesuatu.', 'Kopi tells you when your AI is done or asks something.') : T('Sambungkan AI anda dalam Rehatt → Sambungan.', 'Connect your AI in Rehatt → Connections.'), tx, y + 50, 11, '#8a918c', 500, 'left', tw);
     watching.slice(0, 4).forEach((q, i) => {
       const bx = tx + i * 70, by = y + h - 44;
       miniBot(bx, by, 20, AI_COLOUR[q.provider] || '#aaa', q.connected ? colourOf(q.state === 'disconnected' ? 'ready' : q.state) : '#4a504c', false, false);
       text(q.name, bx + 26, by + 12, 10, '#aab2ad', 600, 'left', 44);
     });
-  }
-  // ChatGPT or Claude (the app or the website), like Coucou: the chat's name, one status line,
-  // and a dark box with the start of the answer, so you see it's really following your chat.
-  function drawChatApp(p, st, tx, y, tw, h) {
-    const lamp = colourOf(st), name = p.name || 'AI', title = p.source?.title || name;
-    ctx.save(); ctx.beginPath(); ctx.arc(tx + 4, y + 21, 3.6, 0, Math.PI * 2); ctx.fillStyle = lamp; ctx.shadowColor = lamp; ctx.shadowBlur = 6; ctx.fill(); ctx.restore();
-    text(title, tx + 14, y + 25, 12.5, '#f2f5ef', 700, 'left', tw * 0.62);
-    text(name, tx + tw, y + 25, 11, '#7d847f', 600, 'right', tw * 0.3);
-    const line = st === 'question' ? name + T(' bertanya sesuatu', ' asks something') : st === 'done' ? T('Siap · jawapan anda sudah sedia', 'Done · your answer is ready') : busy(p) ? name + T(' sedang menulis…', ' is writing…') : st === 'error' ? T('Ada yang tidak kena', 'Something went wrong') : st === 'login' ? T('Log masuk dahulu', 'Log in first') : T('Mengikuti sembang ini', 'Following this chat');
-    statusIcon(tx + 7, y + 40, st, lamp, p);
-    text(line, tx + 18, y + 44, 11.5, st === 'done' ? lamp : '#e8ece6', 700, 'left', tw - 60);
-    if (busy(p) && p.elapsed) text(p.elapsed + ' s', tx + tw, y + 44, 10.5, '#7d847f', 600, 'right');
-    const bx = tx, by = y + 54, bw = tw, bh = h - 66;
-    if (bh < 20) return;
-    ctx.save(); ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 10); ctx.fillStyle = '#0b0c0d'; ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,.05)'; ctx.stroke(); ctx.clip();
-    const said = String(st === 'question' && p.question ? p.question : p.preview || '').replace(/\s+/g, ' ').trim();
-    const lines = said ? wrapLines(busy(p) ? said.slice(-400) : said.slice(0, 400), bw - 20, 10, Math.max(1, Math.floor((bh - 10) / 13))) : [];
-    if (lines.length) lines.forEach((l, i) => text(l, bx + 10, by + 16 + i * 13, 10, '#aab2ad', 500, 'left', bw - 20));
-    else text(busy(p) ? T('Jawapan sedang datang…', 'The answer is on its way…') : T('Tanya soalan anda dalam ' + name + '. Kopi turut memerhati.', 'Ask your question in ' + name + '. Kopi is watching.'), bx + 10, by + 16, 10, '#5d6460', 500, 'left', bw - 20);
-    ctx.restore();
   }
   // Several chats at once (two Claude Code sessions, Codex and ChatGPT…): a short summary and one row each.
   function drawChatList(chats, tx, y, tw, h, live) {
@@ -1228,7 +1030,6 @@
     const chats = activeChats();
     if (chats.length > 1) return drawChatList(chats, tx, y, tw, h, live);
     if (!p) return drawIdleAi(tx, y, tw, h, live);
-    if (p.kind !== 'hooks') return drawChatApp(p, st, tx, y, tw, h);
     ctx.save(); ctx.beginPath(); ctx.arc(tx + 4, y + 21, 3.6, 0, Math.PI * 2); ctx.fillStyle = dot; if (p) { ctx.shadowColor = dot; ctx.shadowBlur = 6; } ctx.fill(); ctx.restore();
     text(project, tx + 14, y + 25, 12.5, '#f2f5ef', 700, 'left', tw * 0.55);
     if (project !== agentName) text(agentName, tx + 14 + Math.min(tw * 0.55, project.length * 7.4) + 8, y + 25, 11, '#7d847f', 500, 'left', tw * 0.35);
@@ -1269,7 +1070,7 @@
       String(p.lastMessage).split('\n').filter(Boolean).slice(0, Math.floor((bh - 8) / lh)).forEach((l, i) => mono(l, mx, by + 15 + i * lh, 9.5, '#aab2ad', bw - 20));
     } else {
       mono(p ? '…' : '$ claude', mx, by + 15, 9.5, '#5d6460', bw - 20);
-      if (!p) mono('Kopi Island follows it by itself', mx, by + 28, 9.5, '#3f4542', bw - 20);
+      if (!p) mono('Rehatt follows it by itself', mx, by + 28, 9.5, '#3f4542', bw - 20);
     }
     ctx.restore();
   }
@@ -1288,46 +1089,6 @@
     statusIcon(tx + 5, my + 2, st, dot, p);
     text(statusText, tx + 16, my + 6, 11.5, p ? (st === 'done' ? dot : '#e8ece6') : '#8a918c', 700, 'left', tw - 16);
     if (lastLine && r.height > 56) mono(lastLine, tx, my + 22, 9.5, '#7d847f', tw);
-  }
-  function cover(x, y, s, rad) {
-    const art = albumImage?.complete && albumImage.naturalWidth;
-    ctx.save(); ctx.beginPath(); ctx.roundRect(x, y, s, s, rad); ctx.clip();
-    if (art) ctx.drawImage(albumImage, x, y, s, s);
-    else { ctx.fillStyle = APPS.spotify.tint(); ctx.globalAlpha = 0.22; ctx.fillRect(x, y, s, s); }
-    ctx.restore();
-    if (!art) window.__kopiIcon?.('music', x + s / 2, y + s / 2, s * 0.5, '#f4f7f2');
-  }
-  function spotifyWidget(w, r, live) {
-    const t = spotifyState.track;
-    if (!t) return genericWidget(w, r);
-    const artist = t.artist || (Array.isArray(t.artists) ? t.artists.map(a => a.name || a).join(', ') : '');
-    const playing = spotifyState.is_playing, part = spotifyState.duration_ms ? Math.min(1, ((spotifyState.progress_ms || 0) + (playing ? performance.now() - spotifySyncAt : 0)) / spotifyState.duration_ms) : 0;
-    if (w.size === 'S') {
-      const s = Math.min(40, r.height - 20); cover(r.x + 12, r.y + (r.height - s) / 2, s, 9);
-      text(t.name, r.x + s + 22, r.y + r.height / 2 - 2, 12, '#f2f5ef', 700, 'left', r.width - s - 30);
-      text(artist, r.x + s + 22, r.y + r.height / 2 + 13, 10.5, '#8f998d', 500, 'left', r.width - s - 30);
-      return;
-    }
-    if (w.size === 'W') {
-      const s = r.height - 18; cover(r.x + 9, r.y + 9, s, 10);
-      const tx = r.x + s + 22, tw = r.width - s - 22 - 90;
-      text(t.name, tx, r.y + r.height / 2 - 2, 13, '#f2f5ef', 700, 'left', tw);
-      text(artist, tx, r.y + r.height / 2 + 14, 11, '#8f998d', 500, 'left', tw);
-      wbtn(r.x + r.width - 62, r.y + r.height / 2, 12, 'next', 'hmNext', false, live);
-      wbtn(r.x + r.width - 28, r.y + r.height / 2, 16, playing ? 'pause' : 'play', 'homePlay', true, live);
-      return;
-    }
-    const s = Math.min(r.height - 20, r.width * 0.42); cover(r.x + 10, r.y + 10, s, 14);
-    const tx = r.x + s + 24, tw = r.x + r.width - tx - 14;
-    text(t.name, tx, r.y + 30, 14.5, '#fff', 700, 'left', tw);
-    text(artist, tx, r.y + 48, 11.5, '#9aa596', 500, 'left', tw);
-    if (spotifyState.device && !spotifyState.device.here) text(T('Dimainkan pada ', 'Playing on ') + spotifyState.device.name, tx, r.y + 68, 10.5, window.__kopiAlbumColour || '#1ed760', 600, 'left', tw); // where it plays (no fake sound wave)
-    const py = r.y + r.height - 50;
-    ctx.save(); ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.beginPath(); ctx.roundRect(tx, py, tw, 4, 2); ctx.fill(); ctx.fillStyle = '#f4f7f0'; ctx.beginPath(); ctx.roundRect(tx, py, Math.max(4, tw * part), 4, 2); ctx.fill(); ctx.restore();
-    const cy = r.y + r.height - 24, mid = tx + tw / 2;
-    wbtn(mid - 42, cy, 13, 'previous', 'hmPrev', false, live);
-    wbtn(mid, cy, 17, playing ? 'pause' : 'play', 'homePlay', true, live);
-    wbtn(mid + 42, cy, 13, 'next', 'hmNext', false, live);
   }
   function focusWidget(w, r, live) {
     const f = window.__kopiFocus; if (!f) return genericWidget(w, r);
@@ -1411,7 +1172,10 @@
       text(status, r.x + 18, r.y + r.height - 18, 11.5, '#8f998d', 500, 'left', r.width - 36);
     }
   }
-  const RENDER = { claude: claudeWidget, spotify: spotifyWidget, focus: focusWidget, note: noteWidget, clips: clipsWidget, clock: clockWidget };
+  // stretch-ui.js and meter-ui.js draw their own widgets
+  const RENDER = { claude: claudeWidget, focus: focusWidget, note: noteWidget, clips: clipsWidget, clock: clockWidget,
+    stretch: (w, r, live) => (window.__rehattStretchWidget ? window.__rehattStretchWidget(w, r, live) : genericWidget(w, r)),
+    meter: (w, r, live) => (window.__rehattMeterWidget ? window.__rehattMeterWidget(w, r, live) : genericWidget(w, r)) };
   function drawWidget(w, r, live) {
     if (w.id === 'claude' && w.size === 'L') return drawClaudeCard(r.x, r.y, r.width, r.height, live);
     widgetBg(r, live ? APPS[w.id].key : null);
@@ -1547,7 +1311,7 @@
     swallowClick = false;
     if (!onHome() || gallery || !homeGeo) return;
     if (homeEdit && getWidgets().some(w => inside(e.clientX, e.clientY, hit['hmMinus_' + w.id]) || inside(e.clientX, e.clientY, hit['hmSize_' + w.id]))) return;
-    if (Object.keys(hit).some(k => /^(homePlay|hmPrev|hmNext|focusQuick)$/.test(k) && inside(e.clientX, e.clientY, hit[k]))) return;
+    if (Object.keys(hit).some(k => /^(focusQuick|stretchQuick|meterQuick)$/.test(k) && inside(e.clientX, e.clientY, hit[k]))) return;
     const w = getWidgets().find(x => inside(e.clientX, e.clientY, hit['hmW_' + x.id]));
     if (!w) return;
     const r = homeGeo.g.rect(w.c, w.r);
@@ -1598,21 +1362,16 @@
     }
   }, true);
 
-  // Quick buttons on the home widgets (play/pause music, start focus) — before the card's own click.
+  // Quick buttons on the home widgets (start focus, start a stretch) — before the card's own click.
   canvas.addEventListener('click', event => {
     if (currentView !== 'home' || mode !== 'expanded') return;
     const stop = () => { event.preventDefault(); event.stopImmediatePropagation(); };
-    if (inside(event.clientX, event.clientY, hit.homePlay)) {
-      stop(); const next = spotifyState.is_playing ? 'pause' : 'play';
-      spotifyState.is_playing = next === 'play'; spotifySyncAt = performance.now();
-      api.spotifyControl?.(next).catch(() => {}); setTimeout(() => refreshSpotify(), 400); sound('click');
-    } else if (inside(event.clientX, event.clientY, hit.hmPrev) || inside(event.clientX, event.clientY, hit.hmNext)) {
-      stop(); api.spotifyControl?.(inside(event.clientX, event.clientY, hit.hmNext) ? 'next' : 'previous').catch(() => {}); setTimeout(() => refreshSpotify(), 500); sound('click');
-    } else if (inside(event.clientX, event.clientY, hit.focusQuick)) { stop(); window.__kopiFocus?.toggle(); }
+    if (inside(event.clientX, event.clientY, hit.focusQuick)) { stop(); window.__kopiFocus?.toggle(); }
+    else if (inside(event.clientX, event.clientY, hit.stretchQuick)) { stop(); window.__rehattStretch?.startNow(); }
   }, true);
 
   // ---- Apps (the + button): a grid of app tiles, each with a live status line ----
-  const TILE_TINT = { music: '#1ed760', terminal: '#c6e994', timer: '#ffb35c', tray: '#8ab4ff', gear: '#b9c2b4' };
+  const TILE_TINT = { stretch: '#ff8fb1', glass: '#e0a96d', terminal: '#c6e994', timer: '#ffb35c', tray: '#8ab4ff', gear: '#b9c2b4' };
   function tile(x, y, w, h, iconName, name, status, key, tint) {
     const over = card(x, y, w, h, key, tint);
     const iy = y + (h - 40) / 2;
@@ -1623,20 +1382,20 @@
   }
   drawApps = function (area) {
     const PAGE = window.__kopiPage, focus = window.__kopiFocus, p = top();
-    PAGE.title(area, 'Apps', 'Everything Kopi Island can do · Ctrl+Alt+1–6 = shortcut');
+    PAGE.title(area, 'Apps', 'Everything Rehatt can do · Ctrl+Alt+1–6 = shortcut');
     const cols = 4, x = area.x + PAGE.contentX, gap = 10, w = Math.floor((area.width - PAGE.contentX * 2 - gap * (cols - 1)) / cols);
     const y = area.y + PAGE.bodyY, h = Math.min(84, Math.floor((area.height - PAGE.bodyY - gap - 4) / 2));
     const tray = window.__kopiTrayCount?.() || 0;
     const tiles = [
-      ['music', 'Spotify', spotifyState.track ? short(spotifyState.track.name, 22) : spotifyConnected ? 'Nothing playing' : 'Not connected yet', 'spotifyApp', window.__kopiAlbumColour || TILE_TINT.music],
-      ['terminal', 'AI', p ? p.name + ' · ' + (p.detail || labels[p.state]) : 'Claude, ChatGPT, Codex', 'monitor_claudecode', p ? colourOf(p.state) : TILE_TINT.terminal],
+      ['stretch', 'Stretch', appStatus('stretch'), 'stretchApp', TILE_TINT.stretch],
+      ['glass', 'Usage', appStatus('meter'), 'meterApp', TILE_TINT.glass],
+      ['terminal', 'AI', p ? p.name + ' · ' + (p.detail || labels[p.state]) : 'Claude Code, Codex', 'monitor_claudecode', p ? colourOf(p.state) : TILE_TINT.terminal],
       ['timer', 'Focus', focus?.active() ? T(`${focus.label()} lagi`, `${focus.label()} left`) : `${focus?.minutes?.() || 25} min`, 'focusApp', TILE_TINT.timer],
       ['tray', 'Tray', tray ? T(`${tray} fail`, `${tray} file${tray === 1 ? '' : 's'}`) : 'Empty', 'trayApp', TILE_TINT.tray],
       ['copy', 'Clipboard', 'Your last copies', 'clipsApp', '#5ad1c4'],
-      ['note', 'Note', 'Jot something down', 'noteApp', '#ffd166'],
-      ['gear', 'Settings', 'Colours, sound and more', 'settingsApp', TILE_TINT.gear]
+      ['note', 'Note', 'Jot something down', 'noteApp', '#ffd166']
     ];
-    // apps you removed in Kopi Island Settings → Apps are not here (Settings itself always is)
+    // apps you removed in Rehatt Settings → Apps are not here
     const off = window.__kopiAppsOff?.() || new Set(), shown = tiles.filter(t => !off.has(APP_OF_KEY[t[3]]));
     for (const t of tiles) if (!shown.includes(t)) delete hit[t[3]];
     shown.forEach(([icon, name, status, key, tint], i) => tile(x + (i % cols) * (w + gap), y + Math.floor(i / cols) * (h + gap), w, h, icon, name, status, key, tint));
@@ -1645,12 +1404,13 @@
     ctx.save(); ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.roundRect(tx + 0.5, ty + 0.5, w - 1, h - 1, 15.5); ctx.strokeStyle = 'rgba(255,255,255,.1)'; ctx.stroke(); ctx.restore();
     text('TIP', tx + 16, ty + h / 2 - 16, 9.5, '#c6e994', 700);
     text('Ctrl + Alt + T', tx + 16, ty + h / 2 + 2, 13, '#fff', 700, 'left', w - 32);
-    text('opens Kopi Island anywhere', tx + 16, ty + h / 2 + 18, 10.5, '#8f998d', 500, 'left', w - 32);
+    text('opens Rehatt anywhere', tx + 16, ty + h / 2 + 18, 10.5, '#8f998d', 500, 'left', w - 32);
     delete hit.todayApp; delete hit.assistantApp; delete hit.projectApp;
   };
   // ---- Your shortcuts (the + button): you choose which apps are here (max 4). The same apps are on the home card. ----
   const APPS = {
-    spotify: { icon: 'music', label: 'Spotify', key: 'spotifyApp', tint: () => window.__kopiAlbumColour || '#1ed760' },
+    stretch: { icon: 'stretch', label: 'Stretch', key: 'stretchApp', tint: () => '#ff8fb1' },
+    meter: { icon: 'glass', label: 'Usage', key: 'meterApp', tint: () => '#e0a96d' },
     claude: { icon: 'terminal', label: 'AI', key: 'monitor_claudecode', tint: () => '#c6e994' },
     focus: { icon: 'timer', label: 'Focus', key: 'focusApp', tint: () => '#ffb35c' },
     tray: { icon: 'tray', label: 'Tray', key: 'trayApp', tint: () => '#7ab8ff' },
@@ -1660,7 +1420,7 @@
     clock: { icon: 'clock', label: 'Clock', key: 'clockApp', tint: () => '#8ab4ff' }
   };
   const APP_OF_KEY = Object.fromEntries(Object.entries(APPS).map(([id, a]) => [a.key, id]));
-  const MAX_SHORTCUTS = 4, DEFAULT_SHORTCUTS = ['spotify', 'focus', 'tray', 'settings'];
+  const MAX_SHORTCUTS = 4, DEFAULT_SHORTCUTS = ['stretch', 'meter', 'focus', 'settings'];
   const installed = id => !(window.__kopiAppsOff?.() || new Set()).has(id);
   const shortcuts = () => { try { const v = JSON.parse(localStorage.getItem('kopi:shortcuts')); if (Array.isArray(v) && v.length) return v.filter(id => APPS[id] && installed(id)).slice(0, MAX_SHORTCUTS); } catch {} return DEFAULT_SHORTCUTS.filter(installed); };
   const saveShortcuts = list => { try { localStorage.setItem('kopi:shortcuts', JSON.stringify(list)); } catch {} };
@@ -1668,7 +1428,8 @@
   let editShortcuts = false;
   function appStatus(id) {
     const focus = window.__kopiFocus, p = top(), tray = window.__kopiTrayCount?.() || 0;
-    if (id === 'spotify') return spotifyState.track ? short(spotifyState.track.name, 20) : 'Music';
+    if (id === 'stretch') return window.__rehattStretch?.status() || T('Rehat regangan', 'Stretch breaks');
+    if (id === 'meter') return window.__rehattMeter?.status() || T('Penggunaan Claude', 'Claude usage');
     if (id === 'claude') return p ? p.detail || labels[p.state] : 'Idle';
     if (id === 'focus') return focus?.active() ? T(`${focus.label()} lagi`, `${focus.label()} left`) : `${focus?.minutes?.() || 25} min`;
     if (id === 'tray') return tray ? T(`${tray} fail`, `${tray} file${tray === 1 ? '' : 's'}`) : 'Empty';
@@ -1728,7 +1489,7 @@
   }, true);
 
   // ---- Usage ring: fills with how much of your 5-hour Claude limit you used ----
-  const usage = () => providers().find(p => p.provider === 'claudecode')?.usage || {};
+  const usage = () => window.__rehattMeter?.usage() || providers().find(p => p.provider === 'claudecode')?.usage || {};
   const ringColour = used => used >= 85 ? '#ff3b3b' : used >= 60 ? '#ff9a1f' : '#22e05a';
   function drawUsageRing(x, y, r) {
     const w = usage().fiveHour; if (!w) return;
@@ -1752,19 +1513,12 @@
     for (const provider of Object.keys(names)) {
       if (inside(event.clientX, event.clientY, hit['monitor_' + provider])) { event.preventDefault(); event.stopImmediatePropagation(); open(provider); return; }
     }
-    // Answer from the small island (Allow / Deny / View).
-    if (mode === 'compact') {
-      const p = top(), stop = () => { event.preventDefault(); event.stopImmediatePropagation(); };
-      if (p && inside(event.clientX, event.clientY, hit.cAllow)) { stop(); hooks('aiMonitorHooksDecide', p.sessionId, 'allow'); sound('click'); return; }
-      if (p && inside(event.clientX, event.clientY, hit.cDeny)) { stop(); hooks('aiMonitorHooksDecide', p.sessionId, 'deny'); sound('click'); return; }
-      if (p && inside(event.clientX, event.clientY, hit.cOpen)) { stop(); open(p.provider); return; }
-    }
     // Click the small or medium island while the eyes show a colour: open that status.
     if (active() && mode !== 'expanded' && inside(event.clientX, event.clientY, islandBounds)) {
       event.preventDefault(); event.stopImmediatePropagation();
       const p = top();
       // Claude is done or wants you: go straight to the Claude Code window (the page only if that fails).
-      if (p?.kind === 'hooks' && p.canJump && ['done', 'error'].includes(p.state) && !p.ask && !p.plan && !p.permission) { // a question opens the page, so you can read it
+      if (p?.kind === 'hooks' && p.canJump && ['done', 'error'].includes(p.state)) { // a question opens the page, so you can read it
         api.aiMonitorHooksJump(p.sessionId).then(result => {
           if (!result?.ok) return open(p.provider);
           if (p.state !== 'question') api.aiMonitorHooksSeen?.().then(update).catch(() => {});
@@ -1776,12 +1530,12 @@
     }
   }, true);
   window.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && ['monitor', 'assistant'].includes(currentView)) { event.preventDefault(); event.stopImmediatePropagation(); small(); }
+    if (event.key === 'Escape' && currentView === 'monitor') { event.preventDefault(); event.stopImmediatePropagation(); small(); }
   }, true);
   api.onAiMonitorState(update); api.onAiMonitorOpen(({ provider }) => open(provider));
   api.aiMonitorGet().then(update).catch(failure => { error = failure.message; render(); });
   function position() {
-    const show = ['monitor', 'assistant'].includes(currentView) && mode === 'expanded' && visual.width > 600 && visual.height > 245;
+    const show = currentView === 'monitor' && mode === 'expanded' && visual.width > 600 && visual.height > 245;
     const display = show ? 'block' : 'none'; if (root.style.display !== display) root.style.display = display;
     if (show) {
       const p = current(), stage = Boolean(p?.kind === 'hooks' && p.connected && window.__kopiPlaceOnStage);

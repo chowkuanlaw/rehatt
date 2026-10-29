@@ -1,13 +1,19 @@
 'use strict';
 // One icon style everywhere: white lines with black inside (like the home icon).
-// Also: the header's sound button opens a volume bar, with a tiny Kopi Island as the knob.
+// Also: the header's sound button opens a volume bar, with a tiny Rehatt as the knob.
 (function iconsAndVolume() {
   const LINE = '#e8eee4';
   // Icons are drawn on a 24×24 grid.
   const ICONS = {
     home(c) { c.beginPath(); c.moveTo(4, 11); c.lineTo(12, 4); c.lineTo(20, 11); c.lineTo(20, 20); c.lineTo(4, 20); c.closePath(); c.fill(); c.stroke();
       c.beginPath(); c.roundRect(10, 14, 4, 6, 1); c.stroke(); },
-    chat(c) { c.beginPath(); c.roundRect(3.5, 5, 17, 12, 5); c.fill(); c.stroke(); c.beginPath(); c.moveTo(8, 17); c.lineTo(7, 20.5); c.lineTo(11.5, 17); c.stroke(); }, // Kopi's chat
+    // someone stretching, arms up (Stretch breaks)
+    stretch(c) { c.beginPath(); c.arc(12, 6, 2.6, 0, Math.PI * 2); c.fill(); c.stroke();
+      c.beginPath(); c.moveTo(12, 9); c.lineTo(12, 15.5); c.moveTo(12, 10.5); c.lineTo(6.5, 4.5); c.moveTo(12, 10.5); c.lineTo(17.5, 4.5); c.moveTo(12, 15.5); c.lineTo(8.5, 21); c.moveTo(12, 15.5); c.lineTo(15.5, 21); c.stroke(); },
+    // a glass of teh tarik with its foam (your Claude usage)
+    glass(c, level = 0.6) { c.beginPath(); c.moveTo(5.5, 4); c.lineTo(18.5, 4); c.lineTo(17, 20); c.lineTo(7, 20); c.closePath(); c.fill(); c.stroke();
+      const y = 20 - 15 * Math.max(0, Math.min(1, level)); c.save(); c.beginPath(); c.moveTo(5.5, 4); c.lineTo(18.5, 4); c.lineTo(17, 20); c.lineTo(7, 20); c.closePath(); c.clip();
+      c.fillStyle = '#c98a4b'; c.fillRect(4, y, 16, 20 - y); c.fillStyle = '#f3dfc1'; c.fillRect(4, y, 16, Math.min(2.2, 20 - y)); c.restore(); },
     plus(c) { c.beginPath(); c.roundRect(4, 4, 16, 16, 5); c.fill(); c.stroke(); c.beginPath(); c.moveTo(12, 8.5); c.lineTo(12, 15.5); c.moveTo(8.5, 12); c.lineTo(15.5, 12); c.stroke(); },
     gear(c) {
       c.beginPath();
@@ -84,7 +90,7 @@
     const homeX = left + 27, chatX = left + 61, appsX = left + 95, soundX = right - 138, settingsX = right - 102, collapseX = right - 66, powerX = right - 30;
     // the page you are on gets a soft pill behind its icon; switching pages, the pill slides over (and stretches a little on the way)
     const editing = window.__kopiHomeEditing?.();
-    const target = currentView === 'home' && !editing ? homeX : currentView === 'chat' ? chatX : currentView === 'shortcuts' || (currentView === 'home' && editing) ? appsX : currentView === 'settings' ? settingsX : null;
+    const target = currentView === 'home' && !editing ? homeX : currentView === 'stretch' ? chatX : currentView === 'shortcuts' || (currentView === 'home' && editing) ? appsX : currentView === 'settings' ? settingsX : null;
     const now = performance.now(), dt = Math.min(0.05, (now - (pillAnim.at || now)) / 1000); pillAnim.at = now;
     if (target != null) {
       if (pillAnim.x == null || pillAnim.shown < 0.05) pillAnim.x = target; // appears where it belongs
@@ -95,7 +101,7 @@
       const stretch = Math.min(18, pillAnim.v / 90);
       ctx.save(); ctx.globalAlpha *= pillAnim.shown; ctx.beginPath(); ctx.roundRect(pillAnim.x - 17 - stretch / 2, 3, 34 + stretch, 30, 12); ctx.fillStyle = 'rgba(255,255,255,.1)'; ctx.fill(); ctx.restore();
     }
-    icon('home', homeX, 18, 19); icon('chat', chatX, 18, 19); icon('plus', appsX, 18, 19); icon('speaker', soundX, 18, 19, LINE, volume); icon('gear', settingsX, 18, 18); icon('collapse', collapseX, 18, 19); drawPower(powerX, 18, inside(pointer.x, pointer.y, hit.power) || quitAsk > 0);
+    icon('home', homeX, 18, 19); icon('stretch', chatX, 18, 19); icon('plus', appsX, 18, 19); icon('speaker', soundX, 18, 19, LINE, volume); icon('gear', settingsX, 18, 18); icon('collapse', collapseX, 18, 19); drawPower(powerX, 18, inside(pointer.x, pointer.y, hit.power) || quitAsk > 0);
     // editing the home widgets: a Done button (like iPhone) and a hint
     if (currentView === 'home' && window.__kopiHomeEditing?.() && !window.__kopiGalleryOpen?.() && !barOpen) {
       const b = { x: left + 88, y: 5, width: 62, height: 26 }, over = inside(pointer.x, pointer.y, b);
@@ -135,7 +141,7 @@
     drawQuitAsk(left, right);
     ctx.restore();
   };
-  // The power button: a click asks "are you sure?" in the header first; Ja closes Kopi Island (with the goodbye).
+  // The power button: a click asks "are you sure?" in the header first; Yes closes Rehatt (with the goodbye).
   let quitAsk = 0, quitAskAt = 0;
   function drawPower(x, y, hot) {
     ctx.save(); ctx.lineCap = 'round'; ctx.lineWidth = 1.9; ctx.strokeStyle = hot ? '#ff8a8a' : '#dce4d9';
@@ -150,7 +156,7 @@
     ctx.save(); ctx.globalAlpha *= Math.min(1, k * 1.5);
     ctx.beginPath(); ctx.roundRect(x, y, w, h, 14); ctx.fillStyle = 'rgba(30,22,22,.98)'; ctx.fill(); ctx.strokeStyle = 'rgba(255,138,138,.35)'; ctx.stroke();
     if (k > 0.6) {
-      text('Quit Kopi Island?', x + 16, y + 18.5, 11.5, '#ffd6d6', 700);
+      text('Quit Rehatt?', x + 16, y + 18.5, 11.5, '#ffd6d6', 700);
       const yes = { x: right - 8 - 4 - 150, y: y + 3, width: 96, height: 22 }, no = { x: right - 8 - 4 - 50, y: y + 3, width: 50, height: 22 };
       const overYes = inside(pointer.x, pointer.y, yes), overNo = inside(pointer.x, pointer.y, no);
       ctx.beginPath(); ctx.roundRect(yes.x, yes.y, yes.width, yes.height, 11); ctx.fillStyle = overYes ? '#ff9c9c' : '#ff7a7a'; ctx.fill();
@@ -176,7 +182,7 @@
       if (window.__kopiHomeEditing?.()) window.__kopiHomeEdit?.(false);
       setView(was === 'home' ? 'apps' : 'home'); setMode('expanded'); return;
     }
-    if (mode === 'expanded' && inside(e.clientX, e.clientY, hit.chat)) { stop(); if (currentView === 'monitor') window.__kopiMonitor?.small?.(); setView('chat'); setMode('expanded'); return; } // Kopi's chat
+    if (mode === 'expanded' && inside(e.clientX, e.clientY, hit.chat)) { stop(); if (currentView === 'monitor') window.__kopiMonitor?.small?.(); setView('stretch'); setMode('expanded'); return; } // Stretch breaks
     if (mode === 'expanded' && inside(e.clientX, e.clientY, hit.apps)) {
       stop();
       if (currentView !== 'home') { setView('home'); window.__kopiHomeEdit?.(true); }

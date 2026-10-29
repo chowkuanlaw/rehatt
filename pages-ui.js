@@ -1,18 +1,18 @@
 'use strict';
-// One layout for every big page (Apps, Settings, Claude Code, Tray, Focus, Spotify), so everything lines up:
+// One layout for every big page (Apps, Settings, Claude Code, Stretch, Usage, Tray, Focus), so everything lines up:
 // the title and a grey subtitle always at the same height, the content always starting on the same line.
-// Kopi Island only appears where he does something (Spotify: dancing, Tray: catching files). The other UI files use window.__kopiPage.
+// Kopi only appears where he does something (Tray: catching files). The other UI files use window.__kopiPage.
 (function pageLayout() {
-  const PAGES = ['apps', 'settings', 'spotify', 'monitor', 'assistant', 'tray', 'mirror', 'focus', 'clips', 'note', 'chat'];
+  const PAGES = ['apps', 'settings', 'monitor', 'tray', 'mirror', 'focus', 'clips', 'note', 'stretch', 'meter'];
   const PAGE = {
     height: 300,
-    contentX: 24,   // left edge of titles and content: Kopi Island only appears on pages where he does something
+    contentX: 24,   // left edge of titles and content: Rehatt only appears on pages where he does something
     titleY: 24,     // title baseline
     subtitleY: 44,  // subtitle baseline
     bodyY: 62,      // where content starts
     ghost: { x: 46, y: 58, size: 60 },
     isPage: view => PAGES.includes(view),
-    // Kopi Island in its standard spot (moved, e.g. while catching a file, when a position is given).
+    // Rehatt in its standard spot (moved, e.g. while catching a file, when a position is given).
     drawGhost(area, at) {
       const x = at?.x ?? area.x + PAGE.ghost.x, y = at?.y ?? area.y + PAGE.ghost.y;
       drawGhost(x, y, PAGE.ghost.size);
@@ -35,12 +35,11 @@
   window.__kopiPage = PAGE;
 
   const baseHeight = targetHeight;
-  // Spotify is a wide, low player (like NotchNook); the other pages need more height.
-  targetHeight = function () { return currentView === 'spotify' ? 196 : PAGE.isPage(currentView) ? PAGE.height : baseHeight(); };
+  targetHeight = function () { return PAGE.isPage(currentView) ? PAGE.height : baseHeight(); };
 
   // Smooth page changes: canvas pages fade in, DOM pages fade + slide in.
   let lastView = null, changedAt = 0;
-  const ROOTS = ['kopi-ai-monitor', 'kopi-settings-v2', 'kopi-extras', 'kopi-focus', 'kopi-tools'];
+  const ROOTS = ['kopi-ai-monitor', 'kopi-settings-v2', 'kopi-extras', 'kopi-focus', 'kopi-tools', 'rehatt-stretch', 'rehatt-meter'];
   (function watch() {
     if (currentView !== lastView) {
       lastView = currentView; changedAt = performance.now();

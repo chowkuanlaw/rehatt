@@ -1,6 +1,6 @@
 name: Build Windows app
 
-# Builds the portable Windows zip (with Kopi Island.exe inside).
+# Builds the portable Windows zip (with Rehatt.exe inside).
 # - Every push to main, or "Run workflow" in the Actions tab: the zip is kept as a download on the run.
 # - Publishing a release on GitHub: the zip is also attached to that release.
 on:
@@ -86,7 +86,7 @@ jobs:
       - name: Upload to the run
         uses: actions/upload-artifact@v4
         with:
-          name: KopiIsland-Windows
+          name: Rehatt-Windows
           path: dist/*.zip
           retention-days: 30
 

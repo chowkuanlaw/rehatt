@@ -25,7 +25,7 @@
 
   const log = (name, details = {}) =>
     console.log(
-      '[Kopi Island window]',
+      '[Rehatt window]',
       name,
       safe(JSON.stringify(details))
     );
@@ -117,7 +117,7 @@
         if (
           level === 'error' ||
           level === 3 ||
-          String(message).startsWith('[Kopi Island frame]')
+          String(message).startsWith('[Rehatt frame]')
         ) {
           log('renderer-error', {
             message: safe(message).slice(0, 1500)

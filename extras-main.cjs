@@ -1,6 +1,6 @@
 'use strict';
 // Extras for the island (main process): file tray, calendar (ICS link), weather (Open-Meteo),
-// volume changes and Bluetooth battery levels. Only the Kopi Island window may use these channels.
+// volume changes and Bluetooth battery levels. Only the Rehatt window may use these channels.
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -149,19 +149,12 @@ Get-PnpDevice -Class Bluetooth -Status OK -ErrorAction SilentlyContinue | ForEac
   handle('extras:note-set', async payload => { writeJson('note.json', { text: String(payload?.text || '').slice(0, 20000) }); return {}; });
 
   // ---------- keyboard shortcuts: Ctrl+Alt+1..6 jump straight to a screen ----------
-  const SHORTCUTS = { 1: 'home', 2: 'spotify', 3: 'claude', 4: 'focus', 5: 'clips', 6: 'note' };
+  const SHORTCUTS = { 1: 'home', 2: 'stretch', 3: 'claude', 4: 'meter', 5: 'focus', 6: 'note' };
   app.on('will-quit', () => { try { for (const n of Object.keys(SHORTCUTS)) electron.globalShortcut.unregister('CommandOrControl+Alt+' + n); } catch {} });
 
   app.whenReady().then(() => {
     const poll = setInterval(() => { readClipboard().catch(() => {}); }, 1000); poll.unref?.();
     for (const [n, view] of Object.entries(SHORTCUTS)) { try { electron.globalShortcut.register('CommandOrControl+Alt+' + n, () => send('extras:shortcut', view)); } catch {} }
-    // Real sound wave: the island may listen to what the PC plays (Windows "loopback" audio).
-    // Only volume levels are measured in the island itself; nothing is recorded or sent anywhere.
-    const { session, desktopCapturer } = electron;
-    session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
-      if (!trusted({ sender: { getURL: () => request.frame?.url || '' } })) return callback({}); // only the Kopi Island island
-      desktopCapturer.getSources({ types: ['screen'] }).then(sources => callback({ video: sources[0], audio: 'loopback' })).catch(() => callback({}));
-    });
     startVolume();
     setTimeout(readBluetooth, 15000); const bt = setInterval(readBluetooth, 5 * 60000); bt.unref?.();
   });

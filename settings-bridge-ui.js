@@ -24,7 +24,7 @@
 
   // ---------- the draft ----------
   // prefs: a copy of Kopi's preferences; sleep/login: the two switches that live outside prefs;
-  // extras: city and calendar link typed but not saved; apps: the apps you want in your Kopi Island.
+  // extras: city and calendar link typed but not saved; apps: the apps you want in your Rehatt.
   let draft = null;
   const realLogin = () => box.querySelector('[data-login]')?.classList.contains('on') ?? false;
   function begin() {

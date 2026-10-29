@@ -1,4 +1,4 @@
-// Draws the Kopi Island app icon: Kopi's sketched face, the same mark as in the website footer
+// Draws the Rehatt app icon: Kopi's sketched face, the same mark as in the website footer
 // (a kopi-O cup with a green rim, two eyes and steam). No background, just the face.
 // Writes PNGs + a Windows .ico + a small tray icon. Run: node_modules\electron\dist\electron.exe tools\make-icon.cjs
 const { app, BrowserWindow } = require('electron');

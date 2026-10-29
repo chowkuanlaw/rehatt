@@ -53,7 +53,7 @@
     if (currentView === 'tray') {
       root.innerHTML = `<div class="tc-page-head"><div><p class="tc-page-title">Tray</p><p class="tc-page-sub">${trayFiles.length ? 'Drag a file out, or click to open it' : 'Drop files on the island to keep them for a bit'}</p></div></div>${
         trayFiles.length ? `<div class="ex-drop extra"><span class="on">🧺 Let go, I’ll catch it!</span></div><div class="ex-grid">${trayFiles.map((f, i) => `<div class="ex-file" draggable="true" data-i="${i}" title="${esc(f.path)}">${f.icon ? `<img src="${f.icon}" alt="">` : '📄'}<span>${esc(f.name)}</span><button type="button" class="ex-x" data-x="${i}" aria-label="${T(`Keluarkan ${esc(f.name)} dari dulang`, `Take ${esc(f.name)} out of the tray`)}">×</button></div>`).join('')}</div>`
-          : '<div class="ex-drop ex-empty"><span class="off"><svg width="34" height="34" viewBox="0 0 24 24" fill="#000" stroke="#e8eee4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13 7 5h10l3 8v6H4z"/><path d="M4 13h5l1 2h4l1-2h5" fill="none"/></svg><b>Your tray is empty</b><small>Drag a file onto Kopi Island to keep it for a bit</small></span><span class="on"><svg width="34" height="34" viewBox="0 0 24 24" fill="#000" stroke="#e8eee4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13 7 5h10l3 8v6H4z"/><path d="M4 13h5l1 2h4l1-2h5" fill="none"/></svg><b>Let go, I’ll catch it!</b></span></div>'
+          : '<div class="ex-drop ex-empty"><span class="off"><svg width="34" height="34" viewBox="0 0 24 24" fill="#000" stroke="#e8eee4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13 7 5h10l3 8v6H4z"/><path d="M4 13h5l1 2h4l1-2h5" fill="none"/></svg><b>Your tray is empty</b><small>Drag a file onto Rehatt to keep it for a bit</small></span><span class="on"><svg width="34" height="34" viewBox="0 0 24 24" fill="#000" stroke="#e8eee4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13 7 5h10l3 8v6H4z"/><path d="M4 13h5l1 2h4l1-2h5" fill="none"/></svg><b>Let go, I’ll catch it!</b></span></div>'
       }${trayError ? `<p class="ex-hint" style="color:#ffaba3">${esc(trayError)}</p>` : ''}`;
       for (const el of root.querySelectorAll('.ex-file')) {
         const f = trayFiles[Number(el.dataset.i)];
@@ -84,7 +84,7 @@
   function stopCamera() { stream?.getTracks().forEach(t => t.stop()); stream = null; }
 
   // ---------- views in the canvas island ----------
-  // ---------- the basket: while you drag a file over the island, Kopi Island walks under it with a basket ----------
+  // ---------- the basket: while you drag a file over the island, Rehatt walks under it with a basket ----------
   const basket = { on: false, seen: 0, x: null, y: null, vx: 0, caughtAt: -1e9, mouseX: null };
   window.__kopiBasket = () => {
     const t = performance.now(), catching = t - basket.caughtAt < 700;
@@ -122,7 +122,7 @@
     const home = { x: area.x + PAGE.ghost.x, y: area.y + PAGE.ghost.y };
     const sinceCatch = t - basket.caughtAt, holdBasket = currentView === 'tray' && (basket.on || sinceCatch < 1100);
     if (currentView === 'tray' && incoming && sinceCatch < INCOMING_MS) drawIncoming(area, sinceCatch);
-    if (!holdBasket && currentView === 'tray') { basket.x = null; return; } // Kopi Island only shows while catching
+    if (!holdBasket && currentView === 'tray') { basket.x = null; return; } // Rehatt only shows while catching
     // Walks in from below, follows the mouse along the bottom while you drag, catches, then walks out again.
     const target = holdBasket
       ? { x: Math.min(area.x + area.width - 60, Math.max(area.x + 60, basket.mouseX ?? pointer.x)), y: !basket.on && sinceCatch > 650 ? islandBounds.height + 60 : islandBounds.height - 70 }
@@ -281,81 +281,4 @@
     return parts.join('  ·  ');
   };
 
-  // ---------- real sound wave: listen to what the PC plays while music is on ----------
-  const BARS = 18;
-  const audio = { stream: null, ctx: null, analyser: null, data: null, levels: new Array(BARS).fill(0), starting: false, offSince: 0 };
-  async function startListening() {
-    if (audio.stream || audio.starting) return;
-    audio.starting = true;
-    try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({ audio: true, video: { width: 16, height: 16, frameRate: 1 } });
-      stream.getVideoTracks().forEach(t => t.stop()); // only the sound is used
-      if (!stream.getAudioTracks().length) throw new Error('no audio');
-      const ctx = new (window.__kopiRealAudio || AudioContext)();
-      const analyser = ctx.createAnalyser(); analyser.fftSize = 2048; analyser.smoothingTimeConstant = 0.6; analyser.minDecibels = -80; // very soft hiss counts as silence
-      ctx.createMediaStreamSource(stream).connect(analyser); // not connected to the speakers: no echo
-      Object.assign(audio, { stream, ctx, analyser, data: new Uint8Array(analyser.frequencyBinCount) });
-    } catch { audio.failed = true; }
-    audio.starting = false;
-  }
-  function stopListening() {
-    audio.stream?.getTracks().forEach(t => t.stop()); audio.ctx?.close().catch(() => {});
-    Object.assign(audio, { stream: null, ctx: null, analyser: null }); audio.levels.fill(0); window.__kopiHearing = false;
-  }
-  setInterval(() => {
-    const playing = Boolean(spotifyConnected && spotifyState.is_playing);
-    if (playing) { audio.offSince = 0; if (!audio.failed) startListening(); }
-    else if (audio.stream) { audio.offSince ||= performance.now(); if (performance.now() - audio.offSince > 4000) stopListening(); }
-    window.__kopiAudioLevels?.(); // keeps __kopiHearing fresh when no wave is on screen
-  }, 1000);
-  // Levels 0..1 per bar, or null when not listening.
-  // Bars cover 60 Hz – 12 kHz on a log scale (like a real equalizer), and every bar has its own
-  // auto-range: bass is much louder than treble, so without this only the first bars would move.
-  const peaks = new Array(BARS).fill(0.08);
-  let loudPeak = 0.1;
-  window.__kopiAudioLevels = () => {
-    if (!audio.analyser) return null;
-    audio.analyser.getByteFrequencyData(audio.data);
-    const n = audio.data.length, hzPerBin = audio.ctx.sampleRate / 2 / n;
-    const raw = [];
-    for (let i = 0; i < BARS; i++) {
-      const f0 = 60 * Math.pow(200, i / BARS), f1 = 60 * Math.pow(200, (i + 1) / BARS);
-      const from = Math.max(1, Math.floor(f0 / hzPerBin)), to = Math.max(from + 1, Math.ceil(f1 / hzPerBin));
-      let sum = 0; for (let j = from; j < to && j < n; j++) sum += audio.data[j];
-      raw.push(sum / (to - from) / 255);
-    }
-    const loud = raw.reduce((a, b) => a + b, 0) / BARS;
-    // Real silence on this PC (e.g. the music plays on your phone): the bars settle flat. Without this the
-    // auto-range below would blow up tiny background hiss into a dancing wave.
-    window.__kopiHearing = loud > 0.05;
-    if (!window.__kopiHearing) { for (let i = 0; i < BARS; i++) audio.levels[i] *= 0.8; return audio.levels; }
-    loudPeak = Math.max(loud, loudPeak * 0.997, 0.12);
-    const overall = Math.min(1, loud / loudPeak * 1.15); // quiet parts → lower wave
-    for (let i = 0; i < BARS; i++) {
-      peaks[i] = Math.max(raw[i], peaks[i] * 0.996, 0.15);
-      const v = Math.pow(raw[i] / peaks[i], 1.6) * overall; // stretch so beats stand out
-      audio.levels[i] += (v - audio.levels[i]) * (v > audio.levels[i] ? 0.55 : 0.2); // quick up, smooth down
-    }
-    return audio.levels;
-  };
-
-  // ---------- album colour (soft, readable version of the cover's main colour) ----------
-  let colourFor = '';
-  setInterval(() => {
-    const url = spotifyState.track?.image_url || '';
-    if (url === colourFor) return; colourFor = url;
-    if (!url) { window.__kopiAlbumColour = null; return; }
-    const img = new Image(); img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      try {
-        const c = document.createElement('canvas'); c.width = c.height = 12; const x = c.getContext('2d'); x.drawImage(img, 0, 0, 12, 12);
-        const d = x.getImageData(0, 0, 12, 12).data; let r = 0, g = 0, b = 0, n = 0;
-        for (let i = 0; i < d.length; i += 4) { const sat = Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2]); const w = 1 + sat / 16; r += d[i] * w; g += d[i + 1] * w; b += d[i + 2] * w; n += w; }
-        [r, g, b] = [r / n, g / n, b / n];
-        const boost = 200 / Math.max(60, Math.max(r, g, b)); // bright enough on black
-        window.__kopiAlbumColour = `rgb(${[r, g, b].map(v => Math.min(255, Math.round(v * boost))).join(',')})`;
-      } catch { window.__kopiAlbumColour = null; }
-    };
-    img.src = url;
-  }, 1000);
 })();

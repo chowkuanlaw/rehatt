@@ -1,9 +1,9 @@
-# Prints "<volume 0-100> <muted 0/1>" whenever the Windows master volume changes (Kopi Island volume bar).
+# Prints "<volume 0-100> <muted 0/1>" whenever the Windows master volume changes (Rehatt volume bar).
 $ErrorActionPreference = 'Stop'
 Add-Type -TypeDefinition @'
 using System;
 using System.Runtime.InteropServices;
-namespace KopiIsland {
+namespace Rehatt {
   [Guid("5CDF2C82-841E-4546-9722-0CF74078229A"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
   interface IAudioEndpointVolume {
     int f(); int g(); int h(); int i();
@@ -40,9 +40,9 @@ param([int]$Parent = 0)
 $last = ''
 $tick = 0
 while ($true) {
-  # Stop together with Kopi Island, also when it was closed abruptly.
+  # Stop together with Rehatt, also when it was closed abruptly.
   if ($Parent -and (++$tick % 15 -eq 0) -and -not (Get-Process -Id $Parent -ErrorAction SilentlyContinue)) { exit 0 }
-  try { $now = [KopiIsland.Audio]::Read() } catch { $now = $last }
+  try { $now = [Rehatt.Audio]::Read() } catch { $now = $last }
   if ($now -ne $last) { [Console]::Out.WriteLine($now); [Console]::Out.Flush(); $last = $now }
   Start-Sleep -Milliseconds 150
 }

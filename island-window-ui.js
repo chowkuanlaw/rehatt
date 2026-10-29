@@ -9,7 +9,7 @@
     typeof currentView !== 'undefined' &&
     typeof mode !== 'undefined' &&
     mode === 'expanded' &&
-    ['project', 'settings', 'monitor', 'assistant'].includes(currentView);
+    ['settings', 'monitor', 'stretch'].includes(currentView);
 
   function state() {
     return {

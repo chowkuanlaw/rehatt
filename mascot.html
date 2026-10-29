@@ -102,7 +102,7 @@ canvas {
   type="text"
   autocomplete="off"
   spellcheck="false"
-  placeholder="What do you want to find in this project?"
+  placeholder=""
 >
 
 
@@ -455,57 +455,15 @@ let lastActivity =
 let hit = {};
 
 
-// ============================================================
-// PROJECT MODE
-// ============================================================
-
-let projectState = {
-  ok:
-    true,
-
-  selected:
-    false
-};
 
 
-let projectLoading =
-  false;
 
 
-let projectError =
-  '';
 
 
-let projectSearchLoading =
-  false;
 
 
-let projectSearchError =
-  '';
 
-
-let projectSearchResults =
-  [];
-
-
-let projectSearchMeta =
-  null;
-
-
-let projectSelectedResult =
-  null;
-
-
-let projectReadLoading =
-  false;
-
-
-let projectReadData =
-  null;
-
-
-let projectInputBounds =
-  null;
 
 
 let projectInputFocused =
@@ -554,9 +512,6 @@ projectInput.addEventListener(
       'Enter'
     ) {
       event.preventDefault();
-
-
-      await performProjectSearch();
     }
 
 
@@ -635,41 +590,9 @@ let sleepEnabled =
   'off';
 
 
-// ============================================================
-// SPOTIFY
-// ============================================================
-
-let spotifyConnected =
-  false;
 
 
-let spotifyState = {
-  active:
-    false,
 
-  is_playing:
-    false,
-
-  progress_ms:
-    0,
-
-  duration_ms:
-    0,
-
-  track:
-    null
-};
-
-
-let spotifySyncAt =
-  performance.now();
-
-
-let albumImage =
-  null;
-
-let albumUrl =
-  '';
 
 
 // ============================================================
@@ -926,14 +849,6 @@ function targetHeight() {
 
   if (
     currentView ===
-    'spotify'
-  ) {
-    return UI.SPOTIFY_H;
-  }
-
-
-  if (
-    currentView ===
     'apps'
   ) {
     return UI.APPS_H;
@@ -945,14 +860,6 @@ function targetHeight() {
     'settings'
   ) {
     return UI.SETTINGS_H;
-  }
-
-
-  if (
-    currentView ===
-    'project'
-  ) {
-    return UI.PROJECT_H;
   }
 
 
@@ -1337,69 +1244,6 @@ function text(
 }
 
 
-function codeText(
-  value,
-  x,
-  y,
-  size = 9,
-  color = '#d5ddd2',
-  maxWidth = null
-) {
-  ctx.font =
-    `${size}px Consolas, monospace`;
-
-
-  ctx.fillStyle =
-    color;
-
-
-  ctx.textAlign =
-    'left';
-
-
-  ctx.textBaseline =
-    'alphabetic';
-
-
-  let content =
-    String(
-      value ??
-      ''
-    )
-      .replace(
-        /\t/g,
-        '  '
-      );
-
-
-  if (
-    maxWidth
-  ) {
-    while (
-      content.length >
-        1 &&
-      ctx.measureText(
-        content
-      ).width >
-        maxWidth
-    ) {
-      content =
-        content.slice(
-          0,
-          -2
-        ) +
-        '…';
-    }
-  }
-
-
-  ctx.fillText(
-    content,
-    x,
-    y
-  );
-}
-
 
 // ============================================================
 // SPEAKER
@@ -1577,8 +1421,6 @@ function drawGhost(
   y,
   diameter
 ) {
-  // Kopi is out of the island (buddy-ui.js): there is only one Kopi
-  if (window.__kopiCarried?.() && !window.__kopiBuddyDrawing) return;
 
   const scale =
     bodyScale(
@@ -2705,118 +2547,10 @@ function pill(
 function drawHome(
   content
 ) {
-  const ghostX =
-    content.x +
-    48;
-
-
-  const ghostY =
-    content.y +
-    content.height /
-    2;
-
-
-  drawGhost(
-    ghostX,
-    ghostY,
-    UI.HOME_BODY
-  );
-
-
-  hit.ghost = {
-    x:
-      ghostX -
-      42,
-
-    y:
-      ghostY -
-      38,
-
-    width:
-      84,
-
-    height:
-      76
-  };
-
-
-  const textX =
-    content.x +
-    100;
-
-
-  text(
-    'Kopi Island',
-    textX,
-    content.y +
-    25,
-    10,
-    '#849080',
-    600
-  );
-
-
-  text(
-    'How can I help?',
-    textX,
-    content.y +
-    48,
-    16,
-    '#fff',
-    600
-  );
-
-
-  const appsX =
-    content.x +
-    content.width -
-    280;
-
-
-  pill(
-    appsX,
-    content.y +
-    3,
-    132,
-    '♫',
-    'Spotify',
-    'spotifyApp'
-  );
-
-
-  pill(
-    appsX +
-    140,
-    content.y +
-    3,
-    132,
-    '◷',
-    'Today',
-    'todayApp'
-  );
-
-
-  pill(
-    appsX,
-    content.y +
-    45,
-    132,
-    '✦',
-    'Assistant',
-    'assistantApp'
-  );
-
-
-  pill(
-    appsX +
-    140,
-    content.y +
-    45,
-    132,
-    '⌘',
-    'Project',
-    'projectApp'
-  );
+  // The real home page is the widget dashboard (ai-monitor-ui.js); this is only its fallback.
+  drawGhost(content.x + 48, content.y + content.height / 2, UI.HOME_BODY);
+  text('Rehatt', content.x + 100, content.y + 25, 10, '#849080', 600);
+  text(kopiT('Rehat sekejap?', 'Time for a break?'), content.x + 100, content.y + 48, 16, '#fff', 600);
 }
 
 
@@ -2824,1072 +2558,26 @@ function drawHome(
 // APPS
 // ============================================================
 
+// The apps page: one pill per app. [icon, Malay, English, hit key, view]
+const APP_PILLS = [
+  ['🧘', 'Regangan', 'Stretch', 'stretchApp', 'stretch'],
+  ['☕', 'Penggunaan', 'Usage', 'meterApp', 'meter'],
+  ['⌘', 'Claude Code', 'Claude Code', 'claudeApp', 'monitor'],
+  ['◷', 'Fokus', 'Focus', 'focusApp', 'focus'],
+  ['⇩', 'Dulang', 'Tray', 'trayApp', 'tray'],
+  ['❐', 'Papan keratan', 'Clipboard', 'clipsApp', 'clips'],
+  ['✎', 'Nota', 'Note', 'noteApp', 'note']
+];
+
 function drawApps(
   content
 ) {
-  const ghostX =
-    content.x +
-    48;
-
-
-  const ghostY =
-    content.y +
-    content.height /
-    2;
-
-
-  drawGhost(
-    ghostX,
-    ghostY,
-    64
-  );
-
-
-  const startX =
-    content.x +
-    101;
-
-
-  text(
-    'Apps',
-    startX,
-    content.y +
-    19,
-    16,
-    '#fff',
-    600
-  );
-
-
-  const width =
-    180;
-
-
-  pill(
-    startX,
-    content.y +
-    52,
-    width,
-    '♫',
-    'Spotify',
-    'spotifyApp'
-  );
-
-
-  pill(
-    startX +
-    190,
-    content.y +
-    52,
-    width,
-    '◷',
-    'Today',
-    'todayApp'
-  );
-
-
-  pill(
-    startX,
-    content.y +
-    94,
-    width,
-    '✦',
-    'Assistant',
-    'assistantApp'
-  );
-
-
-  pill(
-    startX +
-    190,
-    content.y +
-    94,
-    width,
-    '⌘',
-    'Project',
-    'projectApp'
-  );
-}
-
-
-// ============================================================
-// PROJECT LOAD
-// ============================================================
-
-async function loadProject() {
-  projectLoading =
-    true;
-
-
-  projectError =
-    '';
-
-
-  try {
-    const result =
-      await window.kopi
-        .projectGet();
-
-
-    projectState =
-      result ||
-      {
-        ok:
-          false,
-
-        selected:
-          false
-      };
-
-
-    if (
-      !projectState.ok
-    ) {
-      projectError =
-        projectState.error ||
-        'The project could not be loaded.';
-    }
-
-  } catch {
-    projectError =
-      'The project could not be loaded.';
-  }
-
-
-  projectLoading =
-    false;
-}
-
-
-async function chooseProject() {
-  projectLoading =
-    true;
-
-
-  projectError =
-    '';
-
-
-  projectSearchResults =
-    [];
-
-
-  projectReadData =
-    null;
-
-
-  try {
-    const result =
-      await window.kopi
-        .projectChoose();
-
-
-    if (
-      result?.cancelled
-    ) {
-      projectLoading =
-        false;
-
-      return;
-    }
-
-
-    projectState =
-      result;
-
-
-    if (
-      !result?.ok
-    ) {
-      projectError =
-        result?.error ||
-        'The project could not be opened.';
-    }
-
-  } catch {
-    projectError =
-      'The project could not be opened.';
-  }
-
-
-  projectLoading =
-    false;
-}
-
-
-async function rescanProject() {
-  projectLoading =
-    true;
-
-
-  projectError =
-    '';
-
-
-  try {
-    const result =
-      await window.kopi
-        .projectRescan();
-
-
-    projectState =
-      result;
-
-
-    if (
-      !result?.ok
-    ) {
-      projectError =
-        result?.error ||
-        'The project could not be scanned again.';
-    }
-
-  } catch {
-    projectError =
-      'The project could not be scanned again.';
-  }
-
-
-  projectLoading =
-    false;
-}
-
-
-// ============================================================
-// PROJECT SEARCH
-// ============================================================
-
-async function performProjectSearch() {
-  const query =
-    projectInput.value
-      .trim();
-
-
-  if (
-    !query
-  ) {
-    projectSearchError =
-      'First type what you want to search for.';
-
-    return;
-  }
-
-
-  projectSearchLoading =
-    true;
-
-
-  projectSearchError =
-    '';
-
-
-  projectSearchResults =
-    [];
-
-
-  projectReadData =
-    null;
-
-
-  projectSelectedResult =
-    null;
-
-
-  try {
-    const result =
-      await window.kopi
-        .projectSearch(
-          query
-        );
-
-
-    if (
-      !result?.ok
-    ) {
-      projectSearchError =
-        result?.error ||
-        'Search failed.';
-
-    } else {
-      projectSearchResults =
-        result.results ||
-        [];
-
-
-      projectSearchMeta =
-        result;
-
-
-      if (
-        projectSearchResults.length ===
-        0
-      ) {
-        projectSearchError =
-          'I didn’t find relevant code for this yet.';
-      }
-    }
-
-  } catch {
-    projectSearchError =
-      'Searching the project failed.';
-  }
-
-
-  projectSearchLoading =
-    false;
-}
-
-
-// ============================================================
-// PROJECT READ
-// ============================================================
-
-async function openProjectResult(
-  result
-) {
-  if (
-    !result
-  ) {
-    return;
-  }
-
-
-  projectInput.blur();
-
-
-  projectReadLoading =
-    true;
-
-
-  projectReadData =
-    null;
-
-
-  projectSelectedResult =
-    result;
-
-
-  const line =
-    result.matches?.[0]
-      ?.line ||
-    1;
-
-
-  try {
-    const read =
-      await window.kopi
-        .projectRead(
-          result.file,
-          line
-        );
-
-
-    if (
-      !read?.ok
-    ) {
-      projectSearchError =
-        read?.error ||
-        'The file could not be read.';
-
-    } else {
-      projectReadData =
-        read;
-    }
-
-  } catch {
-    projectSearchError =
-      'The file could not be read.';
-  }
-
-
-  projectReadLoading =
-    false;
-}
-
-
-// ============================================================
-// PROJECT DRAW
-// ============================================================
-
-function drawProject(
-  content
-) {
-  projectInputBounds =
-    null;
-
-
-  const ghostX =
-    content.x +
-    43;
-
-
-  const ghostY =
-    content.y +
-    content.height /
-    2;
-
-
-  drawGhost(
-    ghostX,
-    ghostY,
-    58
-  );
-
-
-  hit.ghost = {
-    x:
-      ghostX -
-      40,
-
-    y:
-      ghostY -
-      36,
-
-    width:
-      80,
-
-    height:
-      72
-  };
-
-
-  const startX =
-    content.x +
-    92;
-
-
-  const right =
-    content.x +
-    content.width;
-
-
-  const width =
-    right -
-    startX;
-
-
-  text(
-    'Project',
-    startX,
-    content.y +
-    20,
-    16,
-    '#fff',
-    600
-  );
-
-
-  if (
-    projectLoading
-  ) {
-    text(
-      'Scanning project...',
-      startX,
-      content.y +
-      53,
-      11,
-      '#aeb8ab',
-      500
-    );
-
-
-    return;
-  }
-
-
-  if (
-    projectError
-  ) {
-    text(
-      projectError,
-      startX,
-      content.y +
-      50,
-      10,
-      '#ff9090',
-      500,
-      'left',
-      width
-    );
-
-
-    button(
-      startX,
-      content.y +
-      72,
-      125,
-      'Other folder',
-      'projectChoose',
-      true
-    );
-
-
-    return;
-  }
-
-
-  if (
-    !projectState
-      ?.selected
-  ) {
-    text(
-      'No project chosen yet',
-      startX,
-      content.y +
-      50,
-      12,
-      '#dde5da',
-      600
-    );
-
-
-    text(
-      'Kopi Island only reads the folder you choose.',
-      startX,
-      content.y +
-      70,
-      9,
-      '#818b7f'
-    );
-
-
-    button(
-      startX,
-      content.y +
-      92,
-      135,
-      'Choose project folder',
-      'projectChoose',
-      true
-    );
-
-
-    return;
-  }
-
-
-  if (
-    projectReadLoading
-  ) {
-    text(
-      projectSelectedResult
-        ?.file ||
-      'Opening file...',
-
-      startX,
-      content.y +
-      48,
-      11,
-      '#dce5d9',
-      600
-    );
-
-
-    text(
-      'Fetching the real local code...',
-      startX,
-      content.y +
-      70,
-      9,
-      '#7e897c'
-    );
-
-
-    return;
-  }
-
-
-  if (
-    projectReadData
-  ) {
-    drawProjectCode(
-      content,
-      startX,
-      width
-    );
-
-
-    return;
-  }
-
-
-  // project name
-  text(
-    projectState.name,
-    startX,
-    content.y +
-    43,
-    12,
-    '#f4f6f3',
-    600,
-    'left',
-    width
-  );
-
-
-  text(
-    `${projectState.technology || 'Project'} · ${projectState.textFileCount || 0} ${kopiT('fail boleh dibaca', 'readable files')}`,
-    startX,
-    content.y +
-    60,
-    9,
-    '#7f8a7c'
-  );
-
-
-  // input
-  const searchButtonWidth =
-    72;
-
-
-  const gap =
-    8;
-
-
-  const inputWidth =
-    width -
-    searchButtonWidth -
-    gap;
-
-
-  projectInputBounds = {
-    x:
-      startX,
-
-    y:
-      content.y +
-      72,
-
-    width:
-      inputWidth,
-
-    height:
-      34
-  };
-
-
-  button(
-    startX +
-    inputWidth +
-    gap,
-    content.y +
-    74,
-    searchButtonWidth,
-    'Search',
-    'projectSearch',
-    true
-  );
-
-
-  if (
-    projectSearchLoading
-  ) {
-    text(
-      'Searching the code...',
-      startX,
-      content.y +
-      127,
-      10,
-      '#a9b4a5',
-      500
-    );
-
-
-    return;
-  }
-
-
-  if (
-    projectSearchError
-  ) {
-    text(
-      projectSearchError,
-      startX,
-      content.y +
-      128,
-      9,
-      '#c79696',
-      500,
-      'left',
-      width
-    );
-
-
-    return;
-  }
-
-
-  if (
-    projectSearchResults.length ===
-    0
-  ) {
-    text(
-      'For example:',
-      startX,
-      content.y +
-      128,
-      9,
-      '#697468'
-    );
-
-
-    text(
-      '"where is the Spotify wave?"',
-      startX,
-      content.y +
-      145,
-      9,
-      '#8a9587'
-    );
-
-
-    text(
-      '"which file handles the settings?"',
-      startX,
-      content.y +
-      162,
-      9,
-      '#8a9587'
-    );
-
-
-    return;
-  }
-
-
-  text(
-    kopiT(`${projectSearchResults.length} hasil berkaitan dijumpai`, `${projectSearchResults.length} relevant results found`),
-    startX,
-    content.y +
-    126,
-    9,
-    '#879384',
-    500
-  );
-
-
-  const maxRows =
-    3;
-
-
-  for (
-    let i = 0;
-    i <
-    Math.min(
-      maxRows,
-      projectSearchResults.length
-    );
-    i++
-  ) {
-    const result =
-      projectSearchResults[
-        i
-      ];
-
-
-    const rowY =
-      content.y +
-      137 +
-      i *
-      37;
-
-
-    drawProjectResultRow(
-      startX,
-      rowY,
-      width,
-      result,
-      i
-    );
-  }
-}
-
-
-// ============================================================
-// PROJECT RESULT ROW
-// ============================================================
-
-function drawProjectResultRow(
-  x,
-  y,
-  width,
-  result,
-  index
-) {
-  const bounds = {
-    x,
-    y,
-    width,
-    height:
-      32
-  };
-
-
-  const over =
-    inside(
-      pointer.x,
-      pointer.y,
-      bounds
-    );
-
-
-  box(
-    x,
-    y,
-    width,
-    32,
-    10,
-
-    over
-      ?
-        '#1c231c'
-      :
-        '#131713'
-  );
-
-
-  const match =
-    result.matches?.[0];
-
-
-  text(
-    result.file,
-    x +
-    10,
-    y +
-    13,
-    9,
-    '#e0e7dd',
-    600,
-    'left',
-    width -
-    90
-  );
-
-
-  if (
-    match
-  ) {
-    text(
-      kopiT(`baris ${match.line}`, `line ${match.line}`),
-      x +
-      width -
-      10,
-      y +
-      13,
-      8,
-      '#81907c',
-      500,
-      'right'
-    );
-
-
-    codeText(
-      match.text.trim(),
-      x +
-      10,
-      y +
-      26,
-      8,
-      '#899586',
-      width -
-      20
-    );
-  }
-
-
-  hit[
-    `projectResult${index}`
-  ] =
-    bounds;
-}
-
-
-// ============================================================
-// PROJECT CODE VIEW
-// ============================================================
-
-function drawProjectCode(
-  content,
-  startX,
-  width
-) {
-  const data =
-    projectReadData;
-
-
-  text(
-    data.file,
-    startX,
-    content.y +
-    45,
-    11,
-    '#f2f4f1',
-    600,
-    'left',
-    width -
-    95
-  );
-
-
-  text(
-    kopiT(`baris ${data.startLine}-${data.endLine} daripada ${data.totalLines}`, `lines ${data.startLine}-${data.endLine} of ${data.totalLines}`),
-    startX,
-    content.y +
-    62,
-    8,
-    '#788375'
-  );
-
-
-  button(
-    startX +
-    width -
-    86,
-    content.y +
-    34,
-    86,
-    '← Results',
-    'projectReadBack'
-  );
-
-
-  const codeY =
-    content.y +
-    75;
-
-
-  const codeHeight =
-    126;
-
-
-  box(
-    startX,
-    codeY,
-    width,
-    codeHeight,
-    11,
-    '#0c100c'
-  );
-
-
-  ctx.save();
-
-
-  ctx.beginPath();
-
-
-  ctx.roundRect(
-    startX,
-    codeY,
-    width,
-    codeHeight,
-    11
-  );
-
-
-  ctx.clip();
-
-
-  const focusLine =
-    data.focusLine;
-
-
-  const lineHeight =
-    11;
-
-
-  for (
-    let i = 0;
-    i <
-    data.lines.length;
-    i++
-  ) {
-    const line =
-      data.lines[
-        i
-      ];
-
-
-    const lineY =
-      codeY +
-      15 +
-      i *
-      lineHeight;
-
-
-    if (
-      line.number ===
-      focusLine
-    ) {
-      box(
-        startX +
-        4,
-        lineY -
-        9,
-        width -
-        8,
-        11,
-        4,
-        '#1d2919'
-      );
-    }
-
-
-    codeText(
-      String(
-        line.number
-      ).padStart(
-        4,
-        ' '
-      ),
-
-      startX +
-      8,
-      lineY,
-      8,
-
-      line.number ===
-      focusLine
-        ?
-          '#c6e994'
-        :
-          '#536050'
-    );
-
-
-    codeText(
-      line.text,
-      startX +
-      42,
-      lineY,
-      8,
-
-      line.number ===
-      focusLine
-        ?
-          '#eff6e8'
-        :
-          '#b8c2b5',
-
-      width -
-      52
-    );
-  }
-
-
-  ctx.restore();
-
-
-  text(
-    'This was read straight from your local project.',
-    startX,
-    codeY +
-    codeHeight +
-    16,
-    8,
-    '#647061'
-  );
+  const startX = content.x + 24;
+  text(kopiT('Aplikasi', 'Apps'), startX, content.y + 19, 16, '#fff', 600);
+  const width = Math.min(180, (content.width - 48 - 20) / 3);
+  APP_PILLS.forEach(([icon, ms, en, key], n) => {
+    pill(startX + (n % 3) * (width + 10), content.y + 44 + Math.floor(n / 3) * 42, width, icon, kopiT(ms, en), key);
+  });
 }
 
 
@@ -3950,204 +2638,8 @@ function drawSettings(
 }
 
 
-// ============================================================
-// PLACEHOLDER
-// ============================================================
-
-function drawPrompt(
-  content,
-  title,
-  description
-) {
-  drawGhost(
-    content.x +
-    38,
-    content.y +
-    content.height /
-    2,
-    44
-  );
 
 
-  text(
-    title,
-    content.x +
-    78,
-    content.y +
-    29,
-    16,
-    '#fff',
-    600
-  );
-
-
-  text(
-    description,
-    content.x +
-    78,
-    content.y +
-    51,
-    10,
-    '#828d80'
-  );
-}
-
-
-// ============================================================
-// SPOTIFY
-// ============================================================
-
-function setAlbum(
-  url
-) {
-  if (
-    url ===
-    albumUrl
-  ) {
-    return;
-  }
-
-
-  albumUrl =
-    url;
-
-
-  if (!url) {
-    albumImage =
-      null;
-
-    return;
-  }
-
-
-  const image =
-    new Image();
-
-
-  image.onload =
-    () => {
-      albumImage =
-        image;
-    };
-
-
-  image.src =
-    url;
-}
-
-
-async function refreshSpotify() {
-  try {
-    const result =
-      await window.kopi
-        .spotifyGetState();
-
-
-    if (!result) {
-      return;
-    }
-
-
-    spotifyConnected =
-      Boolean(
-        result.connected
-      );
-
-
-    if (
-      result.connected
-    ) {
-      spotifyState = {
-        active:
-          Boolean(
-            result.active
-          ),
-
-        is_playing:
-          Boolean(
-            result.is_playing
-          ),
-
-        progress_ms:
-          Number(
-            result.progress_ms ||
-            0
-          ),
-
-        duration_ms:
-          Number(
-            result.duration_ms ||
-            0
-          ),
-
-        track:
-          result.track ||
-          null,
-
-        // where it plays (this PC, your phone, the car…)
-        device:
-          result.device ||
-          null
-      };
-
-
-      spotifySyncAt =
-        performance.now();
-
-
-      setAlbum(
-        result.track
-          ?.image_url ||
-        ''
-      );
-    }
-
-  } catch {}
-}
-
-
-function drawSpotify(
-  content
-) {
-  drawGhost(
-    content.x +
-    content.width -
-    42,
-    content.y +
-    content.height /
-    2,
-    58
-  );
-
-
-  text(
-    spotifyState.track
-      ?.name ||
-      'No music playing',
-
-    content.x +
-    110,
-    content.y +
-    32,
-    14,
-    '#fff',
-    600
-  );
-
-
-  text(
-    spotifyState.track
-      ?.artist ||
-      'Open Spotify and start some music',
-
-    content.x +
-    110,
-    content.y +
-    52,
-    10,
-    '#8f998d'
-  );
-}
 
 
 // ============================================================
@@ -4164,8 +2656,6 @@ function setView(
     'none';
 
 
-  const leavingProject =
-    currentView === 'project' && next !== 'project';
 
 
   currentView =
@@ -4185,24 +2675,10 @@ function setView(
 
 
   setMode(
-    leavingProject ? 'compact' : 'expanded'
+    'expanded'
   );
 
 
-  if (
-    next ===
-    'project'
-  ) {
-    loadProject();
-  }
-
-
-  if (
-    next ===
-    'spotify'
-  ) {
-    refreshSpotify();
-  }
 }
 
 
@@ -4402,27 +2878,6 @@ function drawSmall() {
   );
 
 
-  const indicatorState =
-    window.__kopiProjectIndicator?.state;
-
-  const indicatorColors = {
-    ready: '#70d88a',
-    question: '#f2c94c',
-    error: '#ef6b63'
-  };
-
-  if (indicatorColors[indicatorState]) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(islandBounds.x + 53, 12, 4, 0, Math.PI * 2);
-    ctx.fillStyle = indicatorColors[indicatorState];
-    ctx.shadowColor = indicatorColors[indicatorState];
-    ctx.shadowBlur = 6;
-    ctx.fill();
-    ctx.restore();
-  }
-
-
   hit.ghost = {
     x:
       islandBounds.x +
@@ -4454,14 +2909,6 @@ function updateHover(
   }
 
 
-  if (
-    currentView ===
-      'project' &&
-    mode !==
-      'expanded'
-  ) {
-    return;
-  }
 
 
   const over =
@@ -4782,45 +3229,10 @@ function drawExpanded(
 
   if (
     currentView ===
-    'project'
-  ) {
-    drawProject(
-      content
-    );
-  }
-
-
-  if (
-    currentView ===
     'settings'
   ) {
     drawSettings(
       content
-    );
-  }
-
-  // Kopi's chat (chat-ui.js): Kopi himself sits bottom left, drawn on the canvas
-  if (currentView === 'chat') window.__kopiDrawChat?.(content);
-
-
-  if (
-    currentView ===
-    'spotify'
-  ) {
-    drawSpotify(
-      content
-    );
-  }
-
-
-  if (
-    currentView ===
-    'assistant'
-  ) {
-    drawPrompt(
-      content,
-      'Assistant',
-      'The AI interface comes here.'
     );
   }
 
@@ -4829,59 +3241,6 @@ function drawExpanded(
 }
 
 
-// ============================================================
-// PROJECT INPUT POSITION
-// ============================================================
-
-function updateProjectInput() {
-  const shouldShow =
-    currentView ===
-      'project' &&
-    mode ===
-      'expanded' &&
-    projectState
-      ?.selected &&
-    !projectLoading &&
-    !projectReadData &&
-    !projectReadLoading &&
-    projectInputBounds &&
-    visual.width >
-      600 &&
-    visual.height >
-      220;
-
-
-  if (
-    !shouldShow
-  ) {
-    projectInput.style.display =
-      'none';
-
-
-    return;
-  }
-
-
-  projectInput.style.display =
-    'block';
-
-
-  projectInput.style.left =
-    `${projectInputBounds.x}px`;
-
-
-  projectInput.style.top =
-    `${projectInputBounds.y}px`;
-
-
-  projectInput.style.width =
-    `${projectInputBounds.width}px`;
-
-
-  projectInput.style.height =
-    `${projectInputBounds.height}px`;
-}
-
 
 // ============================================================
 // INTERACTIVE
@@ -4889,7 +3248,7 @@ function updateProjectInput() {
 
 // Whether the window catches clicks (on the island) or lets them through to the apps below (Chrome, ...).
 // Everything goes through here. Once a second the state is sent again anyway, so it can never get stuck
-// (it used to stay "catching clicks" after Claude finished, until you hovered Kopi Island).
+// (it used to stay "catching clicks" after Claude finished, until you hovered Rehatt).
 let interactiveSentAt = 0;
 
 function sendInteractive(
@@ -4920,7 +3279,7 @@ function sendInteractive(
 }
 
 
-// "Typing" only counts while a visible text field really has focus and Kopi Island's window is active.
+// "Typing" only counts while a visible text field really has focus and Rehatt's window is active.
 // (A text field that was removed or hidden while focused used to keep this on forever.)
 function typingNow() {
   const el =
@@ -4971,10 +3330,6 @@ function drawIslandFrame(
 
 
   hit = {};
-
-
-  projectInputBounds =
-    null;
 
 
   if (
@@ -5060,9 +3415,6 @@ function drawIslandFrame(
   ctx.restore();
 
 
-  updateProjectInput();
-
-
   const overIsland =
     pointer.known &&
     inside(
@@ -5088,7 +3440,7 @@ function drawIslandFrame(
 
   // Catch the mouse only while it is really on the island. Typing does not need it (keyboard focus
   // stays anyway), and catching the mouse while typing made the invisible window (860×320, over the
-  // browser's tabs and address bar) eat clicks meant for Chrome until you clicked Kopi Island again.
+  // browser's tabs and address bar) eat clicks meant for Chrome until you clicked Rehatt again.
   sendInteractive(
     overIsland ||
     overHit
@@ -5122,7 +3474,7 @@ function render(now) {
       kopiLastFrameError = now;
 
       console.error(
-        '[Kopi Island frame]',
+        '[Rehatt frame]',
         error.stack || error.message || String(error)
       );
     }
@@ -5132,7 +3484,7 @@ function render(now) {
       resize();
     } catch {}
     // Still decide if the window catches clicks: otherwise one broken frame left the island "click-through"
-    // until you hovered or clicked Kopi Island again.
+    // until you hovered or clicked Rehatt again.
     try { sendInteractive(pointer.known && inside(pointer.x, pointer.y, islandBounds)); } catch {}
   } finally {
     requestAnimationFrame(render);
@@ -5180,82 +3532,6 @@ canvas.addEventListener(
 
     const y =
       event.clientY;
-
-
-    // ======================================================
-    // PROJECT
-    // ======================================================
-
-    if (
-      inside(
-        x,
-        y,
-        hit.projectChoose
-      )
-    ) {
-      await chooseProject();
-
-      return;
-    }
-
-
-    if (
-      inside(
-        x,
-        y,
-        hit.projectSearch
-      )
-    ) {
-      await performProjectSearch();
-
-      return;
-    }
-
-
-    if (
-      inside(
-        x,
-        y,
-        hit.projectReadBack
-      )
-    ) {
-      projectReadData =
-        null;
-
-
-      projectSelectedResult =
-        null;
-
-
-      return;
-    }
-
-
-    for (
-      let i = 0;
-      i <
-      3;
-      i++
-    ) {
-      if (
-        inside(
-          x,
-          y,
-          hit[
-            `projectResult${i}`
-          ]
-        )
-      ) {
-        await openProjectResult(
-          projectSearchResults[
-            i
-          ]
-        );
-
-
-        return;
-      }
-    }
 
 
     // ======================================================
@@ -5361,86 +3637,9 @@ canvas.addEventListener(
     // APPS
     // ======================================================
 
-    if (
-      inside(
-        x,
-        y,
-        hit.projectApp
-      )
-    ) {
-      setView(
-        'project'
-      );
-
-
-      return;
-    }
-
-
-    if (
-      inside(
-        x,
-        y,
-        hit.spotifyApp
-      )
-    ) {
-      try {
-        const state =
-          await window.kopi
-            .spotifyGetState();
-
-
-        if (
-          !state?.connected
-        ) {
-          await window.kopi
-            .spotifyConnect();
-        }
-
-
-        await refreshSpotify();
-
-
-        setView(
-          'spotify'
-        );
-
-      } catch {}
-
-
-      return;
-    }
-
-
-    if (
-      inside(
-        x,
-        y,
-        hit.todayApp
-      )
-    ) {
-      window.kopi
-        .openUrl(
-          'https://github.com/chowkuanlaw/kopi-island'
-        );
-
-
-      return;
-    }
-
-
-    if (
-      inside(
-        x,
-        y,
-        hit.assistantApp
-      )
-    ) {
-      setView(
-        'assistant'
-      );
-
-
+    for (const [, , , key, view] of APP_PILLS) {
+      if (!inside(x, y, hit[key])) continue;
+      if (view === 'monitor') window.__kopiMonitor?.open('claudecode'); else setView(view);
       return;
     }
   }
@@ -5473,25 +3672,6 @@ addEventListener(
     }
 
 
-    if (
-      currentView ===
-        'project' &&
-      projectReadData
-    ) {
-      projectReadData =
-        null;
-
-
-      projectSelectedResult =
-        null;
-
-
-      return;
-    }
-
-
-    const leavingProject = currentView === 'project';
-
     currentView =
       'home';
 
@@ -5501,45 +3681,28 @@ addEventListener(
 
 
     setMode(
-      leavingProject ? 'compact' : 'rest'
+      'rest'
     );
   }
 );
 
 
-// ============================================================
-// SPOTIFY POLL
-// ============================================================
-
-setInterval(
-  () => {
-    if (
-      currentView ===
-      'spotify'
-    ) {
-      refreshSpotify();
-    }
-  },
-
-  2200
-);
-
 </script>
 <script src="./i18n-ui.js"></script>
-<script src="./project-mode-ui.js"></script>
 <script src="./pages-ui.js"></script>
 <script src="./icons-ui.js"></script>
-<script src="./ai-settings-ui.js"></script>
 <script src="./ai-monitor-ui.js"></script>
-<script src="./spotify-ui.js"></script>
 <script src="./kopi-fun.js"></script>
-<script src="./buddy-ui.js"></script>
 <script src="./settings-bridge-ui.js"></script>
-<script src="./chat-ui.js"></script>
 <script src="./extras-ui.js"></script>
 <script src="./focus-ui.js"></script>
 <script src="./blob-ui.js"></script>
 <script src="./tools-ui.js"></script>
+<script src="./lapis/data.js"></script>
+<script src="./lapis/mascot.js"></script>
+<script src="./stretch-ui.js"></script>
+<script src="./meter-ui.js"></script>
+<script src="./drag-ui.js"></script>
 <script src="./island-window-ui.js"></script>
 
 </body>

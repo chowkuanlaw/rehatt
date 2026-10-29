@@ -16,72 +16,27 @@
   }
 
   contextBridge.exposeInMainWorld('kopi', {
-    spotifyConnect: () => ipcRenderer.invoke('spotify:connect'),
-    spotifyGetState: () => ipcRenderer.invoke('spotify:get-state'),
-    spotifyControl: action =>
-      ipcRenderer.invoke('spotify:control', action),
-    spotifyDevices: () => ipcRenderer.invoke('spotify:devices'),
-    spotifyTransfer: id => ipcRenderer.invoke('spotify:transfer', id),
-    spotifySeek: positionMs =>
-      ipcRenderer.invoke('spotify:seek', positionMs),
-    spotifyDisconnect: () =>
-      ipcRenderer.invoke('spotify:disconnect'),
-
-    projectGet: () => ipcRenderer.invoke('project:get'),
-    projectChoose: () => ipcRenderer.invoke('project:choose'),
-    projectRescan: () => ipcRenderer.invoke('project:rescan'),
-    projectSearch: query =>
-      ipcRenderer.invoke('project:search', { query }),
-    projectRead: (file, line = 1) =>
-      ipcRenderer.invoke('project:read', { file, line }),
-
-    projectAgentGet: () => ipcRenderer.invoke('project-agent:get'),
-  projectAgentOpen: () => ipcRenderer.invoke('project-agent:open'),
-  projectAgentSend: message => ipcRenderer.invoke('project-agent:send', { message }),
-  projectAgentUndo: () => ipcRenderer.invoke('project-agent:undo'),
-  onProjectAgentProgress: callback => subscribe('project-agent:progress', callback),
-  projectEditorOpen: file => ipcRenderer.invoke('project-editor:open', { file }),
-  projectEditorSend: (file, message) => ipcRenderer.invoke('project-editor:edit', { file, message }),
-  projectEditorUndo: file => ipcRenderer.invoke('project-editor:undo', { file }),
-  onProjectEditorProgress: callback => subscribe('project-editor:progress', callback),
-  projectV2Get: () => ipcRenderer.invoke('projectv2:get'),
-    projectV2Choose: () => ipcRenderer.invoke('projectv2:choose'),
-    projectV2ListFiles: () =>
-      ipcRenderer.invoke('projectv2:list-files'),
-    projectV2AiStatus: () =>
-      ipcRenderer.invoke('projectv2:ai-status'),
-    projectV2ChatGet: file =>
-      ipcRenderer.invoke('projectv2:chat-get', { file }),
-    projectV2ChatSend: (file, message) =>
-      ipcRenderer.invoke('projectv2:chat-send', { file, message }),
-    projectV2ChatReset: file =>
-      ipcRenderer.invoke('projectv2:chat-reset', { file }),
-
-    aiSettingsGet: () => ipcRenderer.invoke('ai-settings:get'),
-    aiSettingsSetProvider: provider =>
-      ipcRenderer.invoke('ai-settings:set-provider', provider),
-    aiSettingsSetKey: (type, key) =>
-      ipcRenderer.invoke('ai-settings:set-key', { type, key }),
-    aiSettingsClearKey: type =>
-      ipcRenderer.invoke('ai-settings:clear-key', type),
-    aiSettingsSetModel: model =>
-      ipcRenderer.invoke('ai-settings:set-model', model),
-    aiSettingsTest: () =>
-      ipcRenderer.invoke('ai-settings:test'),
-    aiSettingsChatGPTLogin: () =>
-      ipcRenderer.invoke('ai-settings:chatgpt-login'),
-    aiSettingsChatGPTCancel: () =>
-      ipcRenderer.invoke('ai-settings:chatgpt-cancel'),
-    aiSettingsChatGPTLogout: () =>
-      ipcRenderer.invoke('ai-settings:chatgpt-logout'),
-
+    // Claude Code and Codex (agents-main.cjs): question and done nudges, and "jump to terminal"
     aiMonitorGet: () => ipcRenderer.invoke('ai-monitor:get'),
-    aiMonitorWindows: () => ipcRenderer.invoke('ai-monitor:windows'),
-    aiMonitorConnect: (provider, targetId) => ipcRenderer.invoke('ai-monitor:connect', { provider, targetId }),
-    aiMonitorDisconnect: provider => ipcRenderer.invoke('ai-monitor:disconnect', { provider }),
-    aiMonitorOpenSource: provider => ipcRenderer.invoke('ai-monitor:open-source', { provider }),
     aiMonitorHooksInstall: agent => ipcRenderer.invoke('ai-monitor:hooks-install', { agent }),
     aiMonitorHooksUninstall: agent => ipcRenderer.invoke('ai-monitor:hooks-uninstall', { agent }),
+    aiMonitorHooksJump: sessionId => ipcRenderer.invoke('ai-monitor:hooks-jump', { sessionId }),
+    aiMonitorHooksTest: (kind, command) => ipcRenderer.invoke('ai-monitor:hooks-test', { kind, command }),
+    aiMonitorSetNotify: enabled => ipcRenderer.invoke('ai-monitor:set-notify', { enabled }),
+    aiMonitorHooksSeen: () => ipcRenderer.invoke('ai-monitor:hooks-seen'),
+    onAiMonitorState: callback => subscribe('ai-monitor:state', callback),
+    onAiMonitorOpen: callback => subscribe('ai-monitor:open', callback),
+
+    // Stretch breaks (stretch-main.cjs, from Lapis)
+    stretchGet: () => ipcRenderer.invoke('stretch:get'),
+    stretchAction: (action, value) => ipcRenderer.invoke('stretch:action', { action, value }),
+    onStretch: callback => subscribe('stretch:state', callback),
+
+    // Your Claude usage (meter-main.cjs, from Teh Tarik Meter)
+    meterGet: () => ipcRenderer.invoke('meter:get'),
+    meterAction: action => ipcRenderer.invoke('meter:action', { action }),
+    onMeter: callback => subscribe('meter:state', callback),
+
     // Extras: file tray, calendar, weather, volume, Bluetooth battery
     pathForFile: file => { try { return webUtils.getPathForFile(file); } catch { return ''; } },
     trayGet: () => ipcRenderer.invoke('extras:tray-get'),
@@ -101,56 +56,23 @@
     noteSet: text => ipcRenderer.invoke('extras:note-set', { text }),
     onShortcut: callback => subscribe('extras:shortcut', callback),
     onBluetooth: callback => subscribe('extras:bluetooth', callback),
-    aiMonitorHooksAnswer:(sessionId, answers) => ipcRenderer.invoke('ai-monitor:hooks-answer', { sessionId, answers }),
-    aiMonitorHooksPlan: (sessionId, approve, feedback) => ipcRenderer.invoke('ai-monitor:hooks-plan', { sessionId, approve, feedback }),
-    aiMonitorHooksJump: sessionId => ipcRenderer.invoke('ai-monitor:hooks-jump', { sessionId }),
-    aiMonitorHooksModel: model => ipcRenderer.invoke('ai-monitor:hooks-model', { model }),
-    aiMonitorHooksTest: (kind, command) => ipcRenderer.invoke('ai-monitor:hooks-test', { kind, command }),
-    aiMonitorSetNotify:enabled => ipcRenderer.invoke('ai-monitor:set-notify', { enabled }),
-    aiMonitorHooksReply:(sessionId, text) => ipcRenderer.invoke('ai-monitor:hooks-reply', { sessionId, text }),
-    aiMonitorHooksSeen:() => ipcRenderer.invoke('ai-monitor:hooks-seen'),
-    aiMonitorHooksDecide:(sessionId, behavior) => ipcRenderer.invoke('ai-monitor:hooks-decide', { sessionId, behavior }),
-    aiMonitorReply:(provider, questionId, text) => ipcRenderer.invoke('ai-monitor:reply', { provider, questionId, text }),
-    onAiMonitorState: callback => subscribe('ai-monitor:state', callback),
-    onAiMonitorOpen: callback => subscribe('ai-monitor:open', callback),
 
-    setIslandInteractive: interactive =>
-      ipcRenderer.send('island:set-interactive', interactive),
-    setIslandState: state =>
-      ipcRenderer.send('island:set-state', state),
-    setMode: mode =>
-      ipcRenderer.send('window:set-mode', mode),
-    openUrl: url =>
-      ipcRenderer.send('kopi:open-url', url),
-    close: () =>
-      ipcRenderer.send('window:close'),
-    notify: (title, body, url) =>
-      ipcRenderer.send('kopi:notify', { title, body, url }),
-    onPointer: callback =>
-      subscribe('companion:pointer', callback),
-    onGoodbye: callback =>
-      subscribe('kopi:goodbye', callback),
-    // Kopi the buddy (buddy-main.cjs): grab him out of the island and drop him on the screen
-    settingsOpen: tab => ipcRenderer.send('settings-app:open', typeof tab === 'string' ? tab : ''), // the Kopi Island app, its own window
-    buddyGrab: info => ipcRenderer.send('buddy:grab', info),
-    buddyDrop: () => ipcRenderer.send('buddy:drop'),
-    buddyFrame: url => ipcRenderer.send('buddy:frame', url),
-    // Kopi's chat in the island (chat-ui.js)
-    buddyAsk: (kind, text, history, lang) => ipcRenderer.invoke('buddy:ask', { kind, text, history, lang }),
-    buddyApply: () => ipcRenderer.invoke('buddy:apply'),
-    buddyForget: () => ipcRenderer.send('buddy:forget'),
-    buddyAi: () => ipcRenderer.invoke('buddy:ai'),
-    buddyUseAi: id => ipcRenderer.invoke('buddy:use-ai', id),
-    buddyLogin: () => ipcRenderer.invoke('buddy:login'),
-    buddyApplyFix: () => ipcRenderer.invoke('buddy:apply-fix'),
-    buddyCancelFix: () => ipcRenderer.send('buddy:cancel-fix'),
-    onBuddyChat: callback => subscribe('buddy:chat', callback),
-    settingsFrame: url => ipcRenderer.send('settings-app:frame', url), // the settings app's own Kopi
-    onBuddy: callback => {
-      subscribe('buddy:home', () => callback('home'));
-      subscribe('buddy:mood', data => callback('mood', data));
-      subscribe('buddy:collapse', () => callback('collapse'));
-      subscribe('buddy:dropped', () => callback('dropped'));
-    }
+    // The island window (main.js): catching the mouse, its place on the screen, dragging it
+    setIslandInteractive: interactive => ipcRenderer.send('island:set-interactive', interactive),
+    islandPlaceGet: () => ipcRenderer.invoke('island:place-get'),
+    islandPlaceSet: mode => ipcRenderer.send('island:place-set', mode), // 'free' | 'top' | 'reset'
+    onIslandPlace: callback => subscribe('island:place', callback),
+    islandSize: (width, height) => ipcRenderer.send('island:size', { width, height }),
+    islandDrag: on => ipcRenderer.send('island:drag', Boolean(on)),
+    // start with Windows and restart (tray-main.cjs)
+    loginGet: () => ipcRenderer.invoke('app:login-get'),
+    loginSet: on => ipcRenderer.invoke('app:login-set', Boolean(on)),
+    restart: () => ipcRenderer.send('app:restart'),
+    openUrl: url => ipcRenderer.send('kopi:open-url', url),
+    close: () => ipcRenderer.send('window:close'),
+    onPointer: callback => subscribe('companion:pointer', callback),
+    onGoodbye: callback => subscribe('kopi:goodbye', callback),
+    settingsOpen: tab => ipcRenderer.send('settings-app:open', typeof tab === 'string' ? tab : ''), // the Rehatt Settings app, its own window
+    settingsFrame: url => ipcRenderer.send('settings-app:frame', url) // the settings app's own Kopi
   });
 })();

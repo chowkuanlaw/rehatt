@@ -1,5 +1,5 @@
 'use strict';
-// Kopi Island fun: faces, blinking, startup show, sounds, confetti, sleeping, dancing, outfits,
+// Rehatt fun: faces, blinking, startup show, sounds, confetti, sleeping, dancing, outfits,
 // limit warnings, a focus timer, and all the "make it yours" options in Settings.
 // Reads the Claude Code status from ai-monitor-ui.js (window.__kopiStatus) and draws through
 // the hooks in drawGhost (mascot.html): __kopiGhostFx, __kopiGhostDecor and __kopiLook.
@@ -16,7 +16,7 @@
   const DEFAULTS = { lang: 'en', speed: 'fast', focusMin: 25, focusSec: 1500,eye: 'mint', body: 'cloud', palette: 'classic', faces: true, blink: true,
     dance: true, confetti: true, chimes: true, notify: true, startup: true, outfit: 'auto', sleepMin: 10, warnAt: 80,
     pack: 'classic', seasonal: true, hunger: true, volumeHud: true, batteryWarn: true, appAnim: true,
-    testMode: false, name: 'Kopi Island', lightBusy: '#ff9a1f', lightDone: '#22e05a', lightError: '#ff3b3b' };
+    testMode: false, place: 'free', name: 'Kopi', lightBusy: '#ff9a1f', lightDone: '#22e05a', lightError: '#ff3b3b' };
   const savedPrefs = store.get('kopi:prefs', {});
   if (!savedPrefs.newLook) { savedPrefs.body = 'cloud'; savedPrefs.newLook = true; store.set('kopi:prefs', savedPrefs); } // switch once to the new white look
   const prefs = { ...DEFAULTS, ...savedPrefs };
@@ -27,7 +27,7 @@
   }
   const petName = () => String(prefs.name || '').trim() || 'Kopi';
   if (!['fast', 'normal'].includes(prefs.speed)) prefs.speed = 'normal'; // 'idle' no longer exists
-  let drafting = false; // Kopi Island Settings is trying something out (settings-bridge-ui.js): not saved, not on the real Kopi
+  let drafting = false; // Rehatt Settings is trying something out (settings-bridge-ui.js): not saved, not on the real Kopi
   const save = () => { if (drafting) return; store.set('kopi:prefs', prefs); apply(); };
 
   const EYES = { mint: '#e3ffd4', white: '#ffffff', blue: '#8fd3ff', pink: '#ffb3d9', purple: '#c9a7ff', yellow: '#fff3a3' };
@@ -91,9 +91,10 @@
     pop: [[700, 1100, 0.06, 0.012]],
     badge: [784, 988, 1175, 1568].map((f, i) => [f, f * 1.01, 0.1, 0.014, i * 0.06]),
     yum: [[500, 760, 0.08, 0.016], [760, 620, 0.08, 0.014, 0.09]],
-    // Kopi's chat: a soft whoosh when you send, two bright notes for an answer, a little fanfare for a fix
-    send: [[480, 960, 0.07, 0.011]],
-    reply: [[880, 1175, 0.08, 0.012], [1175, 1568, 0.12, 0.01, 0.08]],
+    // stretch breaks: a soft two-note bell, water drops, a click to switch sides, and a fanfare when you finish
+    stretch: [[784, 788, 0.28, 0.02], [988, 992, 0.4, 0.016, 0.2]],
+    water: [[1175, 880, 0.07, 0.012], [988, 1319, 0.09, 0.01, 0.11], [1319, 1047, 0.07, 0.008, 0.22]],
+    switch: [[660, 664, 0.12, 0.016], [880, 884, 0.12, 0.014, 0.13]],
     fix: [523, 659, 784, 1047, 1319].map((f, i) => [f, f * 1.01, 0.13, 0.015, i * 0.075])
   };
   function chime(kind) {
@@ -107,7 +108,7 @@
   const outfitName = o => MS() ? OUTFIT_MS[o.id] || o.name : o.name;
   let doneCount = store.get('kopi:done-count', 0);
   const unlocked = id => doneCount >= (OUTFITS.find(o => o.id === id)?.at ?? Infinity);
-  // Holidays: Kopi Island dresses up by himself (Settings → Seizoensoutfits).
+  // Holidays: Kopi dresses up by himself (Settings → Seizoensoutfits).
   function season() {
     if (!prefs.seasonal) return null;
     const d = new Date(), m = d.getMonth() + 1, day = d.getDate();
@@ -143,12 +144,12 @@
     { id: 'first', icon: '🌱', name: 'First task', how: 'Claude Code finishes a task' },
     { id: 'ten', icon: '🔟', name: 'Ten tasks', how: '10 tasks done' },
     { id: 'fifty', icon: '🏅', name: 'Fifty tasks', how: '50 tasks done' },
-    { id: 'helper', icon: '💬', name: 'Helpful', how: 'Answered 10 times from the island' },
+    { id: 'water', icon: '💧', name: 'Hydrated', how: 'Drank 8 glasses of water in a day' },
     { id: 'owl', icon: '🦉', name: 'Night owl', how: 'A task done after midnight' },
     { id: 'bird', icon: '🐦', name: 'Early bird', how: 'A task done before 7 am' },
     { id: 'marathon', icon: '🏃', name: 'Marathon', how: 'A task of more than 15 minutes' },
     { id: 'focus', icon: '🎯', name: 'Focus master', how: '5 focus blocks finished' },
-    { id: 'dj', icon: '🎧', name: 'DJ', how: 'Controlled Spotify 10 times from the island' },
+    { id: 'bendy', icon: '🧘', name: 'Bendy', how: 'Did 10 stretch breaks' },
     { id: 'tray', icon: '📥', name: 'Collector', how: '5 files in the tray' },
     { id: 'mirror', icon: '🪞', name: 'Looking good', how: 'Used the mirror' },
     { id: 'fashion', icon: '👑', name: 'Fashion icon', how: 'Earned every outfit' }
@@ -164,12 +165,13 @@
   function bump(name, goal, id) { counters[name] = (counters[name] || 0) + 1; store.set('kopi:counters', counters); if (counters[name] >= goal) earn(id); }
   window.addEventListener('kopi:badge', e => {
     const what = String(e.detail || '');
-    if (what === 'dj') bump('dj', 10, 'dj');
+    if (what === 'stretch') bump('stretch', 10, 'bendy');
+    else if (what === 'water') earn('water');
     else if (what === 'mirror') earn('mirror');
     else if (what.startsWith('tray:') && Number(what.slice(5)) >= 5) earn('tray');
   });
 
-  // ---------- hunger: finishing tasks feeds Kopi Island (like a Tamagotchi) ----------
+  // ---------- hunger: finishing tasks feeds Kopi (like a Tamagotchi) ----------
   let food = store.get('kopi:food', { value: 80, at: Date.now() });
   const hunger = () => {
     // Loses 1 point every 10 minutes while the app runs (time while closed does not count).
@@ -255,7 +257,7 @@
   let lastWake = Date.now();
   function wake() { lastWake = Date.now(); }
   canvas.addEventListener('click', wake, true);
-  const asleep = () => sleepEnabled && !window.__kopiStatus?.() && !focus.active() && !spotifyState.is_playing
+  const asleep = () => sleepEnabled && !window.__kopiStatus?.() && !focus.active() && !window.__kopiStretchNudge?.()
     && !(pointer.known && inside(pointer.x, pointer.y, islandBounds)) && Date.now() - lastWake > prefs.sleepMin * 60000;
 
   // ---------- hello and goodbye: calm and smooth ----------
@@ -264,7 +266,7 @@
   let showAt = null;
   const showColours = () => [prefs.lightError, prefs.lightBusy, prefs.lightDone];
   const baseEyes = window.__kopiEyes;
-  // In the Settings locker Kopi Island shows his own look, not Claude's traffic light.
+  // In the Settings locker Kopi shows his own look, not Claude's traffic light.
   const inLocker = () => window.__kopiLockerDraw === true;
   let lightsDemoAt = -1e9; // Settings example: the traffic-light eyes test themselves once
   let lightPreview = null; // { color, until }: a just-picked traffic-light colour, shown on the eyes
@@ -372,7 +374,7 @@
   };
   window.kopi?.onGoodbye?.(() => window.__kopiBye());
 
-  // ---------- poking: click Kopi Island a few times and he gets angry, click a lot and he gets dizzy ----------
+  // ---------- poking: click Kopi a few times and he gets angry, click a lot and he gets dizzy ----------
   let pokes = [], dizzyUntil = 0, pokeMessage = '', pokeMessageUntil = 0;
   canvas.addEventListener('click', event => {
     if (!inside(event.clientX, event.clientY, hit.ghost)) return;
@@ -404,10 +406,6 @@
       if (state === 'error') chime('error');
       lastState = state;
     }
-    // You answered or allowed something from the island: a little heart.
-    const detail = status?.detail || '';
-    if (detail !== lastDetail && /Allowed|answer was sent/.test(detail)) { feel('heart', 1400); chime('pop'); bump('helper', 10, 'helper'); }
-    lastDetail = detail;
     if (wasFocus && !focus.active()) {
       say(T('Fokus siap!', 'Focus done!'), T(`${clock(focusLength)} fokus. Rehat sebentar.`, `${clock(focusLength)} focused. Take a short break.`)); chime('party'); confetti(); jump(); feel('happy', 2000);
       bump('focus', 5, 'focus'); feed(10);
@@ -450,8 +448,8 @@
     if (feeling && t < feelingUntil) mood = feeling;
     const hop = (t - bounceAt) / 700;
     if (hop >= 0 && hop < 1) { dy -= Math.abs(Math.sin(hop * Math.PI)) * 11 * (1 - hop * 0.5); scale = 1 + Math.sin(hop * Math.PI) * 0.06; }
-    else if ((prefs.dance && spotifyState.is_playing && window.__kopiHearing || now() < danceDemoUntil) && !mood) { // dance to the music: every song gets its own move
-      const id = spotifyState.track?.id || spotifyState.track?.name || '';
+    else if (now() < danceDemoUntil && !mood) { // a little dance (a test, or a stretch he does along with you)
+      const id = String(Math.floor(danceDemoUntil / 10000));
       const move = [...id].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 7) % 4;
       if (move === 0) { dy -= Math.abs(Math.sin(t / 250)) * 3; tilt = Math.sin(t / 500) * 0.07; } // bob
       if (move === 1) { tilt = Math.sin(t / 380) * 0.16; dy -= Math.abs(Math.sin(t / 380)) * 1.5; } // sway
@@ -576,7 +574,7 @@
     c.restore();
   };
 
-  // ---------- Settings: make Kopi Island yours ----------
+  // ---------- Settings: make Rehatt yours ----------
   const style = document.createElement('style');
   style.textContent = `
 #kopi-settings-v2 .tc-group{margin:14px 2px 6px;color:#c6e994;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
@@ -609,7 +607,7 @@
   document.head.appendChild(style);
 
   const esc = s => String(s).replace(/[&<>"]/g, x => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[x]));
-  // A settings block. With a demo name, clicking anywhere on the block shows it on Kopi Island in the locker.
+  // A settings block. With a demo name, clicking anywhere on the block shows it on Kopi in the locker.
   const row = (title, help, control, demo = '') => `<div class="tc-setting-row${demo ? ' tc-demo' : ''}"${demo ? ` data-demo="${demo}"` : ''}><div><strong>${title}</strong><small>${help}</small></div>${control}</div>`;
   const chips = (key, options) => `<div class="tc-chips">${options.map(([value, label, locked]) =>
     `<button type="button" class="tc-chip ${prefs[key] === value ? 'on' : ''}" data-pref="${key}" data-value="${esc(value)}" ${locked ? 'disabled title="Not earned yet"' : ''}>${locked ? '🔒 ' : ''}${label}</button>`).join('')}</div>`;
@@ -629,7 +627,7 @@
     <div class="tc-chips">${Object.entries(LIGHT_PRESETS).map(([k, [b, d, e, label]]) => `<button type="button" class="tc-chip ${prefs.lightBusy === b && prefs.lightDone === d && prefs.lightError === e ? 'on' : ''}" data-lightpreset="${k}">${preview({ busy: b, done: d, error: e })}${label}</button>`).join('')}</div></div>
     ${[['lightBusy', 'Working or a question'], ['lightDone', 'Done'], ['lightError', 'Error']].map(([key, label]) => `<div class="tc-light-line"><span><i style="background:${prefs[key]};box-shadow:0 0 8px ${prefs[key]}"></i>${label}</span><div class="tc-chips">${LIGHT_OPTIONS[key].map(c => `<button type="button" class="tc-swatch ${prefs[key] === c ? 'on' : ''}" style="background:${c}" data-pref="${key}" data-value="${c}" aria-label="${label}: ${c}"></button>`).join('')}</div></div>`).join('')}</div>`;
   const MOOD_DEMO = [['happy', '😊 Happy'], ['heart', '😍 In love'], ['surprised', '😮 Surprised'], ['curious', '🤔 Curious'], ['focus', '🧐 Focused'], ['wink', '😉 Wink'], ['sad', '😢 Sad'], ['dizzy', '😵 Dizzy'], ['sleep', '😴 Sleepy']];
-  // Settings → Character (the locker): everything about how Kopi Island looks and behaves.
+  // Settings → Character (the locker): everything about how Kopi looks and behaves.
   window.__kopiSettingsCharacter = (sleepRow = '') => [
     '<div class="tc-group" data-icon="🏷️" style="--g:#5ad1c4">Name</div>',
     row('What’s his name?', 'He says it when he says hi', `<div class="tc-step"><input class="tc-input tc-name" id="tc-in-petname" maxlength="18" placeholder="Kopi" value="${esc(prefs.name || '')}"><button type="button" class="tc-chip on" data-setname="1">Save</button></div>`),
@@ -644,7 +642,7 @@
     row('Faces', 'Happy, sad, curious, focused', toggle('faces'), 'faces'),
     row('See his moods', 'Click one to see it', `<div class="tc-chips">${MOOD_DEMO.map(([m, label]) => `<button type="button" class="tc-chip" data-mood="${m}">${label}</button>`).join('')}</div>`),
     row('Blinking', 'He blinks now and then', toggle('blink'), 'blink'),
-    row('Dancing to music', 'Moves along when Spotify plays', toggle('dance'), 'dance'),
+    row('Stretch along', 'He does a little dance while you stretch', toggle('dance'), 'dance'),
     sleepRow,
     row('Fall asleep after', 'When nothing happens (Sleep effect must be on)', chips('sleepMin', [[5, '5 min'], [10, '10 min'], [30, '30 min']]), 'sleep'),
     row('Startup animation', 'Wave and say "hi" at startup', toggle('startup'), 'hello'),
@@ -652,17 +650,19 @@
     `<div class="tc-group" data-icon="🏆" style="--g:#ffc93c">${T('Pencapaian', 'Achievements')} · ${badges.size}/${BADGES.length}</div>`,
     `<div class="tc-badges">${BADGES.map(b => `<div class="tc-badge ${badges.has(b.id) ? 'on' : ''}" title="${esc(b.how)}"><span>${badges.has(b.id) ? b.icon : '🔒'}</span><b>${esc(b.name)}</b><small>${esc(b.how)}</small></div>`).join('')}</div>`,
   ].join('');
-  // What the locker shows under Kopi Island.
+  // What the locker shows under Kopi.
   window.__kopiLocker = () => ({ name: petName(), done: doneCount, badges: badges.size, total: BADGES.length });
 
   // Settings → General: the island itself.
   const TESTS = [['hello', '👋 Start up'], ['bye', '😴 Shut down'], ['busy', '🟠 Claude working'], ['question', '❓ Claude asks'],
-    ['done', '🟢 Claude done'], ['error', '🔴 Claude error'], ['music', '🎵 Fake music'], ['focus', '⏱️ Focus 1 min'], ['clear', '🧹 Stop everything']];
+    ['done', '🟢 Claude done'], ['error', '🔴 Claude error'], ['stretch', '🧘 Stretch break'], ['water', '💧 Water'], ['focus', '⏱️ Focus 1 min'], ['clear', '🧹 Stop everything']];
   window.__kopiSettingsExtra = () => [
     '<div class="tc-group" data-icon="🌍" style="--g:#7fb2ff">Language</div>',
     row('Language · Bahasa', 'The language of the island', chips('lang', [['en', 'English'], ['ms', 'Bahasa Melayu']])),
+    '<div class="tc-group" data-icon="📍" style="--g:#5ad1c4">Island</div>',
+    row('Where the island sits', 'Drag it anywhere, or keep it fixed at the top of your screen', chips('place', [['free', 'Drag anywhere'], ['top', 'Fixed at the top']])),
     '<div class="tc-group" data-icon="🧪" style="--g:#b98cff">Testing</div>',
-    row('Test mode', 'Buttons to try everything without real Claude or music', toggle('testMode')),
+    row('Test mode', 'Buttons to try everything without a real Claude session', toggle('testMode')),
     prefs.testMode ? `<div class="tc-tests">${TESTS.map(([k, label]) => `<button type="button" class="tc-chip" data-test="${k}">${label}</button>`).join('')}</div>` : '',
     '<div class="tc-group" data-icon="✨" style="--g:#ffb35c">Animations</div>',
     row('Speed', 'How fast the island opens, closes and reacts', chips('speed', [['fast', 'Fast'], ['normal', 'Normal']])),
@@ -682,13 +682,13 @@
     row('Volume bar', 'Shows the volume in the island when you change it', toggle('volumeHud')),
     row('Battery warning', 'Laptop and Bluetooth (headphones, mouse) almost empty', toggle('batteryWarn')),
     `<div class="tc-setting-row"><div><strong>Reset everything</strong><small>Set all these choices back to default</small></div><button type="button" class="tc-toggle" data-pref="reset">Reset</button></div>`,
-    '<div class="tc-group" data-icon="⏻" style="--g:#ff8a8a">Kopi Island</div>',
-    row('Start with Windows', 'Kopi Island starts by itself when you turn on your PC', `<button type="button" class="tc-toggle ${loginOn ? 'on' : ''}" data-login="1" aria-pressed="${loginOn}">${loginOn ? 'On' : 'Off'}</button>`),
-    row('Restart', 'Closes Kopi Island and starts it again right away', '<button type="button" class="tc-chip" data-restart="1">Restart</button>'),
-    row('Quit', 'Quits Kopi Island completely. Also possible via Kopi next to the clock.', '<button type="button" class="tc-chip" data-quit="1">Quit</button>')
+    '<div class="tc-group" data-icon="⏻" style="--g:#ff8a8a">Rehatt</div>',
+    row('Start with Windows', 'Rehatt starts by itself when you turn on your PC', `<button type="button" class="tc-toggle ${loginOn ? 'on' : ''}" data-login="1" aria-pressed="${loginOn}">${loginOn ? 'On' : 'Off'}</button>`),
+    row('Restart', 'Closes Rehatt and starts it again right away', '<button type="button" class="tc-chip" data-restart="1">Restart</button>'),
+    row('Quit', 'Quits Rehatt completely. Also possible via Kopi next to the clock.', '<button type="button" class="tc-chip" data-quit="1">Quit</button>')
   ].join('');
 
-  // Settings: click a block and Kopi Island shows what it does (in the locker).
+  // Settings: click a block and Kopi shows what it does (in the locker).
   const later = (ms, fn) => setTimeout(fn, ms);
   const DEMOS = {
     look: () => { jump(); feel('happy', 900); chime('pop'); },
@@ -703,32 +703,15 @@
     chimes: () => chime('done')
   };
   window.__kopiDemo = name => { if (drafting) previewDemo(name); else DEMOS[name]?.(); };
-  // ---------- test mode: see every state without a real Claude Code session or music ----------
-  let fakeMusicUntil = 0;
-  function fakeMusic() {
-    const realRefresh = window.__kopiRealRefresh || refreshSpotify;
-    window.__kopiRealRefresh = realRefresh;
-    refreshSpotify = async () => {}; // the real Spotify check would replace the fake song
-    const c = document.createElement('canvas'); c.width = c.height = 200; const g = c.getContext('2d');
-    const gr = g.createLinearGradient(0, 0, 200, 200); gr.addColorStop(0, '#ff5ac8'); gr.addColorStop(1, '#3d1a8e'); g.fillStyle = gr; g.fillRect(0, 0, 200, 200);
-    g.fillStyle = '#ffd23f'; g.beginPath(); g.arc(100, 100, 46, 0, Math.PI * 2); g.fill();
-    albumImage = new Image(); albumImage.src = c.toDataURL(); window.__kopiAlbumColour = '#ff5ac8';
-    spotifyConnected = true; spotifyState = { is_playing: true, progress_ms: 0, duration_ms: 210000, track: { name: 'Test song', artist: 'Kopi Island', id: 'test' } }; spotifySyncAt = performance.now();
-    fakeMusicUntil = now() + 30000; window.__kopiSettleSize?.();
-    setTimeout(() => { if (now() >= fakeMusicUntil) stopFakeMusic(); }, 30100);
-  }
-  function stopFakeMusic() {
-    fakeMusicUntil = 0;
-    if (window.__kopiRealRefresh) { refreshSpotify = window.__kopiRealRefresh; window.__kopiRealRefresh = null; }
-    spotifyState = { is_playing: false, track: null }; albumImage = null; window.__kopiAlbumColour = null; refreshSpotify(); window.__kopiSettleSize?.();
-  }
+  // ---------- test mode: see every state without a real Claude Code session ----------
   function runTest(kind) {
     const claude = k => window.kopi?.aiMonitorHooksTest?.(k).then(() => window.__kopiMonitor?.refresh()).catch(() => {});
     if (kind === 'hello') startHello();
     else if (kind === 'bye') { window.__kopiBye(); setTimeout(() => { byeAt = null; jump(); feel('happy', 900); }, BYE.end + 500); } // a test: he comes back
-    else if (kind === 'music') fakeMusic();
     else if (kind === 'focus') focus.start(60);
-    else if (kind === 'clear') { claude('clear'); if (fakeMusicUntil) stopFakeMusic(); if (focus.active()) focus.stop(); }
+    else if (kind === 'stretch') window.__rehattStretch?.test('stretch');
+    else if (kind === 'water') window.__rehattStretch?.test('water');
+    else if (kind === 'clear') { claude('clear'); window.__rehattStretch?.test('clear'); if (focus.active()) focus.stop(); }
     else if (kind === 'hungry') { food = { value: 12, at: Date.now() }; store.set('kopi:food', food); } // hungry right away: the next finished task feeds him
     else claude(kind);
   }
@@ -747,7 +730,7 @@
     if (target.dataset.mood) { feel(target.dataset.mood, 2600); jump(); return true; } // emotion preview in the locker
     if (target.dataset.test) { runTest(target.dataset.test); return true; }
     if (target.dataset.setname) {
-      prefs.name = (document.getElementById('tc-in-petname')?.value || '').trim().slice(0, 18) || 'Kopi Island'; save();
+      prefs.name = (document.getElementById('tc-in-petname')?.value || '').trim().slice(0, 18) || 'Kopi'; save();
       jump(); feel('heart', 1400); chime('pop'); return true;
     }
     if (target.dataset.lightpreset) {
@@ -774,7 +757,7 @@
     return true;
   };
 
-  // ---------- Kopi Island Settings: drafts and the app's own Kopi (settings-bridge-ui.js, buddy-ui.js) ----------
+  // ---------- Rehatt Settings: drafts and the app's own Kopi (settings-bridge-ui.js, buddy-ui.js) ----------
   let previewing = false;
   const later2 = (ms, fn) => setTimeout(fn, ms);
   const pFeel = (mood, ms) => { pv.feeling = mood; pv.feelingUntil = now() + ms; };
@@ -817,11 +800,11 @@
   // Kopi's state is put back. So a test timer, Claude or music never shows on him, and nothing leaks out.
   window.__kopiDrawPreview = draw => {
     const keep = { prefs: { ...prefs }, feeling, feelingUntil, bounceAt, danceDemoUntil, waveUntil, showAt, byeAt, popAt, nextBlink, lastWake,
-      spotify: spotifyState, angry: typeof angry === 'number' ? angry : 0, dizzy: typeof dizzy === 'number' ? dizzy : 0, basket: window.__kopiBasket, locker: window.__kopiLockerDraw };
+      angry: typeof angry === 'number' ? angry : 0, dizzy: typeof dizzy === 'number' ? dizzy : 0, basket: window.__kopiBasket, locker: window.__kopiLockerDraw };
     if (pv.prefs) Object.assign(prefs, pv.prefs);
     feeling = pv.feeling; feelingUntil = pv.feelingUntil; bounceAt = pv.bounceAt; danceDemoUntil = pv.danceUntil;
     waveUntil = pv.waveUntil; showAt = null; byeAt = null; popAt = -1e9; nextBlink = pv.nextBlink || now() + 2000; lastWake = Date.now();
-    spotifyState = { is_playing: false, track: null }; angry = 0; dizzy = 0; window.__kopiBasket = null; window.__kopiLockerDraw = true;
+    angry = 0; dizzy = 0; window.__kopiBasket = null; window.__kopiLockerDraw = true;
     previewing = true;
     try { draw(); }
     finally {
@@ -829,7 +812,7 @@
       for (const k of Object.keys(prefs)) delete prefs[k];
       Object.assign(prefs, keep.prefs);
       ({ feeling, feelingUntil, bounceAt, danceDemoUntil, waveUntil, showAt, byeAt, popAt, nextBlink, lastWake } = keep);
-      spotifyState = keep.spotify; angry = keep.angry; dizzy = keep.dizzy; window.__kopiBasket = keep.basket; window.__kopiLockerDraw = keep.locker;
+      angry = keep.angry; dizzy = keep.dizzy; window.__kopiBasket = keep.basket; window.__kopiLockerDraw = keep.locker;
     }
   };
 })();

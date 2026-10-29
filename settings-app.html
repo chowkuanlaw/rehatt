@@ -1,13 +1,13 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
-<title>Kopi Island Settings</title>
+<title>Rehatt Settings</title>
 <!--
-  Kopi Island Settings (settings-app-main.cjs): its own app, next to Kopi Island itself.
+  Rehatt Settings (settings-app-main.cjs): its own app, next to Rehatt itself.
   General and Kopi: the island's own lists (settings-bridge-ui.js), so every option works exactly like before.
   Wardrobe: the outfits and colours from those lists, as a dressing room with Kopi big in the middle.
-  AI & Chat: which AI Kopi's chat uses (the agents connected in Connections).
-  Apps: which apps are in your Kopi Island. News: our updates, from the releases on GitHub.
+  Stretch: your stretch breaks and water (stretch-main.cjs, from Lapis). Usage: your Claude glass (meter-main.cjs).
+  Apps: which apps are in your Rehatt. News: our updates, from the releases on GitHub.
 -->
 <style>
   :root{
@@ -305,18 +305,44 @@
 
   :root[data-theme="light"] .face{filter:drop-shadow(0 8px 14px rgba(40,40,60,.18)) drop-shadow(0 1px 2px rgba(0,0,0,.12))}
   :root[data-theme="light"] .dress-stage .floor{background:radial-gradient(rgba(60,90,40,.22),transparent 70%)}
+  /* ---------- Stretch and Usage ---------- */
+  .kuihs{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px}
+  .kuih{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px 8px;border-radius:12px;border:1px solid var(--line);background:var(--card);cursor:pointer;color:var(--text2);font-size:11.5px}
+  .kuih:hover{background:var(--card2);border-color:var(--line2)}
+  .kuih.on{border-color:var(--accent-line);background:var(--accent-soft);color:var(--strong);font-weight:600}
+  .kuih svg{height:76px;width:auto;overflow:visible}
+  .lapis .limb{fill:none;stroke:#2A1F1A;stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round}.lapis .hand,.lapis .foot,.lapis .eye{fill:#2A1F1A}
+  .lapis .line{fill:none;stroke:#2A1F1A;stroke-width:2.6;stroke-linecap:round}.lapis .blush{fill:#F58FAE;opacity:.85}
+  .lapis .fx{fill:none;stroke:#F2729C;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round}.lapis .fx.dash{stroke-dasharray:3 6}
+  .lapis .zz{font:800 18px "Segoe UI",sans-serif;fill:#62C68C}
+  .lapis .stk *{fill:#fff!important;stroke:#fff!important;stroke-width:13px;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:none!important}
+  .week{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;align-items:end;height:118px;padding:12px 14px 8px}
+  .week div{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;height:100%;font-size:11px;color:var(--dim)}
+  .week i{display:block;width:100%;max-width:30px;border-radius:6px 6px 3px 3px;background:#ff8fb1;min-height:3px}
+  .week i.water{background:#7fc8ff}
+  .week b{font-size:12px;color:var(--text)}
+  .times{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2)}
+  .times select{background:var(--input);border:1px solid var(--input-line);border-radius:8px;color:var(--text);padding:5px 6px;font:inherit}
+  .meter-now{display:flex;gap:18px;align-items:center;padding:16px 18px}
+  .meter-now .big{font:700 34px/1 var(--display);letter-spacing:-1px}
+  .meter-now small{color:var(--dim)}
+  .bars{display:flex;flex-direction:column;gap:10px;flex:1}
+  .bars .track{height:7px;border-radius:5px;background:var(--soft2);overflow:hidden}
+  .bars .track i{display:block;height:100%;border-radius:5px;background:#c98a4b}
+  .bars div.head{display:flex;justify-content:space-between;font-size:13px}
   @media (max-width:980px){.home{grid-template-columns:1fr}.side-cards{margin-top:0}.wardrobe{grid-template-columns:1fr}.dress-stage{position:relative}}
 </style></head>
 <body>
 <div class="drag"></div>
 <div class="app">
   <aside>
-    <div class="brand"><img src="assets/settings-icon-64.png" alt=""><div><b>Kopi Island</b><span data-t="settings">Settings</span></div><em class="beta">beta</em></div>
+    <div class="brand"><img src="assets/settings-icon-64.png" alt=""><div><b>Rehatt</b><span data-t="settings">Settings</span></div><em class="beta">beta</em></div>
     <nav id="nav">
-      <p class="sec" data-t="secApp">Kopi Island</p>
+      <p class="sec" data-t="secApp">Rehatt</p>
       <button data-tab="home"><svg class="i" viewBox="0 0 24 24"><use href="#i-home"/></svg><em data-t="home">Home</em></button>
       <button data-tab="connect"><svg class="i" viewBox="0 0 24 24"><use href="#i-plug"/></svg><em data-t="connect">Connections</em><i class="dot" id="connectDot"></i></button>
-      <button data-tab="ai"><svg class="i" viewBox="0 0 24 24"><use href="#i-chat"/></svg><em data-t="ai">AI &amp; Chat</em><i class="dot" id="aiDot"></i></button>
+      <button data-tab="stretch"><svg class="i" viewBox="0 0 24 24"><use href="#i-stretch"/></svg><em data-t="stretch">Stretch</em></button>
+      <button data-tab="usage"><svg class="i" viewBox="0 0 24 24"><use href="#i-cup"/></svg><em data-t="usage">Usage</em></button>
       <button data-tab="apps"><svg class="i" viewBox="0 0 24 24"><use href="#i-grid"/></svg><em data-t="apps">Apps</em></button>
       <p class="sec" data-t="secKopi">Kopi</p>
       <button data-tab="character"><svg class="i" viewBox="0 0 24 24"><use href="#i-bot"/></svg><em data-t="character">Kopi</em></button>
@@ -334,7 +360,7 @@
       <label class="search" id="searchBox"><svg class="i" viewBox="0 0 24 24"><use href="#i-search"/></svg><input id="search" type="search" autocomplete="off" spellcheck="false"></label>
     </header>
     <div class="scroll" id="scroll"><div id="list"></div></div>
-    <div class="savebar" id="savebar"><i></i><span><b data-t="unsaved">Not saved yet</b><small data-t="unsavedHelp">Kopi here shows it already. Kopi Island gets it when you save.</small></span>
+    <div class="savebar" id="savebar"><i></i><span><b data-t="unsaved">Not saved yet</b><small data-t="unsavedHelp">Kopi here shows it already. Rehatt gets it when you save.</small></span>
       <button class="btn ghost" id="sbCancel" data-t="cancelAll">Cancel</button><button class="btn main" id="sbSave" data-t="saveAll">Save</button></div>
   </main>
 </div>
@@ -343,7 +369,10 @@
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></symbol>
   <symbol id="i-plug" viewBox="0 0 24 24"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></symbol>
-  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></symbol>
+  <symbol id="i-stretch" viewBox="0 0 24 24"><circle cx="12" cy="4.5" r="2"/><path d="M12 7.5V15"/><path d="m12 9-6-5.5"/><path d="m12 9 6-5.5"/><path d="m12 15-3.5 6"/><path d="m12 15 3.5 6"/></symbol>
+  <symbol id="i-cup" viewBox="0 0 24 24"><path d="M5 3h14l-1.6 17a1 1 0 0 1-1 .9H7.6a1 1 0 0 1-1-.9Z"/><path d="M5.6 9h12.8"/></symbol>
+  <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 4.99-5.54 10.19-7.4 11.8a1 1 0 0 1-1.2 0C9.54 20.19 4 14.99 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></symbol>
   <symbol id="i-grid" viewBox="0 0 24 24"><rect width="7" height="7" x="3" y="3" rx="1.5"/><rect width="7" height="7" x="14" y="3" rx="1.5"/><rect width="7" height="7" x="14" y="14" rx="1.5"/><rect width="7" height="7" x="3" y="14" rx="1.5"/></symbol>
   <symbol id="i-bot" viewBox="0 0 24 24"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></symbol>
   <symbol id="i-shirt" viewBox="0 0 24 24"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></symbol>
@@ -368,74 +397,70 @@
   <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
   <symbol id="i-gear" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
 </svg>
+<script src="lapis/data.js"></script>
+<script src="lapis/mascot.js"></script>
 <script>
 const $ = s => document.querySelector(s), list = $('#list'), scroll = $('#scroll'), S = window.settingsApp;
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const icon = (name, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24"><use href="#i-${name}"/></svg>`;
-const TABS = ['home', 'connect', 'ai', 'apps', 'character', 'wardrobe', 'general', 'news'];
+const TABS = ['home', 'connect', 'stretch', 'usage', 'apps', 'character', 'wardrobe', 'general', 'news'];
 const asked = new URLSearchParams(location.search).get('tab');
 let tab = TABS.includes(asked) ? asked : 'home', lang = 'en', info = {}, lastHtml = '', busy = false;
 
 const T = {
-  ms: { secApp: 'Kopi Island', secKopi: 'Kopi', secSettings: 'Tetapan', home: 'Utama', connect: 'Sambungan',
+  ms: { secApp: 'Rehatt', secKopi: 'Kopi', secSettings: 'Tetapan', home: 'Utama', connect: 'Sambungan',
     hello: (n, h) => `${h < 6 ? 'Selamat malam' : h < 12 ? 'Selamat pagi' : h < 19 ? 'Selamat petang' : 'Selamat malam'}${n ? ', ' + n : ''}`,
-    helloSub: 'Kopi memerhati AI anda dan memberitahu apabila ia siap atau ada soalan.',
+    helloSub: 'Kopi memerhati AI anda, dan mengingatkan anda untuk regangan dan minum air.',
     history: 'Aktiviti', searchHistory: 'Cari dalam aktiviti anda', noHistory: 'Belum ada apa-apa. Apabila AI anda menyiapkan kerja, ia muncul di sini.',
     res: { done: 'Siap', question: 'Soalan', error: 'Ralat' }, files: n => `${n} fail`, mins: s => s >= 60 ? `${Math.round(s / 60)} min` : `${s} s`,
-    statDone: 'tugasan siap', statToday: 'hari ini', statStreak: 'hari berturut-turut', today: 'Hari ini', yesterday: 'Semalam',
-    buddyTitle: 'Tip: Kopi Buddy', buddyText: 'Seret Kopi keluar dari island ke apa sahaja di skrin anda dan tanya apa yang tertulis. Atau biar dia semak ejaan anda dalam Word.',
-    setupTitle: 'Sambungkan AI anda', setupText: 'Hidupkan Claude Code atau Codex. Kopi akan beritahu apabila AI anda siap, dan dia boleh menjawab soalan anda.', toConnect: 'Sambung',
+    statDone: 'tugasan siap', statToday: 'regangan hari ini', statStreak: 'hari berturut-turut', today: 'Hari ini', yesterday: 'Semalam',
+    buddyTitle: 'Tip: alihkan island', buddyText: 'Seret island ke mana-mana di skrin anda. Mahu ia tetap di atas? Umum → Island.',
+    setupTitle: 'Sambungkan AI anda', setupText: 'Hidupkan Claude Code atau Codex. Kopi akan beritahu apabila AI anda siap atau ada soalan, dan mencadangkan regangan semasa ia bekerja.', toConnect: 'Sambung',
     quick: 'Pergi ke', qWardrobe: 'Almari', qConnect: 'Sambungan', qGeneral: 'Umum',
     agentState: { running: 'sibuk', sending: 'sibuk', question: 'menunggu anda', done: 'siap', error: 'ralat', ready: 'rehat', off: 'rehat' },
-    cx: { claudecode: ['Claude Code', 'Mengikuti sesi Claude Code anda dalam terminal atau VS Code.'], codex: ['Codex', 'Mengikuti Codex daripada OpenAI semasa ia menulis kod untuk anda.'],
-      claude: ['Claude', 'Aplikasi Claude atau claude.ai: Kopi beritahu apabila jawapan anda sedia.'], chatgpt: ['ChatGPT', 'Aplikasi ChatGPT atau chatgpt.com: Kopi beritahu apabila jawapan anda sedia.'] },
-    cxOn: 'Disambungkan', cxOff: 'Mati', cxMissing: 'Tidak dijumpai dalam PC ini', cxSoon: 'Akan datang', cxSoonNote: 'Akan datang bersama sambungan Kopi Island untuk Chrome.',
-    cxAgents: 'AI pengaturcaraan', cxChats: 'Aplikasi sembang', cxRestart: n => `Disambungkan. Mulakan semula ${n} sekali.`, cxCodexTrust: 'Codex akan bertanya sekali sama ada anda mempercayai Kopi Island: pilih Ya.',
-    cxHow: 'Hidupkan apa yang anda guna. Kopi Island uruskan selebihnya: tiada tetingkap untuk dipilih, tiada kod.',
-    aiHow: 'Sembang Kopi menggunakan AI yang anda hidupkan dalam Sambungan. Kedua-duanya hidup? Pilih satu dalam sembang.',
-    aiClaude: 'Menggunakan akaun Claude anda sendiri, melalui Claude Code.', aiCodexOut: 'Log masuk sekali dengan akaun ChatGPT anda. Tiada kunci API diperlukan.', aiOff: 'Belum disambungkan', aiConnect: 'Sambung',
-    settings: 'Tetapan', general: 'Umum', character: 'Kopi', wardrobe: 'Almari', ai: 'AI & Sembang', apps: 'Aplikasi', news: 'Berita',
-    search: 'Cari', light: 'Cerah', dark: 'Gelap', unsaved: 'Belum disimpan', unsavedHelp: 'Kopi di sini sudah menunjukkannya. Kopi Island menerimanya apabila anda simpan.',
-    saveAll: 'Simpan', cancelAll: 'Batal', savedAll: 'Disimpan, Kopi Island sudah menerimanya', cancelled: 'Dikembalikan', none: 'Tiada apa dijumpai.', saved: 'Disimpan', wait: 'Kopi Island masih bermula…',
+    cx: { claudecode: ['Claude Code', 'Mengikuti sesi Claude Code anda dalam terminal atau VS Code.'], codex: ['Codex', 'Mengikuti Codex daripada OpenAI semasa ia menulis kod untuk anda.'] },
+    cxOn: 'Disambungkan', cxOff: 'Mati', cxMissing: 'Tidak dijumpai dalam PC ini', cxSoon: 'Akan datang', cxSoonNote: '',
+    cxAgents: 'AI pengaturcaraan', cxChats: 'Aplikasi sembang', cxRestart: n => `Disambungkan. Mulakan semula ${n} sekali.`, cxCodexTrust: 'Codex akan bertanya sekali sama ada anda mempercayai Rehatt: pilih Ya.',
+    cxHow: 'Hidupkan apa yang anda guna. Rehatt uruskan selebihnya: tiada tetingkap untuk dipilih, tiada kod.',
+    settings: 'Tetapan', general: 'Umum', character: 'Kopi', wardrobe: 'Almari', stretch: 'Regangan', usage: 'Penggunaan', apps: 'Aplikasi', news: 'Berita',
+    search: 'Cari', light: 'Cerah', dark: 'Gelap', unsaved: 'Belum disimpan', unsavedHelp: 'Kopi di sini sudah menunjukkannya. Rehatt menerimanya apabila anda simpan.',
+    saveAll: 'Simpan', cancelAll: 'Batal', savedAll: 'Disimpan, Rehatt sudah menerimanya', cancelled: 'Dikembalikan', none: 'Tiada apa dijumpai.', saved: 'Disimpan', wait: 'Rehatt masih bermula…',
     sub: { home: '', connect: 'AI mana yang Kopi perhatikan untuk anda', general: 'Bahasa, pemberitahuan, animasi dan island', character: 'Nama, mata, kelakuan dan pencapaiannya', wardrobe: 'Pilih apa yang Kopi pakai. Dia cuba terus.',
-      ai: 'AI mana yang digunakan oleh sembang Kopi', apps: 'Pilih aplikasi yang ada dalam Kopi Island anda', news: 'Apa yang baharu dalam Kopi Island' },
+      stretch: 'Rehat regangan, waktu kerja, air dan kuih anda', usage: 'Had Claude anda, sebagai segelas teh tarik', apps: 'Pilih aplikasi yang ada dalam Rehatt anda', news: 'Apa yang baharu dalam Rehatt' },
     stats: i => `${i.done ?? 0} tugasan siap`, badges: i => `${i.badges ?? 0} daripada ${i.total ?? 0} pencapaian`,
     outfit: 'Pakaian', body: 'Cawan', eyes: 'Mata', seasonal: 'Pakaian perayaan', seasonalHelp: 'Songkok untuk Hari Raya, reben merah untuk Tahun Baru Cina, topi Santa, topi ahli sihir',
     wearing: w => `Memakai: ${w}`, locked: n => `${n} tugasan lagi`, earned: n => `Diperoleh pada ${n} tugasan`, tasksLeft: 'Dapatkan lagi dengan menyiapkan tugasan',
-    tagOn: 'Disambungkan', gptIn: (e, p) => `Log masuk${e ? ' sebagai ' + e : ''}${p ? ' · ' + p : ''}`, login: 'Log masuk dengan ChatGPT', logout: 'Log keluar', cancel: 'Batal', loggingIn: 'Semak pelayar anda untuk log masuk…',
-    inApp: 'Dalam Kopi Island anda', notIn: 'Tiada dalam Kopi Island anda', always: 'Sentiasa hidup', soon: 'Lebih banyak aplikasi akan datang', soonHelp: 'Ada idea untuk aplikasi? Beritahu kami di GitHub.',
-    added: n => `${n} ada dalam Kopi Island anda`, removed: n => `${n} telah dibuang`,
-    yours: v => `Anda ada Kopi Island ${v}`, latest: v => `Versi terbaharu: ${v}`, upToDate: 'Anda sudah terkini', update: v => `Ada kemas kini: ${v}`,
+    tagOn: 'Disambungkan', cancel: 'Batal',
+    inApp: 'Dalam Rehatt anda', notIn: 'Tiada dalam Rehatt anda', always: 'Sentiasa hidup', soon: 'Lebih banyak aplikasi akan datang', soonHelp: 'Ada idea untuk aplikasi? Beritahu kami di GitHub.',
+    added: n => `${n} ada dalam Rehatt anda`, removed: n => `${n} telah dibuang`,
+    yours: v => `Anda ada Rehatt ${v}`, latest: v => `Versi terbaharu: ${v}`, upToDate: 'Anda sudah terkini', update: v => `Ada kemas kini: ${v}`,
     download: 'Muat turun', onGithub: 'Lihat di GitHub', newsError: 'Berita tidak dapat dimuatkan. Adakah anda dalam talian?', retry: 'Cuba lagi', beta: 'beta', newest: 'Terbaharu', loading: 'Memuatkan…' },
-  en: { secApp: 'Kopi Island', secKopi: 'Kopi', secSettings: 'Settings', home: 'Home', connect: 'Connections',
+  en: { secApp: 'Rehatt', secKopi: 'Kopi', secSettings: 'Settings', home: 'Home', connect: 'Connections',
     hello: (n, h) => `${h < 6 ? 'Good night' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'}${n ? ', ' + n : ''}`,
-    helloSub: 'Kopi keeps an eye on your AI and tells you when it is done or has a question.',
+    helloSub: 'Kopi keeps an eye on your AI, and reminds you to stretch and drink some water.',
     history: 'Activity', searchHistory: 'Search your activity', noHistory: 'Nothing yet. When your AI finishes a job, it shows up here.',
     res: { done: 'Done', question: 'Question', error: 'Error' }, files: n => `${n} file${n === 1 ? '' : 's'}`, mins: s => s >= 60 ? `${Math.round(s / 60)} min` : `${s} s`,
-    statDone: 'tasks done', statToday: 'today', statStreak: 'days in a row', today: 'Today', yesterday: 'Yesterday',
-    buddyTitle: 'Tip: Kopi Buddy', buddyText: 'Drag Kopi out of the island onto anything on your screen and ask what it says. Or let him check your spelling in Word.',
-    setupTitle: 'Connect your AI', setupText: 'Turn on Claude Code or Codex. Kopi tells you when your AI is done, and he can answer your questions.', toConnect: 'Connect',
+    statDone: 'tasks done', statToday: 'stretches today', statStreak: 'days in a row', today: 'Today', yesterday: 'Yesterday',
+    buddyTitle: 'Tip: move the island', buddyText: 'Drag the island anywhere on your screen. Rather keep it fixed at the top? General → Island.',
+    setupTitle: 'Connect your AI', setupText: 'Turn on Claude Code or Codex. Kopi tells you when your AI is done or has a question, and suggests a stretch while it works.', toConnect: 'Connect',
     quick: 'Jump to', qWardrobe: 'Wardrobe', qConnect: 'Connections', qGeneral: 'General',
     agentState: { running: 'busy', sending: 'busy', question: 'waiting for you', done: 'done', error: 'error', ready: 'idle', off: 'idle' },
-    cx: { claudecode: ['Claude Code', 'Follows your Claude Code sessions in the terminal or VS Code.'], codex: ['Codex', 'Follows OpenAI Codex while it codes for you.'],
-      claude: ['Claude', 'The Claude app or claude.ai: Kopi tells you when your answer is ready.'], chatgpt: ['ChatGPT', 'The ChatGPT app or chatgpt.com: Kopi tells you when your answer is ready.'] },
-    cxOn: 'Connected', cxOff: 'Off', cxMissing: 'Not found on this PC', cxSoon: 'Coming soon', cxSoonNote: 'Comes with the Kopi Island extension for Chrome.',
-    cxAgents: 'Coding AI', cxChats: 'Chat apps', cxRestart: n => `Connected. Restart ${n} once.`, cxCodexTrust: 'Codex asks once whether you trust Kopi Island: choose Yes.',
-    cxHow: 'Turn on what you use. Kopi Island does the rest: no windows to pick, no code.',
-    aiHow: 'Kopi\'s chat uses the AI you turned on in Connections. Both on? Then you pick one in the chat.',
-    aiClaude: 'Uses your own Claude account, through Claude Code.', aiCodexOut: 'Sign in once with your ChatGPT account. No API key needed.', aiOff: 'Not connected yet', aiConnect: 'Connect',
-    settings: 'Settings', general: 'General', character: 'Kopi', wardrobe: 'Wardrobe', ai: 'AI & Chat', apps: 'Apps', news: 'News',
-    search: 'Search', light: 'Light', dark: 'Dark', unsaved: 'Not saved yet', unsavedHelp: 'Kopi here shows it already. Kopi Island gets it when you save.',
-    saveAll: 'Save', cancelAll: 'Cancel', savedAll: 'Saved, Kopi Island has it now', cancelled: 'Put back', none: 'Nothing found.', saved: 'Saved', wait: 'Kopi Island is still starting…',
+    cx: { claudecode: ['Claude Code', 'Follows your Claude Code sessions in the terminal or VS Code.'], codex: ['Codex', 'Follows OpenAI Codex while it codes for you.'] },
+    cxOn: 'Connected', cxOff: 'Off', cxMissing: 'Not found on this PC', cxSoon: 'Coming soon', cxSoonNote: '',
+    cxAgents: 'Coding AI', cxChats: 'Chat apps', cxRestart: n => `Connected. Restart ${n} once.`, cxCodexTrust: 'Codex asks once whether you trust Rehatt: choose Yes.',
+    cxHow: 'Turn on what you use. Rehatt does the rest: no windows to pick, no code.',
+    settings: 'Settings', general: 'General', character: 'Kopi', wardrobe: 'Wardrobe', stretch: 'Stretch', usage: 'Usage', apps: 'Apps', news: 'News',
+    search: 'Search', light: 'Light', dark: 'Dark', unsaved: 'Not saved yet', unsavedHelp: 'Kopi here shows it already. Rehatt gets it when you save.',
+    saveAll: 'Save', cancelAll: 'Cancel', savedAll: 'Saved, Rehatt has it now', cancelled: 'Put back', none: 'Nothing found.', saved: 'Saved', wait: 'Rehatt is still starting…',
     sub: { home: '', connect: 'Which AIs Kopi keeps an eye on for you', general: 'Language, notifications, animations and the island', character: 'His name, eyes, behaviour and badges', wardrobe: 'Pick what Kopi wears. He tries it on right away.',
-      ai: 'Which AI Kopi\'s chat talks to', apps: 'Pick which apps are in your Kopi Island', news: 'What is new in Kopi Island' },
+      stretch: 'Stretch breaks, working hours, water and your kuih', usage: 'Your Claude limits, as a glass of teh tarik', apps: 'Pick which apps are in your Rehatt', news: 'What is new in Rehatt' },
     stats: i => `${i.done ?? 0} tasks done`, badges: i => `${i.badges ?? 0} of ${i.total ?? 0} badges`,
     outfit: 'Outfit', body: 'Body', eyes: 'Eyes', seasonal: 'Seasonal outfits', seasonalHelp: 'Songkok for Hari Raya, a red bow for Chinese New Year, Santa hat, witch hat',
     wearing: w => `Wearing: ${w}`, locked: n => `${n} more tasks`, earned: n => `Earned at ${n} tasks`, tasksLeft: 'Earn more by finishing tasks',
-    tagOn: 'Connected', gptIn: (e, p) => `Signed in${e ? ' as ' + e : ''}${p ? ' · ' + p : ''}`, login: 'Sign in with ChatGPT', logout: 'Sign out', cancel: 'Cancel', loggingIn: 'Check your browser to sign in…',
-    inApp: 'In your Kopi Island', notIn: 'Not in your Kopi Island', always: 'Always on', soon: 'More apps are coming', soonHelp: 'Got an idea for an app? Tell us on GitHub.',
-    added: n => `${n} is in your Kopi Island`, removed: n => `${n} was removed`,
-    yours: v => `You have Kopi Island ${v}`, latest: v => `Newest version: ${v}`, upToDate: 'You are up to date', update: v => `There is an update: ${v}`,
+    tagOn: 'Connected', cancel: 'Cancel',
+    inApp: 'In your Rehatt', notIn: 'Not in your Rehatt', always: 'Always on', soon: 'More apps are coming', soonHelp: 'Got an idea for an app? Tell us on GitHub.',
+    added: n => `${n} is in your Rehatt`, removed: n => `${n} was removed`,
+    yours: v => `You have Rehatt ${v}`, latest: v => `Newest version: ${v}`, upToDate: 'You are up to date', update: v => `There is an update: ${v}`,
     download: 'Download', onGithub: 'View on GitHub', newsError: 'The news could not be loaded. Are you online?', retry: 'Try again', beta: 'beta', newest: 'Newest', loading: 'Loading…' }
 };
 const t = () => T[lang];
@@ -454,7 +479,7 @@ function labels() {
   $('#searchBox').classList.toggle('off', !['general', 'character'].includes(tab));
   document.querySelector('header').classList.toggle('hidden', tab === 'home'); scroll.classList.toggle('top', tab === 'home'); // the home page has its own greeting
   $('#themeBtn').title = theme === 'dark' ? t().light : t().dark;
-  document.title = 'Kopi Island ' + t().settings;
+  document.title = 'Rehatt ' + t().settings;
 }
 // Changes to the island's settings are a draft until you press Save (settings-bridge-ui.js).
 let islandDirty = false;
@@ -582,42 +607,84 @@ function drawWardrobe(html) {
   paint(html2, false);
 }
 
-// ---------- AI & Chat ----------
-let ai = null, aiBusy = false, loggingIn = false;
-async function loadAi() { ai = await S.ai.get().catch(() => null); cxs = await S.connections().catch(() => cxs); drawAi(); $('#aiDot').classList.toggle('on', !!cxs?.list && !cxs.list.some(c => (c.id === 'claudecode' || c.id === 'codex') && c.on)); }
-// Kopi's chat answers with what you connected: Claude Code (your Claude account) and/or Codex (your ChatGPT account).
-function drawAi() {
-  if (tab !== 'ai') return;
-  if (!ai?.ok || !cxs?.list) { paint(`<p class="empty">${t().loading}</p>`); return; }
-  const on = id => !!cxs.list.find(c => c.id === id)?.on, g = ai.chatgpt || {};
-  const row = (id, name, sub, right, good) => `<div class="row"><span class="bot ${good ? '' : 'off'}" style="--c:${AI_COLOUR[id]}"></span><div class="text"><b>${name}</b><small>${sub}</small></div>${right}</div>`;
-  const connect = `<button class="btn" data-ai="connect">${t().aiConnect}</button>`, ok = `<span class="tag good"><i></i>${t().tagOn}</span>`;
-  const claude = on('claudecode') ? row('claudecode', 'Claude', esc(t().aiClaude), ok, true) : row('claudecode', 'Claude', esc(t().aiOff), connect, false);
-  const codex = !on('codex') ? row('codex', 'Codex', esc(t().aiOff), connect, false)
-    : g.unknown ? row('codex', 'Codex', esc(t().loading), '', false)
-    : g.ready ? row('codex', 'Codex', esc(t().gptIn(g.email, g.plan)), `<button class="btn ghost" data-ai="logout">${t().logout}</button>${ok}`, true)
-    : row('codex', 'Codex', esc(loggingIn ? t().loggingIn : t().aiCodexOut), loggingIn ? `<button class="btn ghost" data-ai="cancel">${t().cancel}</button>` : `<button class="btn main" data-ai="login">${t().login}</button>`, false);
-  if (on('codex') && g.unknown && !aiChecking) checkAi(); // never checked yet: ask Codex once, only on this tab
-  paint(`<p class="lead">${esc(t().aiHow)}</p><div class="group">${claude}${codex}</div>` + (g.error && on('codex') && !g.ready ? `<div class="tc-ai-error">${esc(g.error)}</div>` : ''), false);
+// ---------- Stretch (stretch-main.cjs, from Lapis): changes apply at once ----------
+const L2 = (ms, en) => (lang === 'ms' ? ms : en);
+let sx = null;
+S.stretch.onState(v => { sx = v; if (tab === 'stretch') drawStretch(); if (tab === 'home') drawHome(); });
+async function loadStretch() { sx = await S.stretch.get().catch(() => sx); drawStretch(); }
+const setStretch = (key, value) => S.stretch.action('set', { key, value }).then(v => { if (v?.ok) { sx = v; drawStretch(); } });
+const hhmm = m => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+function timeSelect(key, value, from = 0, to = 1440) {
+  let o = ''; for (let m = from; m <= to; m += 15) o += `<option value="${m}" ${m === value ? 'selected' : ''}>${hhmm(m % 1440 === 0 && m ? 1439 : m).replace('23:59', '24:00')}</option>`;
+  return `<select data-sk="${key}">${o}</select>`;
 }
-// Starting Codex can take a few seconds, so it only happens here, when you look at AI & Chat.
-let aiChecking = false;
-async function checkAi() { aiChecking = true; let r = null; try { r = await S.ai.get(true); } catch {} if (r?.ok) ai = r; else if (ai?.chatgpt) ai.chatgpt.unknown = false; drawAi(); }
-async function aiAction(fn, ok) {
-  if (aiBusy) return; aiBusy = true;
-  try {
-    const r = await fn();
-    if (r && r.ok === false) toast(r.error || '?', true);
-    else if (ok) toast(ok);
-  } catch (e) { toast(String(e?.message || e), true); }
-  finally { aiBusy = false; await loadAi(); }
+function drawStretch() {
+  if (tab !== 'stretch') return;
+  if (!sx?.ok) { paint(`<p class="empty">${t().loading}</p>`); return; }
+  const sw = (key, on) => `<button class="switch ${on ? 'on' : ''}" data-sk="${key}" data-sv="${on ? '0' : '1'}"></button>`;
+  const chips = (key, opts) => `<div class="tc-chips">${opts.map(([v, l]) => `<button class="tc-chip ${sx[key] === v ? 'on' : ''}" data-sk="${key}" data-sv="${v}">${l}</button>`).join('')}</div>`;
+  const row = (ic, c, title, sub, control) => `<div class="row"><span class="tile" style="--c:${c}">${icon(ic)}</span><div class="text"><b>${title}</b><small>${sub}</small></div>${control}</div>`;
+  const DAYS = lang === 'ms' ? ['Ahd', 'Isn', 'Sel', 'Rab', 'Kha', 'Jum', 'Sab'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const days = `<div class="tc-chips">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button class="tc-chip ${sx.workDays.includes(d) ? 'on' : ''}" data-day="${d}">${DAYS[d]}</button>`).join('')}</div>`;
+  const max = Math.max(sx.goal, ...sx.week.map(d => d.total), 1);
+  const week = `<div class="card week">${sx.week.map(d => `<div><b>${d.total || ''}</b><i style="height:${Math.round(78 * d.total / max)}px"></i><span>${new Date(d.day + 'T12:00').toLocaleDateString(lang === 'ms' ? 'ms-MY' : 'en-GB', { weekday: 'short' })}</span></div>`).join('')}</div>`;
+  const D = window.LapisData, kuih = D ? `<div class="kuihs">${D.KUIH.map(k => `<button class="kuih ${sx.kuih === k.id ? 'on' : ''}" data-kuih="${k.id}" title="${esc(lang === 'ms' && k.ms ? k.ms.note : k.note)}">${window.lapisSVG?.(sx.kuih === k.id ? 'wave' : 'idle', k.name, false, k.id) || ''}<span>${esc(k.name)}</span></button>`).join('')}</div>` : '';
+  paint(`<p class="lead">${L2('Setiap beberapa minit kuih anda muncul dalam island dengan satu regangan meja yang pantas. Apabila Claude Code atau Codex mula bekerja dan regangan hampir tiba, ia datang sekarang: anda berehat semasa AI anda bekerja.', 'Every so often your kuih pops up in the island with one quick desk stretch. When Claude Code or Codex starts a job and a stretch is due soon anyway, it comes right then: you rest while your AI works.')}</p>
+    <p class="section">${L2('Minggu ini', 'This week')} · ${L2(`${sx.today.total} daripada ${sx.goal} hari ini`, `${sx.today.total} of ${sx.goal} today`)}${sx.streak ? ' · 🔥 ' + L2(`${sx.streak} hari berturut-turut`, `${sx.streak}-day streak`) : ''}</p>${week}
+    <p class="section">${L2('Peringatan', 'Reminders')}</p><div class="group">
+      ${row('stretch', '#ff8fb1', L2('Rehat regangan', 'Stretch breaks'), L2('Kuih anda mengingatkan anda dalam island', 'Your kuih reminds you in the island'), sw('on', sx.on))}
+      ${row('timer', '#ffb35c', L2('Ingatkan setiap', 'Remind me every'), L2('Rehat pendek yang kerap paling berkesan', 'Short, frequent breaks work best'), chips('interval', [15, 20, 30, 45, 60].map(m => [m, m + ' min'])))}
+      ${row('clock', '#a99bff', L2('Tunda', 'Snooze'), L2('Apabila anda tekan Tunda', 'When you press Snooze'), chips('snooze', [5, 10, 15].map(m => [m, m + ' min'])))}
+      ${row('check', '#8fd65a', L2('Sasaran harian', 'Daily goal'), L2('Regangan sehari', 'Stretches a day'), chips('goal', [4, 6, 8, 10, 12].map(n => [n, String(n)])))}
+      ${row('bot', '#d97757', L2('Regang semasa AI anda bekerja', 'Stretch while your AI works'), L2('Regangan yang hampir tiba datang sebaik sahaja Claude Code atau Codex mula bekerja', 'A stretch that is almost due comes as soon as Claude Code or Codex starts working'), sw('withAi', sx.withAi))}
+      ${row('hand', '#8fb8ff', L2('Masa jauh dikira sebagai rehat', 'Time away counts as a break'), L2('5 minit tanpa papan kekunci atau tetikus, atau skrin dikunci', '5 minutes without keyboard or mouse, or a locked screen'), sw('awayReset', sx.awayReset))}
+      ${row('sparkles', '#c9b3ff', L2('Senyap semasa mesyuarat', 'Quiet in meetings'), L2('Menunggu semasa aplikasi skrin penuh, persembahan atau Jangan Ganggu', 'Waits while an app is full screen, presenting, or Do not disturb is on'), sw('quietMeetings', sx.quietMeetings))}
+      ${row('news', '#5ad1c4', L2('Pemberitahuan Windows', 'Windows notification'), L2('Juga satu pemberitahuan apabila regangan tiba', 'Also a notification when a stretch is due'), sw('notify', sx.notify))}
+    </div>
+    <p class="section">${L2('Waktu kerja', 'Working hours')}</p><div class="group">
+      ${row('today', '#8fb8ff', L2('Hanya semasa waktu kerja', 'Only during working hours'), L2('Di luar waktu ini Kopi berehat juga', 'Outside these hours Kopi rests too'), sw('workOn', sx.workOn))}
+      ${sx.workOn ? `${row('today', '#8fb8ff', L2('Hari', 'Days'), '', days)}
+      ${row('clock', '#a99bff', L2('Dari', 'From'), '', `<span class="times">${timeSelect('workStart', sx.workStart, 0, 1410)} ${L2('hingga', 'to')} ${timeSelect('workEnd', sx.workEnd, 30, 1440)}</span>`)}
+      ${row('clock', '#ffb35c', L2('Rehat makan tengah hari', 'Lunch break'), sx.lunchOn ? `<span class="times">${timeSelect('lunchStart', sx.lunchStart, 0, 1410)} ${L2('hingga', 'to')} ${timeSelect('lunchEnd', sx.lunchEnd, 30, 1440)}</span>` : '', sw('lunchOn', sx.lunchOn))}` : ''}
+    </div>
+    <p class="section">${L2('Air', 'Water')}</p><div class="group">
+      ${row('drop', '#7fc8ff', L2('Peringatan air', 'Water reminders'), L2(`${sx.today.water} daripada ${sx.waterGoal} gelas hari ini`, `${sx.today.water} of ${sx.waterGoal} glasses today`), sw('waterOn', sx.waterOn))}
+      ${sx.waterOn ? row('timer', '#7fc8ff', L2('Setiap', 'Every'), '', chips('waterEvery', [30, 45, 60, 90, 120].map(m => [m, m < 60 ? m + ' min' : m / 60 + L2(' jam', ' h')]))) : ''}
+      ${row('flame', '#ffb35c', L2('Mod Ramadan', 'Ramadan mode'), L2('Semasa bulan puasa: tiada peringatan air, dan jalan sekejap ditinggalkan', 'During the fasting month: no water reminders, and the walkaround is left out'), sw('ramadanOn', sx.ramadanOn))}
+    </div>
+    <p class="section">${L2('Kuih anda', 'Your kuih')}</p>${kuih}`, false);
+}
+
+// ---------- Usage (meter-main.cjs, from Teh Tarik Meter) ----------
+let mx = null;
+S.meter.onState(v => { mx = v; if (tab === 'usage') drawUsage(); });
+async function loadUsage() { mx = await S.meter.get().catch(() => mx); cxs = await S.connections().catch(() => cxs); drawUsage(); }
+function drawUsage() {
+  if (tab !== 'usage') return;
+  if (!mx?.ok) { paint(`<p class="empty">${t().loading}</p>`); return; }
+  const left = w => (w && w.pct != null ? Math.max(0, Math.min(100, Math.round(100 - w.pct))) : null);
+  const when = ts => ts ? new Date(ts).toLocaleString(lang === 'ms' ? 'ms-MY' : 'en-GB', { weekday: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+  const bar = (label, w) => { const l = left(w); return `<div><div class="head"><span>${label}</span><b>${l == null ? '—' : l + '% ' + L2('lagi', 'left')}</b></div><div class="track"><i style="width:${l ?? 0}%"></i></div>${w?.resetsAt ? `<small>${L2('Penuh semula', 'Full again')} ${esc(when(w.resetsAt))}</small>` : ''}</div>`; };
+  const cc = (cxs?.list || []).find(c => c.id === 'claudecode');
+  const row = (ic, c, title, sub, control) => `<div class="row"><span class="tile" style="--c:${c}">${icon(ic)}</span><div class="text"><b>${title}</b><small>${sub}</small></div>${control}</div>`;
+  const status = { ok: L2('Disambungkan: nombor langsung', 'Connected: live numbers'), offline: L2('Tiada internet sekarang', 'Offline right now'), error: L2('Tidak dapat dibaca sebentar tadi', 'Could not read it just now'), checking: L2('Menyemak…', 'Checking…') }[mx.status] || '';
+  paint(`<p class="lead">${L2('Gelas menunjukkan berapa banyak had Claude anda yang masih tinggal: penuh pada permulaan, kosong apabila anda mencapai had. Kopi memberi amaran pada 80% dan 95%.', 'The glass shows how much of your Claude limit is left: full at the start, empty when you hit the limit. Kopi warns you at 80% and 95%.')}</p>
+    <div class="card meter-now"><div><div class="big">${left(mx.session) ?? '—'}%</div><small>${L2('lagi dalam 5 jam ini', 'left in this 5-hour window')}</small></div>
+      <div class="bars">${bar(L2('5 jam', '5 hours'), mx.session)}${bar(L2('Minggu ini', 'This week'), mx.weekly)}${(mx.models || []).slice(0, 3).map(m => bar(esc(m.name), m)).join('')}</div></div>
+    <p class="section">${L2('Dari mana nombor datang', 'Where the numbers come from')}</p><div class="group">
+      ${row('cup', '#e0a96d', 'claude.ai', mx.signedIn ? status : L2('Log masuk sekali dalam tetingkap claude.ai peribadi di dalam Rehatt. Kata laluan anda tidak pernah sampai kepada Rehatt.', 'Sign in once in a private claude.ai window inside Rehatt. Your password never reaches Rehatt.'),
+        mx.signedIn ? `<button class="btn ghost" data-mx="refresh">${L2('Muat semula', 'Refresh')}</button><button class="btn ghost" data-mx="signout">${L2('Log keluar', 'Sign out')}</button>` : `<button class="btn main" data-mx="signin">${L2('Log masuk', 'Sign in')}</button>`)}
+      ${row('bot', '#d97757', 'Claude Code', cc?.on ? (mx.claudeCode ? L2('Garis status menghantar penggunaan anda selepas setiap jawapan', 'The status line sends your usage after every answer') : L2('Disambungkan. Nombor datang selepas jawapan Claude yang seterusnya.', 'Connected. Numbers arrive after Claude\'s next answer.')) : L2('Sambungkan Claude Code untuk bacaan segera', 'Connect Claude Code for instant readings'),
+        cc?.on ? `<span class="tag good"><i></i>${t().cxOn}</span>` : `<button class="btn" data-goto="connect">${t().toConnect}</button>`)}
+      ${row('sparkles', '#ffb35c', L2('Amaran pada 80% dan 95%', 'Alerts at 80% and 95%'), L2('Dalam island dan sebagai pemberitahuan Windows', 'In the island and as a Windows notification'), `<button class="switch ${mx.alerts ? 'on' : ''}" data-mx="${mx.alerts ? 'alertsOff' : 'alertsOn'}"></button>`)}
+    </div>`, false);
 }
 
 // ---------- Apps ----------
 const APPS = [
   { id: 'claude', icon: 'bot', tint: '#c6e994', core: true, ms: ['Pembantu AI', 'Claude Code dan Codex: Kopi tunjukkan sama ada AI anda sibuk, ada soalan atau sudah siap.'], en: ['AI assistants', 'Claude Code and Codex: Kopi shows whether your AI is busy, has a question or is done.'] },
-  { id: 'buddy', icon: 'hand', tint: '#8fb8ff', ms: ['Kopi Buddy', 'Ambil Kopi keluar dari island, letakkan dia pada apa sahaja dan tanya mengenainya. Atau biar dia semak ejaan anda.'], en: ['Kopi Buddy', 'Grab Kopi out of the island, drop him on anything and ask about it. Or let him check your spelling.'] },
-  { id: 'spotify', icon: 'music', tint: '#1ed760', ms: ['Spotify', 'Apa yang sedang dimainkan, dengan kawalan. Kopi turut menari.'], en: ['Spotify', 'What is playing, with controls. Kopi dances along.'] },
+  { id: 'stretch', icon: 'stretch', tint: '#ff8fb1', core: true, ms: ['Regangan', 'Rehat regangan pantas dengan kuih anda, dan peringatan air. Daripada Lapis.'], en: ['Stretch', 'Quick stretch breaks with your kuih, and water reminders. From Lapis.'] },
+  { id: 'meter', icon: 'cup', tint: '#e0a96d', core: true, ms: ['Penggunaan', 'Had Claude anda sebagai segelas teh tarik. Daripada Teh Tarik Meter.'], en: ['Usage', 'Your Claude limits as a glass of teh tarik. From Teh Tarik Meter.'] },
   { id: 'focus', icon: 'timer', tint: '#ffb35c', ms: ['Fokus', 'Pemasa fokus. Kopi jauhkan gangguan buat seketika.'], en: ['Focus', 'A focus timer. Kopi keeps distractions away for a while.'] },
   { id: 'tray', icon: 'inbox', tint: '#7ab8ff', ms: ['Dulang', 'Letakkan fail dalam island dan ambil semula kemudian.'], en: ['Tray', 'Drop files into the island and grab them again later.'] },
   { id: 'clips', icon: 'clipboard', tint: '#5ad1c4', ms: ['Papan keratan', 'Salinan terakhir anda. Klik satu untuk menyalinnya semula.'], en: ['Clipboard', 'Your last copies. Click one to copy it again.'] },
@@ -671,7 +738,7 @@ function drawNews() {
   if (tab !== 'news' || !news) return;
   const latest = news.releases?.[0], hasUpdate = latest && newer(latest.tag, news.version);
   const head = `<div class="card version"><span class="tile" style="--c:${hasUpdate ? '#ffb35c' : '#c6e994'}">${icon(hasUpdate ? 'download' : 'check')}</span><div><b>${esc(hasUpdate ? t().update(latest.tag) : t().yours(news.version))}</b><small>${esc(hasUpdate ? t().yours(news.version) : latest ? t().upToDate + ' · ' + t().latest(latest.tag) : '')}</small></div>
-    <button class="btn ${hasUpdate ? 'main' : 'ghost'}" data-url="https://github.com/chowkuanlaw/kopi-island/releases/latest">${icon('download')}${t().download}</button></div>`;
+    <button class="btn ${hasUpdate ? 'main' : 'ghost'}" data-url="https://github.com/chowkuanlaw/rehatt/releases/latest">${icon('download')}${t().download}</button></div>`;
   if (!news.ok) { paint(head + `<div class="card"><p class="muted" style="margin:0 0 12px">${t().newsError}</p><button class="btn" data-news="retry">${t().retry}</button></div>`, false); return; }
   const date = d => d ? new Date(d).toLocaleDateString(lang === 'ms' ? 'ms-MY' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
   const items = news.releases.map((r, i) => `<div class="release ${i === 0 ? 'latest' : ''}"><div class="rhead"><b>${esc(r.name || r.tag)}</b>${i === 0 ? `<span class="pill new">${t().newest}</span>` : ''}${r.beta ? `<span class="pill">${t().beta}</span>` : ''}<span>${esc(date(r.date))}</span></div>
@@ -680,13 +747,13 @@ function drawNews() {
 }
 
 // ---------- Home ----------
-const AI_COLOUR = { claudecode: '#d97757', codex: '#3b82f6', claude: '#e8a87c', chatgpt: '#10a37f' };
+const AI_COLOUR = { claudecode: '#d97757', codex: '#3b82f6' };
 const LAMP = { running: '#ffb35c', sending: '#ffb35c', question: '#ffb35c', done: '#8fd65a', error: '#ff6b6b', ready: '#8fd65a', off: '#8fd65a' };
-const AGENT_OF = { 'Claude Code': 'claudecode', Codex: 'codex', Claude: 'claude', ChatGPT: 'chatgpt' };
+const AGENT_OF = { 'Claude Code': 'claudecode', Codex: 'codex' };
 let home = null, cxs = null;
 async function loadHome() {
-  const [h, c] = await Promise.all([S.home(), S.connections()]);
-  home = h; cxs = c; drawHome();
+  const [h, c, x] = await Promise.all([S.home(), S.connections(), S.stretch.get().catch(() => sx)]);
+  home = h; cxs = c; sx = x || sx; drawHome();
 }
 function dayLabel(at) {
   const d = new Date(at), today = new Date(); const diff = Math.round((new Date(today.toDateString()) - new Date(d.toDateString())) / 864e5);
@@ -709,25 +776,26 @@ function drawHome() {
     const extra = [time, j.name, j.project, j.files ? t().files(j.files) : '', j.seconds ? t().mins(j.seconds) : ''].filter(Boolean).join(' · ');
     jobs += `<div class="job"><span class="bot sm" style="--c:${AI_COLOUR[AGENT_OF[j.name]] || '#aaa'}"></span><div><p>${esc(j.prompt)}</p><small>${esc(extra)}</small></div><span class="res ${esc(j.result)}">${esc(t().res[j.result] || '')}</span></div>`;
   }
-  const today = all.filter(j => new Date(j.at).toDateString() === new Date().toDateString()).length;
+  const today = sx?.today ? `${sx.today.total}/${sx.goal}` : 0;
   const keepSearch = $('#histSearch')?.value || '', focused = document.activeElement?.id === 'histSearch';
   const kpi = (ic, c, n, label) => `<div class="kpi"><span class="tile" style="--c:${c}">${icon(ic)}</span><div><b>${n}</b><small>${label}</small></div></div>`;
   const quick = (ic, c, label, to) => `<button data-goto="${to}"><span class="tile" style="--c:${c}">${icon(ic)}</span><span>${label}</span>${icon('chevron')}</button>`;
   paint(`<div class="greet"><div><h2>${esc(t().hello(home.user, new Date().getHours()))}</h2><p>${esc(t().helloSub)}</p></div><div class="agents">${agents}</div></div>
     ${on.length ? '' : `<div class="setup"><span class="tile" style="--c:#c6e994">${icon('plug')}</span><div><b>${t().setupTitle}</b><small>${t().setupText}</small></div><button class="btn main" data-goto="connect">${t().toConnect}</button></div>`}
-    <div class="kpis">${kpi('check', '#c6e994', info.done ?? 0, t().statDone)}${kpi('today', '#8fb8ff', today, t().statToday)}${kpi('flame', '#ffb35c', streak(all), t().statStreak)}</div>
+    <div class="kpis">${kpi('check', '#c6e994', info.done ?? 0, t().statDone)}${kpi('stretch', '#ff8fb1', today, t().statToday)}${kpi('flame', '#ffb35c', streak(all), t().statStreak)}</div>
     <div class="home"><div>
       <div class="hist-head"><b>${t().history}</b><input class="field" id="histSearch" type="search" placeholder="${t().searchHistory}" autocomplete="off"></div>
       ${jobs ? `<div class="group">${jobs}</div>` : `<div class="card muted" style="font-size:13.5px">${t().noHistory}</div>`}
     </div><div class="side-cards">
-      <div class="group quick">${quick('shirt', '#ff86c2', t().qWardrobe, 'wardrobe')}${quick('plug', '#c6e994', t().qConnect, 'connect')}${quick('sliders', '#8fb8ff', t().qGeneral, 'general')}</div>
-      <div class="tip"><b>${icon('hand')}${t().buddyTitle}</b><p>${t().buddyText}</p></div>
+      <div class="group quick">${quick('stretch', '#ff8fb1', t().stretch, 'stretch')}${quick('cup', '#e0a96d', t().usage, 'usage')}${quick('shirt', '#ff86c2', t().qWardrobe, 'wardrobe')}${quick('plug', '#c6e994', t().qConnect, 'connect')}</div>
+      <div class="tip"><b>${icon('pin')}${t().buddyTitle}</b><p>${t().buddyText}</p></div>
     </div></div>`, false);
   const box = $('#histSearch'); if (box) { box.value = keepSearch; if (focused) { box.focus(); box.setSelectionRange(keepSearch.length, keepSearch.length); } }
 }
 list.addEventListener('input', e => { if (e.target.id === 'histSearch') drawHome(); });
+list.addEventListener('change', e => { if (tab === 'stretch' && e.target.matches('select[data-sk]')) setStretch(e.target.dataset.sk, Number(e.target.value)); });
 
-// ---------- Connections: one switch per AI, Kopi Island does the rest ----------
+// ---------- Connections: one switch per AI, Rehatt does the rest ----------
 let cxNote = {};
 async function loadConnect() { cxs = await S.connections(); drawConnect(); }
 function drawConnect() {
@@ -769,13 +837,12 @@ list.addEventListener('click', e => {
     if (b.classList.contains('tc-toggle')) b.classList.toggle('on');
     press({ index: Number(b.dataset.i) }, b);
   }
-  if (tab === 'ai') {
-    const act = b.dataset.ai;
-    if (act === 'login') { loggingIn = true; drawAi(); aiAction(() => S.ai.chatgptLogin(), 'ChatGPT ✓').finally(() => { loggingIn = false; drawAi(); }); }
-    if (act === 'cancel') { S.ai.chatgptCancel(); loggingIn = false; drawAi(); }
-    if (act === 'logout') aiAction(() => S.ai.chatgptLogout());
-    if (act === 'connect') go('connect');
+  if (tab === 'stretch' && sx) {
+    if (b.dataset.sk) { const v = b.dataset.sv; setStretch(b.dataset.sk, v === '1' ? true : v === '0' ? false : Number(v)); }
+    if (b.dataset.day) { const d = Number(b.dataset.day), list2 = sx.workDays.includes(d) ? sx.workDays.filter(x => x !== d) : [...sx.workDays, d]; if (list2.length) setStretch('workDays', list2); }
+    if (b.dataset.kuih) { setStretch('kuih', b.dataset.kuih); toast(b.querySelector('span')?.textContent || ''); }
   }
+  if (tab === 'usage' && b.dataset.mx) S.meter.action(b.dataset.mx).then(v => { if (v?.ok) { mx = v; drawUsage(); } });
   if (tab === 'apps' && b.dataset.app) {
     const a = APPS.find(x => x.id === b.dataset.app), on = b.dataset.on === '1';
     b.classList.toggle('on', on);
@@ -797,7 +864,8 @@ async function render(fresh) {
   if (tab === 'connect') { if (fresh) lastHtml = ''; await loadConnect(); }
   if (tab === 'general' || tab === 'character') { const html = await islandList(tab); if (html != null) paintIsland(html, fresh); }
   if (tab === 'wardrobe') { const html = await islandList('character'); if (html != null && tab === 'wardrobe') drawWardrobe(html); }
-  if (tab === 'ai') { if (fresh) lastHtml = ''; await loadAi(); }
+  if (tab === 'stretch') { if (fresh) lastHtml = ''; await loadStretch(); }
+  if (tab === 'usage') { if (fresh) lastHtml = ''; await loadUsage(); }
   if (tab === 'apps') { if (fresh) lastHtml = ''; await loadApps(); }
   if (tab === 'news') { if (fresh) lastHtml = ''; drawNews(); if (fresh || !news) loadNews(); }
   if (fresh) { scroll.scrollTop = 0; list.classList.remove('fresh'); void list.offsetWidth; list.classList.add('fresh'); clearTimeout(freshTimer); freshTimer = setTimeout(() => list.classList.remove('fresh'), 520); }
@@ -832,11 +900,11 @@ S.onFace(url => { lastFace = url; document.querySelectorAll('.face').forEach(img
 
 // keep up with changes made elsewhere, but never while you type
 addEventListener('focus', () => { if (!typing() && !busy) render(false); });
-setInterval(() => { if (!document.hidden && !busy && !typing() && ['general', 'character', 'wardrobe', 'apps', 'home', 'connect'].includes(tab)) render(false); }, 3000);
+setInterval(() => { if (!document.hidden && !busy && !typing() && ['general', 'character', 'wardrobe', 'apps', 'home', 'connect', 'usage'].includes(tab)) render(false); }, 3000);
 window.settingsApp.onGoto?.(where => go(where));
 
 labels();
 render(true);
-loadAi();   // the red dot on AI & Chat when nothing is connected yet
+S.connections().then(c => { cxs = c; $('#connectDot').classList.toggle('on', !(c?.list || []).some(x => x.on)); }).catch(() => {}); // the red dot on Connections when nothing is connected yet
 loadNews(); // and on News when there is an update
 </script></body></html>

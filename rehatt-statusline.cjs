@@ -1,8 +1,8 @@
 'use strict';
-// Claude Code status line → Kopi Island.
+// Claude Code status line → Rehatt (the teh tarik glass).
 // Claude Code runs this after each answer and passes session data on stdin, including how much
-// of your 5-hour and weekly limit you have used. We forward that to Kopi Island (for the ring) and
-// print a short status line in the terminal. Usage: node kopi-statusline.cjs <token>
+// of your 5-hour and weekly limit you have used. We forward that to Rehatt (for the glass) and
+// print a short status line in the terminal. Usage: node rehatt-statusline.cjs <token>
 const http = require('node:http');
 
 let input = '';
@@ -22,16 +22,16 @@ process.stdin.on('end', () => {
     seven_day: limits.seven_day ? { used: pct(limits.seven_day.used_percentage), resets_at: limits.seven_day.resets_at || null } : null
   };
 
-  const parts = ['Kopi Island'];
+  const parts = ['Rehatt'];
   if (usage.five_hour?.used != null) parts.push('5 hr: ' + usage.five_hour.used + '%');
   if (usage.seven_day?.used != null) parts.push('week: ' + usage.seven_day.used + '%');
   if (usage.context != null) parts.push('chat: ' + usage.context + '% full');
   process.stdout.write(parts.join(' · ') + '\n');
 
   const body = JSON.stringify(usage);
-  const req = http.request({ host: '127.0.0.1', port: 47851, path: '/kopi-status', method: 'POST', timeout: 800,
-    headers: { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body), 'x-kopi-token': process.argv[2] || '' } });
-  req.on('error', () => {}); // Kopi Island not running: the status line still works.
+  const req = http.request({ host: '127.0.0.1', port: 47861, path: '/rehatt-status', method: 'POST', timeout: 800,
+    headers: { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body), 'x-rehatt-token': process.argv[2] || '' } });
+  req.on('error', () => {}); // Rehatt not running: the status line still works.
   req.on('timeout', () => req.destroy());
   req.end(body);
 });

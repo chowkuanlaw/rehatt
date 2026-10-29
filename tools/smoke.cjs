@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const http = require('http');
 const { BrowserWindow } = require('electron');
-const { HOOK_URL } = require('../claude-code-hooks.cjs');
+const { HOOK_URL } = require('../agent-hooks.cjs');
 
 const SCREENS = [
   ['1-small', ''],
@@ -23,8 +23,14 @@ const SCREENS = [
   ['10-note', "setView('note')"],
   ['11-stretch', "setView('stretch')"],
   ['12-meter', "setView('meter')"],
-  ['13-settings', "window.kopi?.settingsOpen?.()"]
+  ['13-stretch-due', "window.__rehattStretch?.test('stretch'); setView('home'); setMode('compact', false)"],
+  ['14-stretch-page-due', "setView('stretch')"],
+  ['15-stretch-active', "window.kopi.stretchAction('start')"],
+  ['16-water-nudge', "window.__rehattStretch?.test('clear'); window.__rehattStretch?.test('water'); setView('home'); setMode('compact', false)"],
+  ['17-apps-grid', "window.__rehattStretch?.test('clear'); setView('apps')"],
+  ['18-settings', "window.kopi?.settingsOpen?.()"]
 ];
+const SETTINGS_TABS = ['home', 'connect', 'stretch', 'usage', 'apps', 'general'];
 
 module.exports = function smoke(getWindow, app) {
   const out = path.resolve(process.env.REHATT_SMOKE);
@@ -44,7 +50,7 @@ module.exports = function smoke(getWindow, app) {
   // pretend to be Claude Code: send a hook event the same way Claude Code does
   const post = (token, event) => new Promise(resolve => {
     const body = JSON.stringify({ session_id: 'smoke', cwd: 'C:\\work\\rehatt', transcript_path: '', ...event });
-    const req = http.request(HOOK_URL, { method: 'POST', timeout: 3000, headers: { 'content-type': 'application/json', 'x-kopi-token': token } }, res => { res.resume(); res.on('end', resolve); });
+    const req = http.request(HOOK_URL, { method: 'POST', timeout: 3000, headers: { 'content-type': 'application/json', 'x-rehatt-token': token } }, res => { res.resume(); res.on('end', resolve); });
     req.on('error', e => { errors.push('hook post: ' + e.message); resolve(); }); req.end(body);
   });
 
@@ -53,8 +59,9 @@ module.exports = function smoke(getWindow, app) {
     const island = getWindow();
     let token = '';
     try {
-      await island.webContents.executeJavaScript("window.kopi?.aiMonitorHooksInstall?.('claude')");
-      token = fs.readFileSync(path.join(app.getPath('userData'), 'claude-code-hook-token'), 'utf8').trim();
+      // no mouse on the build machine: keep the island open instead of folding it away
+      await island.webContents.executeJavaScript("updateHover = function () {}; window.kopi?.aiMonitorHooksInstall?.('claude')");
+      token = fs.readFileSync(path.join(app.getPath('userData'), 'rehatt-hook-token'), 'utf8').trim();
     } catch (e) { errors.push('hooks install: ' + e.message); }
     for (const [name, js, events] of SCREENS) {
       try {
@@ -62,12 +69,22 @@ module.exports = function smoke(getWindow, app) {
         if (js) await island.webContents.executeJavaScript(`try { if (typeof setMode === 'function' && !${JSON.stringify(js)}.includes('settingsOpen')) setMode('expanded', false); ${js} } catch (e) { console.error('smoke ${name}: ' + e.message) }`);
         await wait(1800);
         for (const win of BrowserWindow.getAllWindows()) {
-          if (win.isDestroyed() || !win.isVisible()) continue;
+          if (win.isDestroyed() || !win.isVisible() || /settings-app\.html/.test(win.webContents.getURL()) && name !== '18-settings') continue;
           const tag = win === island ? 'island' : (win.getTitle() || 'window').replace(/[^a-z0-9]+/gi, '-');
           fs.writeFileSync(path.join(out, `${name}-${tag}.png`), (await win.webContents.capturePage()).toPNG());
         }
       } catch (e) { errors.push(`smoke ${name}: ${e.message}`); }
     }
+    // the settings app: every tab
+    const settings = BrowserWindow.getAllWindows().find(w => !w.isDestroyed() && /settings-app\.html/.test(w.webContents.getURL()));
+    if (settings) for (const tab of SETTINGS_TABS) {
+      try {
+        await settings.webContents.executeJavaScript(`document.querySelector('nav [data-tab="${tab}"]')?.click(); 1`);
+        await wait(1500);
+        fs.writeFileSync(path.join(out, `30-settings-${tab}.png`), (await settings.webContents.capturePage()).toPNG());
+      } catch (e) { errors.push(`smoke settings ${tab}: ${e.message}`); }
+    }
+    else errors.push('smoke: the settings app did not open');
     fs.writeFileSync(path.join(out, 'errors.txt'), [...new Set(errors)].join('\n'));
     app.exit(0);
   })();
