@@ -1,7 +1,7 @@
 {
   "name": "rehatt",
   "productName": "Rehatt",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Rehatt: a Dynamic Island for Windows. Kopi nudges you when Claude Code or Codex has a question or is done, reminds you to stretch and drink water, and shows your Claude usage as a glass of teh tarik.",
   "main": "main.js",
   "scripts": {
