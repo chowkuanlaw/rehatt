@@ -33,7 +33,7 @@
       const w = st.alert.kind === 'weekly' ? st.weekly : st.session, high = st.alert.pct >= 95;
       const refill = w?.resetsAt ? ' · ' + T('penuh semula ', 'refills ') + new Date(w.resetsAt).toLocaleTimeString(LOC(), w.resetsAt - Date.now() > 86400e3 ? { weekday: 'short', hour: '2-digit', minute: '2-digit' } : { hour: '2-digit', minute: '2-digit' }) : '';
       window.__rehattDirector?.flash({ key: 'usage:' + st.alert.kind + ':' + st.alert.pct, tone: high ? 'err' : 'us', ms: high ? 8000 : 5000, view: 'meter',
-        text: T(`☕ ${st.alert.pct}% had ${st.alert.kind === 'weekly' ? 'mingguan' : '5 jam'} digunakan`, `☕ ${st.alert.pct}% of ${st.alert.kind === 'weekly' ? 'weekly' : '5-hour'} limit used`) + refill });
+        text: T(`${st.alert.pct}% had ${st.alert.kind === 'weekly' ? 'mingguan' : '5 jam'} digunakan`, `${st.alert.pct}% of ${st.alert.kind === 'weekly' ? 'weekly' : '5-hour'} limit used`) + refill });
     }
     render(true);
   }

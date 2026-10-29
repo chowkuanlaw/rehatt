@@ -199,7 +199,7 @@
       ctx.fillStyle = i === 0 ? (over ? '#ffffff' : tone) : over ? 'rgba(255,255,255,.26)' : 'rgba(255,255,255,.14)';
       ctx.fill(); ctx.restore();
       text(b.label, bx + w / 2, cy + 4, 10.5, i === 0 ? '#16110f' : '#f2f5ed', 700, 'center');
-      hit[key] = r; buttons.set(key, b.act);
+      hit[key] = r; buttons.set(key, { act: b.act, rect: r });
       x = bx - 5;
     }
     if (item.right) { text(item.right, x - 2, cy + 4, 11.5, tone, 700, 'right'); x -= ctx.measureText(item.right).width + 10; }
@@ -209,8 +209,8 @@
   // a quick button does its job; anywhere else on the nudge opens its page (mascot.html → setMode → destination)
   canvas.addEventListener('click', e => {
     if (mode === 'expanded') return;
-    for (const [key, act] of buttons) {
-      if (!inside(e.clientX, e.clientY, hit[key])) continue;
+    for (const [, { act, rect }] of buttons) {
+      if (!inside(e.clientX, e.clientY, rect)) continue;
       e.preventDefault(); e.stopImmediatePropagation();
       sound('click'); window.__kopiHoldClosed?.(); // stays small until the mouse leaves: no surprise opening
       try { act(); } catch {}
@@ -223,13 +223,16 @@
   window.addEventListener('pointerdown', e => { if (e.button === 0) pressed = true; }, true);
   window.addEventListener('pointerup', () => { pressed = false; }, true);
   window.addEventListener('blur', () => { pressed = false; });
-  const overButton = () => pointer.known && [...buttons.keys()].some(k => inside(pointer.x, pointer.y, hit[k]));
+  // (the rects are kept from the last drawing: `hit` is emptied at the start of every frame, before the hover check)
+  const overButton = () => pointer.known && [...buttons.values()].some(b => inside(pointer.x, pointer.y, b.rect));
   const baseHover = updateHover;
   updateHover = function (t) {
     if (!introFinished) return baseHover(t);
     // while you stretch, the Stretch page stays open (Esc folds it to the countdown)
     if (mode === 'expanded' && currentView === 'stretch' && S()?.mode === 'active') { leaveStartedAt = null; return; }
     if (mode === 'compact' && (pressed || window.__rehattDragging || overButton())) { hoverStartedAt = null; return; }
+    // the mouse left the nudge: forget the hover, or coming back later would open the island at once
+    if (mode === 'compact' && !(pointer.known && inside(pointer.x, pointer.y, islandBounds))) hoverStartedAt = null;
     return baseHover(t);
   };
 
