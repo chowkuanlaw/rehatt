@@ -53,7 +53,8 @@ module.exports = function smoke(getWindow, app) {
     const island = getWindow();
     let token = '';
     try {
-      await island.webContents.executeJavaScript("window.kopi?.aiMonitorHooksInstall?.('claude')");
+      // no mouse on the build machine: keep the island open instead of folding it away
+      await island.webContents.executeJavaScript("updateHover = function () {}; window.kopi?.aiMonitorHooksInstall?.('claude')");
       token = fs.readFileSync(path.join(app.getPath('userData'), 'claude-code-hook-token'), 'utf8').trim();
     } catch (e) { errors.push('hooks install: ' + e.message); }
     for (const [name, js, events] of SCREENS) {
