@@ -615,7 +615,7 @@ function embedNow() {
   const want = tab === 'stretch' || tab === 'usage' ? tab : null;
   document.body.classList.toggle('embedded', Boolean(want));
   if (!want) { S.embed?.(null); return; }
-  paint('');
+  list.innerHTML = ''; lastHtml = ''; // nothing of the last tab under the embedded page
   requestAnimationFrame(() => { const r = scroll.getBoundingClientRect(); S.embed?.(want, { x: r.left, y: r.top, width: r.width, height: r.height }); });
 }
 addEventListener('resize', () => { if (tab === 'stretch' || tab === 'usage') embedNow(); });

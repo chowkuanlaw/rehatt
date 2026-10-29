@@ -230,13 +230,18 @@
 #rehatt-stretch .nc-stats div{display:flex;flex-direction:column}
 #rehatt-stretch .nc-stats b{font-size:18px;font-variant-numeric:tabular-nums}
 #rehatt-stretch .nc-stats span{color:#8f998d;font-size:10.5px}
-#rehatt-stretch .nc-bars{display:flex;gap:8px;align-items:flex-end;height:46px}
+#rehatt-stretch .nc-row{display:flex;gap:20px;align-items:flex-end;flex-wrap:nowrap}
+#rehatt-stretch .nc-bars{display:flex;gap:7px;align-items:flex-end;height:44px;flex:none}
+#rehatt-stretch .st-cue.one{-webkit-line-clamp:1}
 #rehatt-stretch .nc-bars div{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9.5px;color:#8f998d}
 #rehatt-stretch .nc-bars i{display:block;width:16px;border-radius:4px;background:rgba(255,255,255,.14)}
 #rehatt-stretch .nc-bars i.met{background:#ff8fb1}
 #rehatt-stretch .nc-news{margin:0;padding-left:16px;color:#c9d0c6;font-size:11.5px;display:flex;flex-direction:column;gap:2px;overflow:hidden}
-#rehatt-stretch .nc-pair{display:flex;align-items:flex-end;gap:6px;height:100%}
-#rehatt-stretch .nc-pair .small{height:60%}`;
+#rehatt-stretch .st-kuih.pair{width:150px}
+#rehatt-stretch .nc-pair{display:flex;align-items:flex-end;justify-content:center;gap:4px;height:100%;width:150px}
+#rehatt-stretch .nc-pair .small{height:58%;display:flex;align-items:flex-end}
+#rehatt-stretch .nc-pair svg{max-width:84px;height:auto;max-height:100%}
+#rehatt-stretch .nc-pair .small svg{max-width:52px}`;
   document.head.appendChild(style);
 
   function side() {
@@ -249,7 +254,7 @@
     const kname = (D.KUIH_BY[st.kuih] || D.KUIH_BY.lapis).name;
     const btn = (label, w, main) => `<button type="button" class="${main ? 'st-go' : ''}" data-w="${w}">${esc(label)}</button>`;
     const page = (pose, kicker, title, body, buttons, kuih) => `<div class="tc-page-head"><div><p class="tc-page-title">${T('Regangan', 'Stretch')}</p><p class="tc-page-sub">${esc(status())}</p></div></div>
-      <div class="st-body"><div class="st-kuih kuih-tap">${kuih || svg(pose, true)}</div><div class="st-main"><p class="st-kicker"><i></i>${kicker}</p><p class="st-name">${title}</p>${body}<div class="st-row">${buttons}</div></div>${side()}</div>`;
+      <div class="st-body"><div class="st-kuih kuih-tap${kuih ? ' pair' : ''}">${kuih || svg(pose, true)}</div><div class="st-main"><p class="st-kicker"><i></i>${kicker}</p><p class="st-name">${title}</p>${body}<div class="st-row">${buttons}</div></div>${side()}</div>`;
     if (n.type === 'unlock') {
       const k = D.KUIH_BY[n.id], r = D.RULE_BY?.[n.id];
       const pair = `<div class="nc-pair"><span class="small">${svg('cheer', false)}</span>${window.lapisSVG('wave', k?.name || '', true, n.id, outfit())}</div>`;
@@ -271,9 +276,9 @@
       }
       const max = Math.max(st.goal, ...bars.map(b => b.n)), top = Object.entries(by).sort((a, b) => b[1] - a[1])[0];
       return page('cheer', esc(L('sum.sub')), esc(L('sum.title')),
-        `<div class="nc-stats"><div><b>${total}</b><span>${esc(L('sum.stretches'))}</span></div><div><b>${atGoal}/${worked}</b><span>${esc(L('sum.goalDays'))}</span></div><div><b>${st.streak || 0}</b><span>${esc(L('sum.streak'))}</span></div><div><b>${water}</b><span>${esc(L('sum.water'))}</span></div></div>
-         <div class="nc-bars">${bars.map(b => `<div><i class="${b.n >= st.goal ? 'met' : ''}" style="height:${Math.max(3, b.n / max * 34)}px"></i>${esc(b.l)}</div>`).join('')}</div>
-         <p class="st-cue">${top ? esc(L('sum.most', { ex: tx(ex(top[0]), 'name'), n: top[1] })) : esc(L('sum.none'))}</p>`,
+        `<div class="nc-row"><div class="nc-stats"><div><b>${total}</b><span>${esc(L('sum.stretches'))}</span></div><div><b>${atGoal}/${worked}</b><span>${esc(L('sum.goalDays'))}</span></div><div><b>${st.streak || 0}</b><span>${esc(L('sum.streak'))}</span></div><div><b>${water}</b><span>${esc(L('sum.water'))}</span></div></div>
+         <div class="nc-bars">${bars.map(b => `<div><i class="${b.n >= st.goal ? 'met' : ''}" style="height:${Math.max(3, b.n / max * 30)}px"></i>${esc(b.l)}</div>`).join('')}</div></div>
+         <p class="st-cue one">${top ? esc(L('sum.most', { ex: tx(ex(top[0]), 'name'), n: top[1] })) : esc(L('sum.none'))}</p>`,
         btn(L('btn.seeProgress'), 'summary-open', true) + btn(L('btn.close'), 'notice-close'));
     }
     if (n.type === 'wrap') {

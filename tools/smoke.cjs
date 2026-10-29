@@ -221,7 +221,7 @@ module.exports = function smoke(getWindow, app) {
           if (!egg) errors.push('CHECK L2: ten taps did not start the surprise');
           else {
             checks.push({ flow: 'L2', what: 'ten taps on the kuih start the surprise', ok: true });
-            try { fs.writeFileSync(path.join(out, 'L2-3-surprise.png'), (await egg.webContents.capturePage()).toPNG()); } catch (e) { errors.push('shot egg: ' + e.message); }
+            // no screenshot: the surprise stays a surprise (the screenshots end up on a public branch)
             await js("window.kopi.lapisAct('egg-done'); return 1"); await wait(800);
             if (findWin(/view=egg/)) errors.push('CHECK L2: the surprise did not close');
           }
@@ -246,7 +246,7 @@ module.exports = function smoke(getWindow, app) {
         else {
           checks.push({ flow: 'M1', what: 'ten pokes on the glass start the surprise', ok: true });
           await wait(2000);
-          try { fs.writeFileSync(path.join(out, 'M1-4-surprise.png'), (await show.webContents.capturePage()).toPNG()); } catch (e) { errors.push('shot show: ' + e.message); }
+          if (show.isDestroyed() || !show.isVisible()) errors.push('CHECK M1: the surprise closed by itself');
           await js("window.kopi.meterAction('show-done'); return 1"); await wait(1200);
           if (findWin(/view=show/)) errors.push('CHECK M1: the surprise did not close');
         }
@@ -304,6 +304,7 @@ module.exports = function smoke(getWindow, app) {
           if (bb.width < 100 || bb.height < 100) errors.push(`CHECK settings ${tab}: the embedded page is too small ${JSON.stringify(bb)}`);
           fs.writeFileSync(path.join(out, `settings-${tab}-embedded.png`), (await wc.capturePage()).toPNG());
           checks.push({ flow: 'S', what: `${tab}: the original app's page is shown`, ok: true, state: { url: u, bounds: bb } });
+          if (tab === 'stretch') { await js("window.kopi.lapisAct('set', { key: 'onboarded', value: true }); return 1"); await wait(1000); }
           if (tab === 'stretch') for (const sel of ['[data-page="progress"]', '[data-page="stretches"]', '[data-page="kuih"]', '[data-page="settings"]']) {
             const ok = await wc.executeJavaScript(`(() => { const b = document.querySelector('${sel}'); if (!b) return false; b.click(); return true; })()`).catch(() => false);
             if (ok) { await wait(800); fs.writeFileSync(path.join(out, `settings-stretch-${sel.match(/"(\w+)"/)[1]}.png`), (await wc.capturePage()).toPNG()); }
