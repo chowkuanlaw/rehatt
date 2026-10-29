@@ -321,5 +321,6 @@
   setInterval(settle, 150);
 
   const clearNews = () => { queue.length = 0; flashNow = null; }; // the smoke test starts each flow clean
-  window.__rehattDirector = Object.freeze({ flash, clearNews, pick: () => pick(), destination, open, fold });
+  window.__rehattDirector = Object.freeze({ flash, clearNews, pick: () => pick(), destination, open, fold,
+    debug: () => ({ buttons: [...buttons.keys()], pressed, current: current?.key || null, wantWidth }) });
 })();

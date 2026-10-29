@@ -137,7 +137,20 @@ module.exports = function smoke(getWindow, app) {
         const r = await js('return islandBounds'); await clickAt(r.x + 50, 14); await wait(900);
         await check('W7', 'clicking the nudge opens Stretch and counts no glass', s => s.mode === 'expanded' && s.view === 'stretch' && s.glasses === before?.glasses); await shot('W7-2-water-card');
         await js("currentView = 'home'; setMode('rest', false); return 1"); await away(); await wait(1200);
-        await clickHit('nudgeBtn0'); await wait(500);
+        const r2 = await js('return hit.nudgeBtn0 || null');
+        const diag = { before: await js(`const r = hit.nudgeBtn0; const el = r && document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return { mode, view: currentView, w: visual.width, island: islandBounds, el: el ? (el.id || el.tagName) : null, d: window.__rehattDirector.debug() }`) };
+        if (r2) {
+          const x = r2.x + r2.width / 2, y = r2.y + r2.height / 2;
+          cursor = { x: b().x + x, y: b().y + y };
+          island.webContents.sendInputEvent({ type: 'mouseMove', x: Math.round(x), y: Math.round(y) }); await wait(40);
+          diag.afterMove = await js('return { mode, d: window.__rehattDirector.debug() }');
+          island.webContents.sendInputEvent({ type: 'mouseDown', x: Math.round(x), y: Math.round(y), button: 'left', clickCount: 1 }); await wait(40);
+          diag.afterDown = await js('return { mode, d: window.__rehattDirector.debug() }');
+          island.webContents.sendInputEvent({ type: 'mouseUp', x: Math.round(x), y: Math.round(y), button: 'left', clickCount: 1 }); await wait(60);
+          diag.afterUp = await js('return { mode, view: currentView, d: window.__rehattDirector.debug(), glasses: window.__rehattStretch?.state()?.today?.water }');
+        } else errors.push('click: no nudgeBtn0 for Drank');
+        fs.writeFileSync(path.join(out, 'w7-diag.json'), JSON.stringify(diag, null, 1));
+        await wait(500);
         await check('W7', 'Drank counts one glass and says so', s => s.glasses === (before?.glasses || 0) + 1 && s.kind === 'note'); await shot('W7-3-drank');
       },
 
