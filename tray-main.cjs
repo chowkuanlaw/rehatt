@@ -18,7 +18,8 @@ function openIsland() {
 }
 
 // Start with Windows. During development Rehatt runs as "electron.exe <folder>", so pass those along.
-function loginOptions() { return app.isPackaged ? {} : { path: process.execPath, args: [app.getAppPath()] }; }
+// --rehatt-login: started by Windows at sign-in (Rehatt then appears quietly, without the hello).
+function loginOptions() { return app.isPackaged ? { args: ['--rehatt-login'] } : { path: process.execPath, args: [app.getAppPath(), '--rehatt-login'] }; }
 function startsWithWindows() { try { return app.getLoginItemSettings(loginOptions()).openAtLogin; } catch { return false; } }
 function setStartsWithWindows(on) { try { app.setLoginItemSettings({ ...loginOptions(), openAtLogin: !!on }); } catch {} buildMenu(); }
 

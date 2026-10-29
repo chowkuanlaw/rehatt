@@ -46,7 +46,7 @@
     if (!next?.ok) return;
     const before = st; st = next;
     if (st.mode !== lastMode) {
-      if (st.mode === 'due') { window.__kopiChime?.('stretch'); if (mode !== 'expanded') setMode('compact', false); }
+      if (st.mode === 'due') window.__kopiChime?.('stretch'); // the island director (director-ui.js) decides what the island shows
       if (st.mode === 'done' && lastMode === 'active') {
         window.__kopiChime?.('party'); window.__kopiCheer?.();
         window.dispatchEvent(new CustomEvent('kopi:badge', { detail: 'stretch' }));
@@ -56,7 +56,7 @@
     if (st.switched && !lastSwitched && st.mode === 'active') window.__kopiChime?.('switch');
     lastSwitched = st.switched;
     if (st.water !== lastWater) {
-      if (st.water === 'ask') { window.__kopiChime?.('water'); if (mode !== 'expanded') setMode('compact', false); }
+      if (st.water === 'ask') window.__kopiChime?.('water');
       if (st.water === 'done' && st.today.water >= st.waterGoal) window.dispatchEvent(new CustomEvent('kopi:badge', { detail: 'water' }));
       lastWater = st.water;
     }
@@ -73,7 +73,10 @@
   function status() {
     if (!st) return '';
     if (!st.on) return T('Dimatikan', 'Turned off');
-    if (st.paused) return T('Dijeda', 'Paused');
+    if (st.paused) return st.pauseUntil ? T(`Dijeda hingga ${clockAt(st.pauseUntil)}`, `Paused till ${clockAt(st.pauseUntil)}`) : T('Dijeda', 'Paused');
+    if (st.mode === 'done') return T(`Seterusnya pada ${clockAt(st.nextDue)}`, `Next at ${clockAt(st.nextDue)}`);
+    if (st.mode === 'snoozed') return T(`Ditunda · kembali ${clockAt(st.nextDue)}`, `Snoozed · back ${clockAt(st.nextDue)}`);
+    if (st.focus) return T('Menunggu Fokus tamat', 'Waiting for Focus to end');
     if (st.mode === 'active') return `${tx(current(), 'name')} · ${mmss(st.activeEnd - Date.now())}`;
     if (st.mode === 'due') return T('Masa untuk regangan', 'Time to stretch');
     if (st.resting) return st.backAt ? T(`Rehat · kembali ${clockAt(st.backAt)}`, `Resting · back ${clockAt(st.backAt)}`) : T('Rehat', 'Resting');
@@ -87,35 +90,11 @@
     test: kind => act('test', kind)
   };
 
-  // ---------- the small island ----------
-  // true while there is something to show: a stretch due or running, just done, water, or "welcome back"
-  window.__kopiStretchNudge = () => Boolean(st?.on && (['due', 'active', 'done'].includes(st.mode) || st.water || st.backMins));
-  window.__kopiStretchSmall = (left, cy, cover, mid0, mid1) => {
-    const line = (s, colour = '#f2f5ed') => text(s, mid0, cy + 4, 11.5, colour, 700, 'left', mid1 - mid0);
-    if (st.mode === 'active') {
-      const e = current(), part = Math.min(1, Math.max(0, 1 - (st.activeEnd - Date.now()) / (st.activeSecs * 1000 || 1))), r = cover / 2 - 2, cx = left + cover / 2;
-      ctx.save(); ctx.lineWidth = 2.5; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.stroke();
-      ctx.beginPath(); ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * part); ctx.strokeStyle = '#ff8fb1'; ctx.stroke(); ctx.restore();
-      const side = e?.sides && st.switched ? T(' · tukar sisi', ' · switch sides') : '';
-      text(mmss(st.activeEnd - Date.now()), mid1, cy + 4, 11.5, '#ffb3c9', 700, 'right');
-      return text(tx(e, 'name') + side, mid0, cy + 4, 11.5, '#f2f5ed', 700, 'left', mid1 - mid0 - 42);
-    }
-    drawKuih(st.mode === 'done' ? 'cheer' : st.water ? (st.water === 'done' ? 'drink' : 'glass') : st.mode === 'due' ? 'wave' : 'idle', left + cover / 2, cy + cover / 2 + 2, cover + 4);
-    if (st.mode === 'done') return line(T(`Syabas! ${st.today.total}/${st.goal} hari ini`, `Nice! ${st.today.total}/${st.goal} today`), '#7ef0a4');
-    if (st.mode === 'due') return line(st.reason === 'ai' ? T(`AI anda bekerja · ${tx(current(), 'name')}?`, `Your AI is working · ${tx(current(), 'name')}?`) : T(`Masa untuk regangan · ${tx(current(), 'name')}`, `Time to stretch · ${tx(current(), 'name')}`));
-    if (st.water === 'ask') return line(T('💧 Minum segelas air?', '💧 Time for a glass of water?'));
-    if (st.water === 'done') return line(T(`💧 ${st.today.water}/${st.waterGoal} gelas hari ini`, `💧 ${st.today.water}/${st.waterGoal} glasses today`), '#8fd0ff');
-    if (st.backMins) return line(T(`Selamat kembali · ${st.backMins} min rehat dikira`, `Welcome back · ${st.backMins} min break counted`), '#c6e994');
-  };
-  // a click on the small island while it asks: open the Stretch page (water: count the glass)
-  canvas.addEventListener('click', e => {
-    if (mode === 'expanded' || !window.__kopiStretchNudge() || !inside(e.clientX, e.clientY, islandBounds)) return;
-    if (window.__kopiStatus?.()?.state === 'question') return; // your AI's question goes first
-    e.preventDefault(); e.stopImmediatePropagation();
-    if (st.water === 'ask' && st.mode !== 'due' && st.mode !== 'active') { act('water'); return; }
-    setView('stretch'); setMode('expanded');
-  }, true);
+  // ---------- for the island director (director-ui.js): the small island's nudges are drawn there ----------
+  window.__rehattKuih = drawKuih;
+  window.__rehattStretch.name = id => tx(ex(id), 'name');
+  window.__rehattStretch.current = () => current();
+  window.__rehattStretch.act = act;
 
   // ---------- the Stretch page ----------
   const root = document.createElement('section'); root.id = 'rehatt-stretch'; document.body.appendChild(root);
@@ -175,16 +154,20 @@
   function render(force) {
     if (!st || root.style.display === 'none') return;
     const e = current(), active = st.mode === 'active', due = st.mode === 'due';
-    const key = [st.mode, st.cur, st.upNext, st.paused, st.resting, st.quiet, st.reason, st.water, st.kuih, st.today.total, st.today.water, st.switched, MS(), st.on].join('|');
+    const key = [st.mode, st.focus, st.nextDue, st.cur, st.upNext, st.paused, st.resting, st.quiet, st.reason, st.water, st.kuih, st.today.total, st.today.water, st.switched, MS(), st.on].join('|');
     if (!force && key === lastKey) return tick();
     lastKey = key;
     const pose = active ? POSE_OF(e?.id) : st.mode === 'done' ? 'cheer' : st.water === 'ask' ? 'glass' : due ? 'wave' : st.mood || 'idle';
-    const kicker = st.reason === 'ai' && (due || active) ? `<p class="st-kicker st-ai"><i style="background:#ffb35c;box-shadow:0 0 8px #ffb35c"></i>${T('AI anda sedang bekerja · masa yang sesuai untuk regangan', 'Your AI is working · a good moment to stretch')}</p>`
+    const done = st.mode === 'done';
+    const kicker = st.reason === 'focus' && due ? `<p class="st-kicker st-ai"><i style="background:#ffb35c;box-shadow:0 0 8px #ffb35c"></i>${T('Fokus siap · masa yang sesuai untuk regangan', 'Focus done · a good moment to stretch')}</p>`
+      : st.reason === 'ai' && (due || active) ? `<p class="st-kicker st-ai"><i style="background:#ffb35c;box-shadow:0 0 8px #ffb35c"></i>${T('AI anda sedang bekerja · masa yang sesuai untuk regangan', 'Your AI is working · a good moment to stretch')}</p>`
       : `<p class="st-kicker"><i></i>${active ? T('Sedang meregang', 'Stretching now') : due ? T('Masa untuk regangan', 'Time to stretch') : st.mode === 'done' ? T('Siap!', 'Done!') : T('Regangan seterusnya', 'Next stretch')}</p>`;
     const steps = (MS() && e?.ms?.steps) || e?.steps || [];
     const actions = active
       ? `${e?.sides ? `<p class="st-cue ${st.switched ? 'st-switch' : ''}" id="st-sides">${st.switched ? T('Tukar sisi sekarang', 'Switch sides now') : T('Satu sisi dahulu, kemudian tukar di pertengahan', 'One side first, switch halfway')}</p>` : ''}
          <div class="st-row"><div class="st-timer"><span class="st-big" id="st-left">${mmss(st.activeEnd - Date.now())}</span><div class="st-track"><div class="st-fill" id="st-fill"></div></div></div><button type="button" class="st-go" data-a="done">${T('Siap', 'Done')}</button><button type="button" class="st-quiet" data-a="stop">${T('Berhenti', 'Stop')}</button></div>`
+      : done ? `<div class="st-row"><span class="st-label" style="margin-left:0;font-size:12px;color:#9fd8b0">${T(`Syabas! ${st.today.total}/${st.goal} hari ini · seterusnya ${clockAt(st.nextDue)}`, `Nice! ${st.today.total}/${st.goal} today · next at ${clockAt(st.nextDue)}`)}</span></div>`
+      : st.mode === 'snoozed' ? `<div class="st-row"><span class="st-label" style="margin-left:0;font-size:12px">${T(`Ditunda · kembali ${clockAt(st.nextDue)}`, `Snoozed · back at ${clockAt(st.nextDue)}`)}</span></div>`
       : due
         ? `<div class="st-row"><button type="button" class="st-go" data-a="start">${T('Mula', 'Start')} · ${esc(tx(e, 'dose'))}</button><button type="button" data-a="snooze">${T(`Tunda ${st.snooze} min`, `Snooze ${st.snooze} min`)}</button><button type="button" data-a="different">${T('Yang lain', 'Another')}</button><button type="button" class="st-quiet" data-a="skip">${T('Langkau', 'Skip')}</button></div>`
         : `<div class="st-row"><button type="button" class="st-go" data-a="now">${T('Regang sekarang', 'Stretch now')}</button>${

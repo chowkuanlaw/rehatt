@@ -29,11 +29,17 @@
     const was = st?.alert; st = next;
     if (st.alert && JSON.stringify(st.alert) !== JSON.stringify(was)) {
       window.__kopiChime?.('warn');
-      window.__kopiFlash?.(T(`☕ Had ${st.alert.kind === 'weekly' ? 'mingguan' : '5 jam'}: ${st.alert.pct}% digunakan`, `☕ ${st.alert.kind === 'weekly' ? 'Weekly' : '5-hour'} limit: ${st.alert.pct}% used`), 5000);
+      // the island director shows it: a nudge when small, a banner when open (5 s, or 8 s at 95%)
+      const w = st.alert.kind === 'weekly' ? st.weekly : st.session, high = st.alert.pct >= 95;
+      const refill = w?.resetsAt ? ' · ' + T('penuh semula ', 'refills ') + new Date(w.resetsAt).toLocaleTimeString(LOC(), w.resetsAt - Date.now() > 86400e3 ? { weekday: 'short', hour: '2-digit', minute: '2-digit' } : { hour: '2-digit', minute: '2-digit' }) : '';
+      window.__rehattDirector?.flash({ key: 'usage:' + st.alert.kind + ':' + st.alert.pct, tone: high ? 'err' : 'us', ms: high ? 8000 : 5000, view: 'meter',
+        text: T(`☕ ${st.alert.pct}% had ${st.alert.kind === 'weekly' ? 'mingguan' : '5 jam'} digunakan`, `☕ ${st.alert.pct}% of ${st.alert.kind === 'weekly' ? 'weekly' : '5-hour'} limit used`) + refill });
     }
     render(true);
   }
   api.onMeter(update);
+  // 95% or more of the 5-hour window used: a small dot stays on Kopi until it refills (director-ui.js draws it)
+  window.__rehattMeterLow = () => { const l = left(st?.session); return l != null && l <= 5; };
   api.meterGet().then(update).catch(() => {});
   const act = action => api.meterAction(action).then(update).catch(() => {});
   setInterval(() => api.meterGet().then(update).catch(() => {}), 30000); // reset times move on
@@ -78,8 +84,8 @@
     const s = left(st?.session), k = left(st?.weekly), my = r.y + r.height / 2;
     if (w.size === 'S') {
       drawGlass(r.x + 26, r.y + r.height - 10, r.height - 22, s);
-      text(s == null ? '—' : `${s}%`, r.x + 50, my - 1, 15, '#fff', 700, 'left', r.width - 58);
-      text(s == null ? T('Penggunaan', 'Usage') : T('lagi · 5 jam', 'left · 5 hr'), r.x + 50, my + 14, 10.5, '#8f998d', 500, 'left', r.width - 58);
+      text(s == null ? T('Penggunaan', 'Usage') : `${s}%`, r.x + 50, my - 1, s == null ? 13 : 15, '#fff', 700, 'left', r.width - 58);
+      text(s == null ? T('Menunggu Claude Code', 'Waiting for Claude Code') : T('lagi · 5 jam', 'left · 5 hr'), r.x + 50, my + 14, 10.5, '#8f998d', 500, 'left', r.width - 58);
       return true;
     }
     const gh = Math.min(r.height - 18, w.size === 'L' ? 112 : 54), gx = r.x + 16 + gh * 0.34;

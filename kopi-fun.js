@@ -16,7 +16,7 @@
   const DEFAULTS = { lang: 'en', speed: 'fast', focusMin: 25, focusSec: 1500,eye: 'mint', body: 'cloud', palette: 'classic', faces: true, blink: true,
     dance: true, confetti: true, chimes: true, notify: true, startup: true, outfit: 'auto', sleepMin: 10, warnAt: 80,
     pack: 'classic', seasonal: true, hunger: true, volumeHud: true, batteryWarn: true, appAnim: true,
-    testMode: false, place: 'free', name: 'Kopi', lightBusy: '#ff9a1f', lightDone: '#22e05a', lightError: '#ff3b3b' };
+    testMode: false, place: 'top', name: 'Kopi', lightBusy: '#ff9a1f', lightDone: '#22e05a', lightError: '#ff3b3b' };
   const savedPrefs = store.get('kopi:prefs', {});
   if (!savedPrefs.newLook) { savedPrefs.body = 'cloud'; savedPrefs.newLook = true; store.set('kopi:prefs', savedPrefs); } // switch once to the new white look
   const prefs = { ...DEFAULTS, ...savedPrefs };
@@ -360,8 +360,13 @@
   const startShow = setInterval(() => {
     if (!introFinished) return;
     clearInterval(startShow);
-    helloQueued = false;
-    if (prefs.startup) startHello();
+    if (!prefs.startup) { helloQueued = false; return; }
+    // No hello when Windows started Rehatt at sign-in (it just appears), or when your AI already has a question
+    Promise.resolve(window.kopi?.launchInfo?.()).catch(() => null).then(info => {
+      helloQueued = false;
+      if (info?.atLogin || window.__kopiStatus?.()?.state === 'question') return;
+      startHello();
+    });
   }, 100);
   // While Kopi says hi (or bye) he stands big in the middle of the island: other messages wait (extras-ui.js).
   window.__kopiHelloBusy = () => (helloQueued && prefs.startup) || showAt != null || byeAt != null;

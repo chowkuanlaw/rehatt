@@ -192,11 +192,11 @@ function createHub(options = {}) {
   }
 
   // You looked at it: green, red and questions go back to quiet.
+  // You looked (the Claude page, or "To terminal"): green and red go quiet. A question stays until you
+  // really answer it in the terminal: looking at it is not answering it.
   function seen() {
     for (const s of sessions.values()) {
-      if (['done', 'error', 'question'].includes(s.state)) {
-        s.state = 'ready'; s.detail = 'Seen'; s.question = ''; s.permission = null;
-      }
+      if (['done', 'error'].includes(s.state)) { s.state = 'ready'; s.detail = 'Seen'; }
     }
     onChange(); return { ok: true };
   }

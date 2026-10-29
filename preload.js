@@ -60,6 +60,7 @@
     // The island window (main.js): catching the mouse, its place on the screen, dragging it
     setIslandInteractive: interactive => ipcRenderer.send('island:set-interactive', interactive),
     islandPlaceGet: () => ipcRenderer.invoke('island:place-get'),
+    launchInfo: () => ipcRenderer.invoke('app:launch'),
     islandPlaceSet: mode => ipcRenderer.send('island:place-set', mode), // 'free' | 'top' | 'reset'
     onIslandPlace: callback => subscribe('island:place', callback),
     islandSize: (width, height) => ipcRenderer.send('island:size', { width, height }),

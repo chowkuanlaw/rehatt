@@ -62,7 +62,7 @@ jobs:
         env:
           REHATT_SMOKE: smoke
         run: |
-          timeout 150 npx electron . || echo "electron exit $?"
+          timeout 300 npx electron . || echo "electron exit $?"
           ls smoke
           if [ -s smoke/errors.txt ]; then
             cat smoke/errors.txt

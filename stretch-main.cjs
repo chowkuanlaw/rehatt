@@ -9,7 +9,11 @@ const { execFile } = require('node:child_process');
 const L = require('./lapis/data.js');
 
 const AWAY_SECS = 300; // 5 min without keyboard or mouse = away from the desk
-const MEETING_RECHECK = 60e3, AFTER_MEETING = 120e3, WATER_LATER = 15 * 60e3;
+const MEETING_RECHECK = 60e3, AFTER_MEETING = 120e3, WATER_LATER = 30 * 60e3;
+const DUE_GIVE_UP = 20 * 60e3; // a stretch nobody started in 20 minutes counts as skipped, quietly
+const WATER_ASK_FOR = 2 * 60e3; // the water question folds away after 2 minutes and asks again in 30
+const WATER_WITH_STRETCH = 15 * 60e3; // water due within 15 min of a finished stretch: asked right after it
+const FOCUS_BREAK = 10 * 60e3; // Focus ends and a stretch is due within 10 min: it comes now
 const EARLY_FOR_CLAUDE = 6 * 60e3; // a stretch due within 6 minutes comes now when your AI starts working
 const own = (o, k) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k);
 
@@ -94,7 +98,8 @@ function setup(electron, options = {}) {
   const writeNow = () => { try { fs.mkdirSync(path.dirname(file()), { recursive: true }); fs.writeFileSync(file() + '.tmp', JSON.stringify(S)); fs.renameSync(file() + '.tmp', file()); } catch {} };
   const save = () => { clearTimeout(saveTimer); saveTimer = setTimeout(writeNow, 300); };
   const R = { mode: 'waiting', cur: null, dueAt: 0, activeEnd: 0, activeSecs: 0, switched: false, msgUntil: 0, awaySince: null, locked: null,
-    resting: false, quiet: false, quietCheck: false, water: null, waterUntil: 0, nextWater: Date.now() + S.waterEvery * 60e3, skips: 0, snoozed: false, reason: '', backMins: 0, backUntil: 0 };
+    resting: false, quiet: false, quietCheck: false, water: null, waterUntil: 0, nextWater: Date.now() + S.waterEvery * 60e3, skips: 0, snoozed: false, reason: '', backMins: 0, backUntil: 0,
+    focusUntil: 0, waterAskAt: 0, waterAfter: false };
 
   const pad = n => String(n).padStart(2, '0');
   const dayKey = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -116,6 +121,7 @@ function setup(electron, options = {}) {
       water: S.waterOn && !puasa() ? R.water : null, nextWater: S.waterOn && !R.resting && !puasa() ? R.nextWater : 0, ramadan: Boolean(puasa()),
       today: { total: t.total, water: t.water || 0, by: t.by }, streak: stats.streak, total: stats.total, week,
       festival: L.festivalOn(new Date())?.id || null, backMins: Date.now() < R.backUntil ? R.backMins : 0,
+      dueAt: R.mode === 'due' ? R.dueAt : 0, focus: R.focusUntil > Date.now(),
       mood: R.skips >= 3 ? 'sad' : R.snoozed ? 'drowsy' : t.total >= S.goal ? 'proud' : '' };
   }
   function broadcast() {
@@ -152,11 +158,13 @@ function setup(electron, options = {}) {
     R.skips = 0; R.snoozed = false;
     const rec = today(); rec.total++; rec.by[R.cur] = (rec.by[R.cur] || 0) + 1;
     advance(); schedule(S.interval * 60e3);
-    R.mode = 'done'; R.msgUntil = Date.now() + 5000; R.reason = '';
+    R.mode = 'done'; R.msgUntil = Date.now() + 4000; R.reason = '';
+    // water due soon anyway: asked right after the cheer, so it is one break instead of two
+    R.waterAfter = waterWanted() && R.nextWater - Date.now() <= WATER_WITH_STRETCH;
     broadcast();
   }
   function skip() { if (R.mode === 'due') R.skips++; R.snoozed = false; advance(); schedule(S.interval * 60e3); R.mode = 'waiting'; R.cur = null; R.reason = ''; broadcast(); }
-  function snooze() { R.snoozed = true; schedule(S.snooze * 60e3); R.mode = 'snoozed'; R.msgUntil = Date.now() + 3500; R.reason = ''; broadcast(); }
+  function snooze() { R.snoozed = true; schedule(S.snooze * 60e3); R.mode = 'snoozed'; R.msgUntil = Date.now() + 2500; R.reason = ''; broadcast(); }
   function different() {
     const base = R.cur || upNext().id; let i = S.idx;
     do { i++; } while (L.CYCLE[i % L.CYCLE.length] === base || (puasa() && L.CYCLE[i % L.CYCLE.length] === 'walk'));
@@ -178,9 +186,11 @@ function setup(electron, options = {}) {
     else if (kind !== 'forever') return;
     togglePause(); S.pauseUntil = until; save(); broadcast();
   }
+  const waterWanted = () => S.waterOn && !puasa() && !R.resting && !S.paused && (today().water || 0) < S.waterGoal;
+  function askWater(now) { R.water = 'ask'; R.waterAskAt = now; R.waterAfter = false; R.nextWater = now + S.waterEvery * 60e3; broadcast(); }
   function drankWater() {
     const rec = today(); rec.water = (rec.water || 0) + 1;
-    R.nextWater = Date.now() + S.waterEvery * 60e3; R.water = 'done'; R.waterUntil = Date.now() + 4000;
+    R.nextWater = Date.now() + S.waterEvery * 60e3; R.water = 'done'; R.waterUntil = Date.now() + 2500; R.waterAfter = false;
     save(); broadcast();
   }
   function backFromAway(now) {
@@ -188,8 +198,8 @@ function setup(electron, options = {}) {
     if (!since || now - since < 60e3) { broadcast(); return; }
     if (R.mode === 'due') { R.mode = 'waiting'; R.cur = null; R.reason = ''; }
     R.quiet = false; schedule(S.interval * 60e3);
-    R.backMins = Math.max(1, Math.round((now - since) / 60e3)); R.backUntil = now + 15000;
-    broadcast(); setTimeout(broadcast, 15100);
+    R.backMins = Math.max(1, Math.round((now - since) / 60e3)); R.backUntil = now + 4000;
+    broadcast(); setTimeout(broadcast, 4100);
   }
 
   // ---------- your AI starts working: a stretch that is due soon comes now ----------
@@ -221,21 +231,28 @@ function setup(electron, options = {}) {
     if (R.mode === 'waiting') skipWalk();
 
     const busy = aiBusy(), aiStarted = busy && !aiWasBusy; aiWasBusy = busy;
-    const ready = R.mode === 'waiting' && !S.paused && !R.awaySince && !R.resting && !R.quietCheck;
+    const focusing = R.focusUntil > now; // a Focus session: stretches and water wait until it ends
+    const ready = R.mode === 'waiting' && !S.paused && !R.awaySince && !R.resting && !R.quietCheck && !focusing;
     if (ready && now >= S.nextDue) dueOrHold(busy && S.withAi ? 'ai' : '');
     else if (ready && aiStarted && S.withAi && S.nextDue - now <= EARLY_FOR_CLAUDE) dueOrHold('ai');
+    else if (R.mode === 'due' && now - R.dueAt >= DUE_GIVE_UP) { R.skips++; R.snoozed = false; advance(); schedule(S.interval * 60e3); R.mode = 'waiting'; R.cur = null; R.reason = ''; broadcast(); }
     else if (R.mode === 'active') {
       const left = R.activeEnd - now, ex = L.BY[R.cur];
       if (ex.sides && !R.switched && left <= R.activeSecs * 500) { R.switched = true; broadcast(); }
       if (left <= 0) finish();
-    } else if ((R.mode === 'done' || R.mode === 'snoozed') && now >= R.msgUntil) { R.mode = 'waiting'; R.cur = null; broadcast(); }
+    } else if ((R.mode === 'done' || R.mode === 'snoozed') && now >= R.msgUntil) {
+      R.mode = 'waiting'; R.cur = null;
+      if (R.waterAfter && waterWanted() && !R.water) askWater(now); else broadcast();
+      R.waterAfter = false;
+    }
 
     const fasting = puasa();
     if (fasting && R.water === 'ask') { R.water = null; broadcast(); }
     if (R.water === 'done' && now >= R.waterUntil) { R.water = null; broadcast(); }
-    if (S.waterOn && !fasting && !R.resting && !S.paused && R.mode === 'waiting' && !R.water && now >= R.nextWater) {
+    if (R.water === 'ask' && now - R.waterAskAt >= WATER_ASK_FOR) { R.water = null; R.nextWater = now + WATER_LATER; broadcast(); } // not now: again in 30 min
+    if (S.waterOn && !fasting && !R.resting && !S.paused && !focusing && R.mode === 'waiting' && !R.water && now >= R.nextWater) {
       if ((today().water || 0) >= S.waterGoal) R.nextWater = now + S.waterEvery * 60e3; // goal reached for today
-      else { R.nextWater = now + S.waterEvery * 60e3; R.water = 'ask'; broadcast(); }
+      else askWater(now);
     }
     if (S.paused && S.pauseUntil && now >= S.pauseUntil) togglePause();
     const dk = dayKey(new Date()); if (dk !== lastDay) { lastDay = dk; broadcast(); }
@@ -265,12 +282,19 @@ function setup(electron, options = {}) {
     stop: () => { if (R.mode === 'active') { R.mode = 'waiting'; R.cur = null; schedule(S.interval * 60e3); broadcast(); } },
     pause: kind => pauseFor(String(kind || 'forever')), resume: () => { if (S.paused) togglePause(); },
     water: drankWater, waterLater: () => { R.water = null; R.nextWater = Date.now() + WATER_LATER; broadcast(); },
+    // the island's Focus timer: { until } while it runs, { until: 0, ended: true } when it finishes on its own
+    focus: v => {
+      const now = Date.now(), until = Number(v?.until) || 0, was = R.focusUntil > now;
+      R.focusUntil = until > now ? Math.min(until, now + 24 * 3600e3) : 0;
+      if (was && !R.focusUntil && v?.ended && R.mode === 'waiting' && S.on && !S.paused && !R.resting && S.nextDue - now <= FOCUS_BREAK) becomeDue('focus');
+      else broadcast();
+    },
     set: v => setSetting(String(v?.key || ''), v?.value),
     reset: () => { S.history = {}; S.idx = 0; save(); broadcast(); },
     // Settings → General → Test mode
     test: kind => {
       if (kind === 'stretch') { R.mode = 'waiting'; becomeDue(aiBusy() ? 'ai' : ''); }
-      else if (kind === 'water') { R.water = 'ask'; broadcast(); }
+      else if (kind === 'water') askWater(Date.now());
       else if (kind === 'clear') { R.mode = 'waiting'; R.cur = null; R.water = null; R.reason = ''; broadcast(); }
     }
   };

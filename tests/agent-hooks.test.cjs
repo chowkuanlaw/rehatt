@@ -100,7 +100,7 @@ test('Rehatt takes over the Claude Code hooks and status line of Kopi Island and
   } finally { t.cleanup(); }
 });
 
-test('seen: green, red and questions go quiet after you looked; nothing else changes', async () => {
+test('seen: green and red go quiet after you looked; a question and busy work stay', async () => {
   const t = temp();
   const hub = createHub({ userData: t.dir, settingsFile: t.settingsFile });
   try {
@@ -114,6 +114,11 @@ test('seen: green, red and questions go quiet after you looked; nothing else cha
     hub.apply({ session_id: 'w', hook_event_name: 'UserPromptSubmit' });
     hub.seen();
     assert.equal(hub.view().state, 'running'); // busy work is never hidden
+    hub.apply({ session_id: 'q', hook_event_name: 'Notification', notification_type: 'permission_prompt', message: 'Allow Bash?' });
+    hub.seen();
+    assert.equal(hub.view().state, 'question'); // looking is not answering
+    hub.apply({ session_id: 'q', hook_event_name: 'PostToolUse', tool_name: 'Bash' });
+    assert.notEqual(hub.view().state, 'question'); // answered in the terminal: gone
   } finally { hub.stop(); t.cleanup(); }
 });
 

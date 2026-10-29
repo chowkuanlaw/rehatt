@@ -106,3 +106,51 @@ test('saved settings are read back safely', () => {
   assert.deepEqual(S.history, { '2026-10-29': { total: 3, water: 2, by: { chin: 2 } } });
   assert.equal(cleanState({ kuih: 'pizza', interval: 7 }).kuih, 'lapis');
 });
+
+test('a stretch nobody starts folds away: after 20 minutes it counts as skipped and the next one is scheduled', () => {
+  const s = start();
+  try {
+    s.S.nextDue = Date.now() - 1; s.tick();
+    assert.equal(s.R.mode, 'due'); assert.ok(s.publicState().dueAt > 0);
+    s.R.dueAt = Date.now() - 21 * 60e3; s.tick();
+    assert.equal(s.R.mode, 'waiting'); assert.equal(s.publicState().today.total, 0);
+    assert.ok(Math.abs(s.S.nextDue - (Date.now() + 20 * 60e3)) < 2000);
+  } finally { s.cleanup(); }
+});
+
+test('water: only "Drank" counts; an unanswered ask folds after 2 minutes and comes back in 30', () => {
+  const s = start();
+  try {
+    s.R.nextWater = Date.now() - 1; s.tick();
+    assert.equal(s.publicState().water, 'ask');
+    s.R.waterAskAt = Date.now() - 3 * 60e3; s.tick();
+    assert.equal(s.publicState().water, null); assert.equal(s.publicState().today.water, 0);
+    assert.ok(Math.abs(s.R.nextWater - (Date.now() + 30 * 60e3)) < 2000);
+  } finally { s.cleanup(); }
+});
+
+test('water due soon after a stretch is asked right after the cheer: one break, not two', () => {
+  const s = start();
+  try {
+    s.R.nextWater = Date.now() + 10 * 60e3;
+    s.S.nextDue = Date.now() - 1; s.tick(); s.ACTIONS.start(); s.ACTIONS.done();
+    assert.equal(s.R.mode, 'done'); assert.equal(s.publicState().water, null);
+    s.R.msgUntil = Date.now() - 1; s.tick();
+    assert.equal(s.R.mode, 'waiting'); assert.equal(s.publicState().water, 'ask');
+  } finally { s.cleanup(); }
+});
+
+test('Focus: stretches and water wait while it runs; when it ends on its own the stretch comes, marked "focus"', () => {
+  const s = start();
+  try {
+    s.ACTIONS.focus({ until: Date.now() + 25 * 60e3 });
+    assert.equal(s.publicState().focus, true);
+    s.S.nextDue = Date.now() - 1; s.R.nextWater = Date.now() - 1; s.tick();
+    assert.equal(s.R.mode, 'waiting'); assert.equal(s.publicState().water, null);
+    s.ACTIONS.focus({ until: 0, ended: true });
+    assert.equal(s.R.mode, 'due'); assert.equal(s.R.reason, 'focus');
+    s.ACTIONS.skip();
+    s.ACTIONS.focus({ until: Date.now() + 60e3 }); s.ACTIONS.focus({ until: 0, ended: false }); // stopped by hand, nothing due soon
+    assert.equal(s.R.mode, 'waiting');
+  } finally { s.cleanup(); }
+});

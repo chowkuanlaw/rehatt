@@ -37,12 +37,12 @@ function openRehattUrl(value) {
 // ============================================================
 // WHERE THE ISLAND SITS
 // ============================================================
-// "free": wherever you drag it (the default; it starts at the top). "top": fixed at the top of your main screen,
-// like a Dynamic Island. x, y = where the top-centre of the small island is on your screen.
+// "top": fixed at the top of your main screen, like a Dynamic Island (the default). "free": wherever you drag it.
+// x, y = where the top-centre of the small island is on your screen.
 const PLACE_FILE = () => path.join(app.getPath('userData'), 'rehatt-position.json');
-let place = { mode: 'free', x: null, y: null };
+let place = { mode: 'top', x: null, y: null };
 try { place = { ...place, ...JSON.parse(fs.readFileSync(PLACE_FILE(), 'utf8')) }; } catch {}
-if (!['free', 'top'].includes(place.mode)) place.mode = 'free';
+if (!['free', 'top'].includes(place.mode)) place.mode = 'top';
 const savePlace = () => { try { fs.writeFileSync(PLACE_FILE(), JSON.stringify(place)); } catch {} };
 
 // How big the island is drawn right now (the island tells us), so near a screen edge it opens inwards.
@@ -55,7 +55,23 @@ function topCentre() {
   return { x: Math.round(b.x + b.width / 2), y: b.y };
 }
 
-function positionMascot() {
+// Near a screen edge the window moves so the open island fits. It glides there in one smooth motion (the island
+// reports its final size when it starts to open or close), instead of jumping a few pixels every frame.
+let glide = null;
+function moveWindow(nx, ny, smooth) {
+  clearInterval(glide); glide = null;
+  const from = mascotWindow.getBounds();
+  if (!smooth || (Math.abs(from.x - nx) < 3 && Math.abs(from.y - ny) < 3)) { if (from.x !== nx || from.y !== ny) mascotWindow.setPosition(nx, ny, false); return; }
+  const start = Date.now(), ms = 240, ease = t => 1 - Math.pow(1 - t, 3);
+  glide = setInterval(() => {
+    if (!mascotWindow || mascotWindow.isDestroyed()) { clearInterval(glide); return; }
+    const t = Math.min(1, (Date.now() - start) / ms), k = ease(t);
+    mascotWindow.setPosition(Math.round(from.x + (nx - from.x) * k), Math.round(from.y + (ny - from.y) * k), false);
+    if (t >= 1) { clearInterval(glide); glide = null; }
+  }, 15);
+}
+
+function positionMascot(smooth = false) {
   if (!mascotWindow || mascotWindow.isDestroyed()) return;
   let x, y;
   if (place.mode === 'top' || !Number.isFinite(place.x) || !Number.isFinite(place.y)) {
@@ -67,8 +83,7 @@ function positionMascot() {
     x = clamp(place.x, wa.x + half, wa.x + wa.width - half);
     y = clamp(place.y, wa.y, wa.y + wa.height - islandSize.height - 16);
   }
-  const bounds = mascotWindow.getBounds(), nx = Math.round(x - PANEL_WIDTH / 2), ny = Math.round(y);
-  if (bounds.x !== nx || bounds.y !== ny) mascotWindow.setPosition(nx, ny, false);
+  moveWindow(Math.round(x - PANEL_WIDTH / 2), Math.round(y), smooth && !drag);
 }
 
 function setPlace(mode) {
@@ -80,6 +95,7 @@ const sendPlace = () => { if (mascotWindow && !mascotWindow.isDestroyed()) masco
 app.rehattPlace = { get: () => place.mode, set: setPlace }; // the tray menu and the settings app change it too
 
 const fromIsland = event => /mascot\.html/.test(event.senderFrame?.url || '');
+ipcMain.handle('app:launch', event => (fromIsland(event) ? { atLogin: process.argv.includes('--rehatt-login') } : null));
 ipcMain.handle('island:place-get', event => (fromIsland(event) ? { ok: true, mode: place.mode } : { ok: false }));
 ipcMain.on('island:place-set', (event, mode) => { if (fromIsland(event)) setPlace(mode); });
 ipcMain.on('island:size', (event, size) => {
@@ -87,7 +103,7 @@ ipcMain.on('island:size', (event, size) => {
   const w = Number(size?.width), h = Number(size?.height);
   if (!Number.isFinite(w) || !Number.isFinite(h)) return;
   islandSize = { width: clamp(w, 40, PANEL_WIDTH), height: clamp(h, 20, PANEL_HEIGHT) };
-  if (place.mode === 'free') positionMascot();
+  if (place.mode === 'free') positionMascot(true);
 });
 ipcMain.on('island:drag', (event, on) => {
   if (!fromIsland(event) || !mascotWindow) return;

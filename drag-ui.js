@@ -31,7 +31,7 @@
     try { canvas.setPointerCapture(press.id); } catch {}
   }, true);
   function end() {
-    if (dragging) { api.islandDrag(false); swallowUntil = performance.now() + 250; window.__kopiChime?.('pop'); }
+    if (dragging) { api.islandDrag(false); swallowUntil = performance.now() + 250; window.__kopiChime?.('pop'); window.__kopiHoldClosed?.(); } // dropped: it stays small until the mouse leaves
     press = null; dragging = false; window.__rehattDragging = false;
   }
   window.addEventListener('pointerup', end, true);
@@ -46,7 +46,8 @@
   // ---- how big the island is drawn now (plus room for its glow) ----
   let sent = '';
   (function report() {
-    const w = Math.round(visual.width / 4) * 4 + 28, h = Math.round(visual.height / 4) * 4 + 24, key = w + 'x' + h;
+    const v = transition?.to || visual; // the size it is going to: the window moves once, not every frame
+    const w = Math.round(v.width / 4) * 4 + 28, h = Math.round(v.height / 4) * 4 + 24, key = w + 'x' + h;
     if (key !== sent) { sent = key; api.islandSize(w, h); }
     requestAnimationFrame(report);
   })();
