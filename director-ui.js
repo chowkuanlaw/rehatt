@@ -146,7 +146,7 @@
     ctx.font = BTN_FONT;
     for (const b of item.buttons || []) w += ctx.measureText(b.label).width + 20 + 5;
     ctx.restore();
-    return Math.round(Math.max(240, Math.min(470, w)) / 4) * 4;
+    return Math.ceil(Math.max(240, Math.min(480, w + 14)) / 4) * 4; // a little slack: text never gets cut short
   }
   const baseTarget = modeTarget;
   modeTarget = function (m) { const t = baseTarget(m); if (m === 'compact' && wantWidth) t.width = wantWidth; return t; };
@@ -320,5 +320,6 @@
   }
   setInterval(settle, 150);
 
-  window.__rehattDirector = Object.freeze({ flash, pick: () => pick(), destination, open, fold });
+  const clearNews = () => { queue.length = 0; flashNow = null; }; // the smoke test starts each flow clean
+  window.__rehattDirector = Object.freeze({ flash, clearNews, pick: () => pick(), destination, open, fold });
 })();

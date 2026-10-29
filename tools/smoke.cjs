@@ -62,7 +62,7 @@ module.exports = function smoke(getWindow, app) {
       await wait(150);
     };
     const clickHit = async key => { const r = await js(`return hit[${JSON.stringify(key)}] || null`); if (!r) { errors.push(`click: no ${key} on screen`); return; } await clickAt(r.x + r.width / 2, r.y + r.height / 2); };
-    const reset = async () => { await js("window.__rehattStretch?.test('clear'); if (window.__kopiFocus?.active()) window.__kopiFocus.stop(); currentView = 'home'; setMode('rest', false); return 1"); await away(); await wait(1500); };
+    const reset = async () => { await js("window.__rehattStretch?.test('clear'); if (window.__kopiFocus?.active()) window.__kopiFocus.stop(); window.__rehattDirector?.clearNews(); currentView = 'home'; setMode('rest', false); return 1"); await away(); await wait(1500); };
 
     try {
       await js("window.kopi?.aiMonitorHooksInstall?.('claude'); return 1");
@@ -184,7 +184,7 @@ module.exports = function smoke(getWindow, app) {
         await reset();
         app.rehattPlace?.set('free'); await wait(600);
         const before = b(), cx = before.x + before.width / 2;
-        const at = (x, y) => ({ x: Math.round(x - before.x), y: Math.round(y - before.y) });
+        const at = (x, y) => ({ x: Math.round(x - before.x), y: Math.round(y - before.y), globalX: Math.round(x), globalY: Math.round(y) });
         const mouse = (type, x, y) => { cursor = { x: Math.round(x), y: Math.round(y) }; island.webContents.sendInputEvent({ type, button: 'left', clickCount: 1, ...at(x, y) }); };
         mouse('mouseMove', cx, before.y + 12); await wait(120);
         mouse('mouseDown', cx, before.y + 12); await wait(700); // held down longer than the hover delay
