@@ -85,7 +85,7 @@
     if (s?.on && s.mode === 'snoozed')
       return { kind: 'note', key: 'st-snoozed', tone: 'k', view: 'stretch', kuih: 'idle', text: T(`Ditunda · kembali ${clockAt(s.nextDue)}`, `Snoozed · back at ${clockAt(s.nextDue)}`) };
     if (s?.water === 'done')
-      return { kind: 'note', key: 'wa-done', tone: 'wa', view: 'stretch', kuih: 'drink', text: T(`💧 ${s.today.water}/${s.waterGoal} gelas hari ini`, `💧 ${s.today.water}/${s.waterGoal} glasses today`) };
+      return { kind: 'note', key: 'wa-done', tone: 'wa', view: 'stretch', kuih: 'drink', text: T(`${s.today.water}/${s.waterGoal} gelas air hari ini`, `${s.today.water}/${s.waterGoal} glasses of water today`) };
     if (s?.backMins)
       return { kind: 'note', key: 'back', tone: 'done', view: 'stretch', kuih: 'cheer', text: T(`Selamat kembali · ${s.backMins} min rehat dikira`, `Welcome back · ${s.backMins} min break counted`) };
     const f = currentFlash(t);
