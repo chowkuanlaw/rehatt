@@ -56,6 +56,30 @@ jobs:
           fi
           tail -n 12 test-output.txt
 
+      - name: Smoke test (open every screen, take screenshots)
+        if: github.event_name != 'release'
+        shell: bash
+        env:
+          REHATT_SMOKE: smoke
+        run: |
+          timeout 150 npx electron . || echo "electron exit $?"
+          ls smoke
+          if [ -s smoke/errors.txt ]; then
+            cat smoke/errors.txt
+            msg=$(head -c 3500 smoke/errors.txt | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')
+            echo "::warning title=Smoke test messages::$msg"
+          fi
+
+      - name: Keep the screenshots on the ci-smoke branch
+        if: github.event_name != 'release'
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/shots" && cp smoke/* "$RUNNER_TEMP/shots/"
+          git config user.name "ci" && git config user.email "ci@users.noreply.github.com"
+          git worktree add --orphan -b ci-smoke "$RUNNER_TEMP/ci-smoke"
+          cd "$RUNNER_TEMP/ci-smoke" && cp "$RUNNER_TEMP"/shots/* . && echo "${GITHUB_SHA}" > commit.txt
+          git add -A && git commit -q -m "Smoke screenshots for ${GITHUB_SHA::7}" && git push -f -q origin ci-smoke
+
       - name: Build zip
         run: npx electron-builder --win zip --publish never
 

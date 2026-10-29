@@ -4138,6 +4138,8 @@ ipcMain.on(
 
 app.whenReady().then(
   () => {
+    // CI only: open every screen and save screenshots (tools/smoke.cjs)
+    if (process.env.REHATT_SMOKE) require('./tools/smoke.cjs')(() => mascotWindow, app);
     createMascot();
 
 
