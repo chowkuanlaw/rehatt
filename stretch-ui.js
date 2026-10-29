@@ -226,22 +226,18 @@
 #rehatt-stretch .st-switch{color:#ffd28a;font-weight:700}
 #rehatt-stretch .st-pause{display:flex;gap:6px;flex-wrap:wrap}
 #rehatt-stretch .st-pause button{padding:6px 10px;font-size:11px}
-#rehatt-stretch .nc-stats{display:flex;gap:14px;flex-wrap:wrap;margin:2px 0}
+#rehatt-stretch .nc-stats{display:flex;gap:12px;flex-wrap:nowrap;margin:2px 0}
+#rehatt-stretch .nc-stats div{min-width:0}
 #rehatt-stretch .nc-stats div{display:flex;flex-direction:column}
 #rehatt-stretch .nc-stats b{font-size:18px;font-variant-numeric:tabular-nums}
 #rehatt-stretch .nc-stats span{color:#8f998d;font-size:10.5px}
-#rehatt-stretch .nc-row{display:flex;gap:20px;align-items:flex-end;flex-wrap:nowrap}
-#rehatt-stretch .nc-bars{display:flex;gap:7px;align-items:flex-end;height:44px;flex:none}
 #rehatt-stretch .st-cue.one{-webkit-line-clamp:1}
-#rehatt-stretch .nc-bars div{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9.5px;color:#8f998d}
-#rehatt-stretch .nc-bars i{display:block;width:16px;border-radius:4px;background:rgba(255,255,255,.14)}
-#rehatt-stretch .nc-bars i.met{background:#ff8fb1}
 #rehatt-stretch .nc-news{margin:0;padding-left:16px;color:#c9d0c6;font-size:11.5px;display:flex;flex-direction:column;gap:2px;overflow:hidden}
-#rehatt-stretch .st-kuih.pair{width:150px}
-#rehatt-stretch .nc-pair{display:flex;align-items:flex-end;justify-content:center;gap:4px;height:100%;width:150px}
-#rehatt-stretch .nc-pair .small{height:58%;display:flex;align-items:flex-end}
-#rehatt-stretch .nc-pair svg{max-width:84px;height:auto;max-height:100%}
-#rehatt-stretch .nc-pair .small svg{max-width:52px}`;
+#rehatt-stretch .st-kuih.pair{width:160px}
+#rehatt-stretch .nc-pair{display:flex;align-items:flex-end;justify-content:center;gap:2px;height:100%;width:160px}
+#rehatt-stretch .nc-pair .small{flex:none;width:46px;height:52%;display:flex;align-items:flex-end}
+#rehatt-stretch .nc-pair .small svg{width:100%;height:100%;max-width:none}
+#rehatt-stretch .nc-pair > svg{flex:none;height:74%;width:auto;max-width:108px}`;
   document.head.appendChild(style);
 
   function side() {
@@ -264,20 +260,19 @@
         btn(L('un.use', { k: k?.name || '' }), 'unlock-use', true) + btn(L('un.keep', { k: kname }), 'notice-close'), pair);
     }
     if (n.type === 'summary') {
-      const [y, m, d] = n.week.split('-').map(Number), mon = new Date(y, m - 1, d, 12), DN = L('days').split(',');
+      const [y, m, d] = n.week.split('-').map(Number), mon = new Date(y, m - 1, d, 12);
       const workDays = st.workOn ? st.workDays : [1, 2, 3, 4, 5], h = st.history || {};
-      let total = 0, water = 0, atGoal = 0, worked = 0; const bars = [], by = {};
+      let total = 0, water = 0, atGoal = 0, worked = 0; const by = {};
       for (let i = 0; i < 7; i++) {
         const day = new Date(mon); day.setDate(mon.getDate() + i);
         const rec = h[dayKey(day)] || { total: 0, by: {} };
         total += rec.total; water += rec.water || 0;
         Object.entries(rec.by || {}).forEach(([id, c]) => { by[id] = (by[id] || 0) + c; });
-        if (workDays.includes(day.getDay())) { worked++; if (rec.total >= st.goal) atGoal++; bars.push({ l: DN[day.getDay()], n: rec.total }); }
+        if (workDays.includes(day.getDay())) { worked++; if (rec.total >= st.goal) atGoal++; }
       }
-      const max = Math.max(st.goal, ...bars.map(b => b.n)), top = Object.entries(by).sort((a, b) => b[1] - a[1])[0];
+      const top = Object.entries(by).sort((a, b) => b[1] - a[1])[0];
       return page('cheer', esc(L('sum.sub')), esc(L('sum.title')),
-        `<div class="nc-row"><div class="nc-stats"><div><b>${total}</b><span>${esc(L('sum.stretches'))}</span></div><div><b>${atGoal}/${worked}</b><span>${esc(L('sum.goalDays'))}</span></div><div><b>${st.streak || 0}</b><span>${esc(L('sum.streak'))}</span></div><div><b>${water}</b><span>${esc(L('sum.water'))}</span></div></div>
-         <div class="nc-bars">${bars.map(b => `<div><i class="${b.n >= st.goal ? 'met' : ''}" style="height:${Math.max(3, b.n / max * 30)}px"></i>${esc(b.l)}</div>`).join('')}</div></div>
+        `<div class="nc-stats"><div><b>${total}</b><span>${esc(L('sum.stretches'))}</span></div><div><b>${atGoal}/${worked}</b><span>${esc(L('sum.goalDays'))}</span></div><div><b>${st.streak || 0}</b><span>${esc(L('sum.streak'))}</span></div><div><b>${water}</b><span>${esc(L('sum.water'))}</span></div></div>
          <p class="st-cue one">${top ? esc(L('sum.most', { ex: tx(ex(top[0]), 'name'), n: top[1] })) : esc(L('sum.none'))}</p>`,
         btn(L('btn.seeProgress'), 'summary-open', true) + btn(L('btn.close'), 'notice-close'));
     }
