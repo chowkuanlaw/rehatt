@@ -133,33 +133,37 @@
 #rehatt-stretch .lapis .stk *{fill:#fff!important;stroke:#fff!important;stroke-width:13px;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:none!important}
 #rehatt-stretch .bob{animation:st-bob 2.6s ease-in-out infinite;transform-origin:50% 100%}
 @keyframes st-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px) rotate(-1.5deg)}}
-#rehatt-stretch .st-body{display:flex;gap:18px;height:calc(100% - 60px);min-height:0}
-#rehatt-stretch .st-kuih{flex:none;width:150px;height:100%;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px;position:relative}
-#rehatt-stretch .st-kuih svg{max-height:168px}
-#rehatt-stretch .st-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+#rehatt-stretch .st-body{display:flex;gap:16px;height:calc(100% - 58px);min-height:0}
+#rehatt-stretch .st-kuih{flex:none;width:118px;height:100%;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;position:relative}
+#rehatt-stretch .st-kuih svg{max-height:100%;max-width:118px}
+#rehatt-stretch .st-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;min-height:0}
 #rehatt-stretch .st-kicker{margin:0;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#ff9fbf;display:flex;gap:8px;align-items:center}
 #rehatt-stretch .st-kicker i{width:7px;height:7px;border-radius:50%;background:#ff8fb1;box-shadow:0 0 8px #ff8fb1}
 #rehatt-stretch .st-ai{color:#ffb35c}
-#rehatt-stretch .st-name{margin:0;font-size:21px;font-weight:700;color:#fff;line-height:1.15}
-#rehatt-stretch .st-cue{margin:0;color:#c9d0c6;font-size:12.5px}
-#rehatt-stretch .st-steps{margin:2px 0 0;padding-left:18px;color:#aab4a5;font-size:11.5px;display:flex;flex-direction:column;gap:2px}
-#rehatt-stretch .st-row{display:flex;gap:8px;align-items:center;margin-top:auto;flex-wrap:wrap}
+#rehatt-stretch .st-name{margin:0;font-size:19px;font-weight:700;color:#fff;line-height:1.15}
+#rehatt-stretch .st-cue{margin:0;color:#c9d0c6;font-size:12px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+#rehatt-stretch .st-steps{margin:0;padding-left:17px;color:#aab4a5;font-size:11px;line-height:1.35;display:flex;flex-direction:column;gap:1px;overflow:hidden}
+#rehatt-stretch .st-steps li{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#rehatt-stretch .st-row{display:flex;gap:7px;align-items:center;margin-top:auto;flex-wrap:nowrap}
+#rehatt-stretch .st-label{color:#7f8a7a;font-size:11px;margin-left:4px}
 #rehatt-stretch button{border:1px solid rgba(255,255,255,.1);border-radius:12px;background:#151715;color:#e8eee4;padding:8px 13px;font:600 11.5px "Segoe UI",sans-serif;cursor:pointer;transition:background .15s,transform .1s}
 #rehatt-stretch button:hover{background:#1f231f;border-color:rgba(255,255,255,.2)}
 #rehatt-stretch button:active{transform:scale(.96)}
-#rehatt-stretch .st-go{background:#ff8fb1;border-color:#ff8fb1;color:#2a0b16;font-size:13px;padding:10px 20px}
+#rehatt-stretch .st-go{background:#ff8fb1;border-color:#ff8fb1;color:#2a0b16;font-size:12.5px;padding:9px 18px;white-space:nowrap}
 #rehatt-stretch .st-go:hover{background:#ffa9c3}
 #rehatt-stretch .st-quiet{background:transparent;border-color:transparent;color:#8f998d}
-#rehatt-stretch .st-side{flex:none;width:176px;display:flex;flex-direction:column;gap:8px}
-#rehatt-stretch .st-card{border-radius:16px;background:linear-gradient(180deg,#141714,#0d0f0d);border:1px solid rgba(255,255,255,.07);padding:11px 13px;display:flex;flex-direction:column;gap:5px}
+#rehatt-stretch .st-side{flex:none;width:172px;display:flex;flex-direction:column;gap:7px}
+#rehatt-stretch .st-card{border-radius:16px;background:linear-gradient(180deg,#141714,#0d0f0d);border:1px solid rgba(255,255,255,.07);padding:9px 12px;display:flex;flex-direction:column;gap:4px}
 #rehatt-stretch .st-card small{color:#8f998d;font-size:10.5px}
-#rehatt-stretch .st-card b{font-size:20px;font-variant-numeric:tabular-nums}
+#rehatt-stretch .st-card b{font-size:17px;font-variant-numeric:tabular-nums;line-height:1.1}
+#rehatt-stretch .st-card .st-line{display:flex;align-items:baseline;justify-content:space-between;gap:6px}
+#rehatt-stretch .st-card button{padding:5px 10px;font-size:11px;align-self:flex-start}
 #rehatt-stretch .st-dots{display:flex;gap:3px;flex-wrap:wrap}
 #rehatt-stretch .st-dots i{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.1)}
 #rehatt-stretch .st-dots i.on{background:#ff8fb1}
 #rehatt-stretch .st-dots.water i.on{background:#7fc8ff}
-#rehatt-stretch .st-timer{display:flex;align-items:center;gap:14px}
-#rehatt-stretch .st-big{font:700 44px/1 "Segoe UI",sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-1px}
+#rehatt-stretch .st-timer{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+#rehatt-stretch .st-big{font:700 30px/1 "Segoe UI",sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-1px}
 #rehatt-stretch .st-track{height:6px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;flex:1}
 #rehatt-stretch .st-fill{height:100%;background:#ff8fb1;border-radius:4px;transition:width .5s linear}
 #rehatt-stretch .st-switch{color:#ffd28a;font-weight:700}
@@ -179,20 +183,19 @@
       : `<p class="st-kicker"><i></i>${active ? T('Sedang meregang', 'Stretching now') : due ? T('Masa untuk regangan', 'Time to stretch') : st.mode === 'done' ? T('Siap!', 'Done!') : T('Regangan seterusnya', 'Next stretch')}</p>`;
     const steps = (MS() && e?.ms?.steps) || e?.steps || [];
     const actions = active
-      ? `<div class="st-timer"><span class="st-big" id="st-left">${mmss(st.activeEnd - Date.now())}</span><div class="st-track"><div class="st-fill" id="st-fill"></div></div></div>
-         ${e?.sides ? `<p class="st-cue ${st.switched ? 'st-switch' : ''}" id="st-sides">${st.switched ? T('Tukar sisi sekarang', 'Switch sides now') : T('Satu sisi dahulu, kemudian tukar di pertengahan', 'One side first, switch halfway')}</p>` : ''}
-         <div class="st-row"><button type="button" class="st-go" data-a="done">${T('Siap', 'Done')}</button><button type="button" class="st-quiet" data-a="stop">${T('Berhenti', 'Stop')}</button></div>`
+      ? `${e?.sides ? `<p class="st-cue ${st.switched ? 'st-switch' : ''}" id="st-sides">${st.switched ? T('Tukar sisi sekarang', 'Switch sides now') : T('Satu sisi dahulu, kemudian tukar di pertengahan', 'One side first, switch halfway')}</p>` : ''}
+         <div class="st-row"><div class="st-timer"><span class="st-big" id="st-left">${mmss(st.activeEnd - Date.now())}</span><div class="st-track"><div class="st-fill" id="st-fill"></div></div></div><button type="button" class="st-go" data-a="done">${T('Siap', 'Done')}</button><button type="button" class="st-quiet" data-a="stop">${T('Berhenti', 'Stop')}</button></div>`
       : due
         ? `<div class="st-row"><button type="button" class="st-go" data-a="start">${T('Mula', 'Start')} · ${esc(tx(e, 'dose'))}</button><button type="button" data-a="snooze">${T(`Tunda ${st.snooze} min`, `Snooze ${st.snooze} min`)}</button><button type="button" data-a="different">${T('Yang lain', 'Another')}</button><button type="button" class="st-quiet" data-a="skip">${T('Langkau', 'Skip')}</button></div>`
         : `<div class="st-row"><button type="button" class="st-go" data-a="now">${T('Regang sekarang', 'Stretch now')}</button>${
-          st.paused ? `<button type="button" data-a="resume">${T('Sambung semula', 'Resume')}</button>` : `<span class="st-pause">${[['m30', '30 min'], ['h1', T('1 jam', '1 hour')], ['tomorrow', T('Esok', 'Tomorrow')]].map(([k, l]) => `<button type="button" data-a="pause" data-v="${k}">${T('Jeda', 'Pause')} ${l}</button>`).join('')}</span>`}</div>`;
+          st.paused ? `<button type="button" data-a="resume">${T('Sambung semula', 'Resume')}</button>` : `<span class="st-label">${T('Jeda', 'Pause')}</span><span class="st-pause">${[['m30', '30 min'], ['h1', T('1 jam', '1 hour')], ['tomorrow', T('hingga esok', 'till tomorrow')]].map(([k, l]) => `<button type="button" data-a="pause" data-v="${k}">${l}</button>`).join('')}</span>`}</div>`;
     const water = st.waterOn && !st.ramadan
-      ? `<div class="st-card"><small>${T('Air hari ini', 'Water today')}</small><b>${st.today.water}<small> / ${st.waterGoal}</small></b><div class="st-dots water">${Array.from({ length: st.waterGoal }, (_, i) => `<i class="${i < st.today.water ? 'on' : ''}"></i>`).join('')}</div>${st.water === 'ask' ? `<button type="button" data-a="water">💧 ${T('Sudah minum', 'Done, I drank')}</button>` : `<button type="button" class="st-quiet" data-a="water">+ ${T('segelas', 'a glass')}</button>`}</div>` : '';
+      ? `<div class="st-card"><div class="st-line"><small>${T('Air hari ini', 'Water today')}</small><b>${st.today.water}<small> / ${st.waterGoal}</small></b></div><div class="st-dots water">${Array.from({ length: st.waterGoal }, (_, i) => `<i class="${i < st.today.water ? 'on' : ''}"></i>`).join('')}</div>${st.water === 'ask' ? `<button type="button" data-a="water">💧 ${T('Sudah minum', 'Done, I drank')}</button>` : `<button type="button" class="st-quiet" data-a="water">+ ${T('segelas', 'a glass')}</button>`}</div>` : '';
     root.innerHTML = `<div class="tc-page-head"><div><p class="tc-page-title">${T('Regangan', 'Stretch')}</p><p class="tc-page-sub">${esc(status())}</p></div></div>
       <div class="st-body"><div class="st-kuih">${svg(pose, !active)}</div>
-        <div class="st-main">${kicker}<p class="st-name">${esc(tx(e, 'name'))}</p><p class="st-cue">${esc(tx(e, 'cue'))} · ${esc(tx(e, 'dose'))}</p>
-          ${active || due ? `<ol class="st-steps">${steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol>` : ''}${actions}</div>
-        <div class="st-side"><div class="st-card"><small>${T('Regangan hari ini', 'Stretches today')}</small><b>${st.today.total}<small> / ${st.goal}</small></b><div class="st-dots">${Array.from({ length: st.goal }, (_, i) => `<i class="${i < st.today.total ? 'on' : ''}"></i>`).join('')}</div>${st.streak ? `<small>🔥 ${T(`${st.streak} hari berturut-turut`, `${st.streak}-day streak`)}</small>` : ''}</div>${water}</div>
+        <div class="st-main">${kicker}<p class="st-name">${esc(tx(e, 'name'))}</p>${active ? '' : `<p class="st-cue">${esc(tx(e, 'cue'))} · ${esc(tx(e, 'dose'))}</p>`}
+          ${active ? `<ol class="st-steps">${steps.map(s => `<li title="${esc(s)}">${esc(s)}</li>`).join('')}</ol>` : ''}${actions}</div>
+        <div class="st-side"><div class="st-card"><div class="st-line"><small>${T('Regangan hari ini', 'Stretches today')}</small><b>${st.today.total}<small> / ${st.goal}</small></b></div><div class="st-dots">${Array.from({ length: st.goal }, (_, i) => `<i class="${i < st.today.total ? 'on' : ''}"></i>`).join('')}</div>${st.streak ? `<small>🔥 ${T(`${st.streak} hari berturut-turut`, `${st.streak}-day streak`)}</small>` : ''}</div>${water}</div>
       </div>`;
     tick();
   }
