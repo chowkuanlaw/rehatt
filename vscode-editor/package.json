@@ -1,0 +1,22 @@
+{
+  "name": "project-editor",
+  "publisher": "kopi",
+  "displayName": "Kopi Island Project Editor",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "activationEvents": [
+    "onUri"
+  ],
+  "main": "./extension.js",
+  "description": "Local project connection for Kopi Island.",
+  "extensionKind": [
+    "ui"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    }
+  }
+}

@@ -1,0 +1,842 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
+<title>Kopi Island Settings</title>
+<!--
+  Kopi Island Settings (settings-app-main.cjs): its own app, next to Kopi Island itself.
+  General and Kopi: the island's own lists (settings-bridge-ui.js), so every option works exactly like before.
+  Wardrobe: the outfits and colours from those lists, as a dressing room with Kopi big in the middle.
+  AI & Chat: which AI Kopi's chat uses (the agents connected in Connections).
+  Apps: which apps are in your Kopi Island. News: our updates, from the releases on GitHub.
+-->
+<style>
+  :root{
+    --bg:#0e0f11;--side:#131416;--card:#17181b;--card2:#1c1d21;--raised:#202125;--line:rgba(255,255,255,.06);--line2:rgba(255,255,255,.1);
+    --text:#ececee;--text2:#b6b7be;--strong:#ffffff;--dim:#8a8b93;--faint:#5c5d65;
+    --accent:#c6e994;--accent-ink:#15200c;--accent-text:#c6e994;--accent-soft:rgba(198,233,148,.12);--accent-line:rgba(198,233,148,.35);
+    --input:#111214;--input-line:#2a2b30;--chip:#1f2024;--btn:#232428;--btn-hover:#2c2d32;--toggle-off:#3a3b41;--soft:rgba(255,255,255,.04);--soft2:rgba(255,255,255,.07);
+    --warn:#ffb35c;--bad:#ff6b6b;--good:#8fd65a;
+    --stage:radial-gradient(120% 90% at 50% 0%,#24262b 0%,#16171a 60%,#121315 100%);--beam:rgba(255,255,255,.10);
+    --shadow:0 1px 0 rgba(255,255,255,.03) inset,0 0 0 1px var(--line);
+    --pop:0 18px 50px rgba(0,0,0,.45),0 0 0 1px var(--line2);
+    --display:"Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
+  }
+  :root[data-theme="light"]{
+    --bg:#f6f6f8;--side:#eeeef1;--card:#ffffff;--card2:#fafafb;--raised:#ffffff;--line:rgba(0,0,0,.07);--line2:rgba(0,0,0,.12);
+    --text:#1a1b1e;--text2:#45464d;--strong:#0b0c0e;--dim:#6e6f77;--faint:#9c9da5;
+    --accent:#b5e07c;--accent-ink:#15200c;--accent-text:#4c8a1c;--accent-soft:rgba(110,180,50,.12);--accent-line:rgba(90,160,40,.4);
+    --input:#ffffff;--input-line:#d9dae0;--chip:#f1f1f4;--btn:#ececf0;--btn-hover:#e2e2e8;--toggle-off:#cfd0d6;--soft:rgba(0,0,0,.035);--soft2:rgba(0,0,0,.06);
+    --stage:radial-gradient(120% 90% at 50% 0%,#ffffff 0%,#f1f1f4 60%,#e8e8ec 100%);--beam:rgba(255,255,255,.8);
+    --shadow:0 1px 2px rgba(0,0,0,.04),0 0 0 1px var(--line);
+    --pop:0 18px 50px rgba(0,0,0,.14),0 0 0 1px var(--line);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font:14px/1.45 "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased;user-select:none}
+  button,input{font:inherit;color:inherit}
+  button:focus-visible,input:focus-visible{outline:2px solid var(--accent-line);outline-offset:2px}
+  svg.i{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .app{display:grid;grid-template-columns:248px 1fr;height:100vh}
+  .drag{position:fixed;left:0;right:150px;top:0;height:44px;-webkit-app-region:drag;z-index:5}
+  .hidden{display:none !important}
+
+  /* ---------- sidebar ---------- */
+  aside{background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;padding:14px 12px 12px}
+  .brand{display:flex;align-items:center;gap:11px;padding:2px 8px 16px;height:52px;flex:none}
+  .brand img{width:30px;height:30px;border-radius:8px}
+  .brand b{display:block;font:600 14px/1.15 var(--display);letter-spacing:-.005em}
+  .brand span{display:block;font-size:12px;color:var(--dim)}
+  .brand .beta{margin-left:auto;align-self:flex-start;margin-top:4px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-style:normal;padding:2px 7px;border-radius:6px;background:var(--soft2);color:var(--dim)}
+  nav{display:flex;flex-direction:column;gap:1px;flex:1;min-height:0;overflow:auto;scrollbar-width:none}
+  nav::-webkit-scrollbar{width:0}
+  nav .sec{margin:16px 10px 6px;font-size:11.5px;font-weight:600;color:var(--faint)}
+  nav .sec:first-child{margin-top:2px}
+  nav button{position:relative;display:flex;align-items:center;gap:11px;border:0;background:transparent;border-radius:8px;height:36px;padding:0 10px;text-align:left;font-size:13.5px;font-weight:500;color:var(--text2);cursor:pointer;transition:background .12s,color .12s}
+  nav button:hover{background:var(--soft);color:var(--text)}
+  nav button.active{background:var(--soft2);color:var(--strong);font-weight:600}
+  nav button.active::before{content:"";position:absolute;left:-2px;top:10px;bottom:10px;width:3px;border-radius:3px;background:var(--accent)}
+  nav button svg{color:var(--dim)}
+  nav button.active svg{color:var(--accent-text)}
+  nav button em{font-style:normal;flex:1}
+  nav button .dot{width:7px;height:7px;border-radius:50%;background:var(--bad);display:none}
+  nav button .dot.on{display:block}
+  .me{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 8px 2px;border-top:1px solid var(--line);flex:none}
+  .me .avatar{width:36px;height:36px;border-radius:10px;background:var(--stage);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none}
+  .me .avatar img{width:44px;height:44px;margin-top:6px}
+  .me div{flex:1;min-width:0}
+  .me b{display:block;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .me small{display:block;font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .iconbtn{width:32px;height:32px;border:0;border-radius:8px;background:transparent;color:var(--dim);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
+  .iconbtn:hover{background:var(--soft2);color:var(--text)}
+
+  /* ---------- main ---------- */
+  main{position:relative;display:flex;flex-direction:column;min-width:0;min-height:0}
+  header{padding:52px 48px 18px;display:flex;align-items:flex-end;justify-content:space-between;gap:20px;max-width:944px;width:100%}
+  header h1{margin:0;font:600 26px/1.15 var(--display);letter-spacing:-.02em;color:var(--strong)}
+  header p{margin:6px 0 0;color:var(--dim);font-size:13.5px}
+  .search{position:relative;flex:none;-webkit-app-region:no-drag}
+  .search.off{visibility:hidden}
+  .search svg{position:absolute;left:11px;top:10px;width:16px;height:16px;color:var(--faint)}
+  .search input{width:240px;height:36px;border-radius:9px;border:1px solid var(--input-line);background:var(--input);padding:0 12px 0 34px;font-size:13px;outline:none;user-select:text}
+  .search input:focus{border-color:var(--accent-line);box-shadow:0 0 0 3px var(--accent-soft)}
+  .scroll{flex:1;overflow:auto;padding:2px 48px 110px}
+  .scroll.top{padding-top:56px}
+  .scroll::-webkit-scrollbar{width:12px}.scroll::-webkit-scrollbar-thumb{background:var(--btn);border-radius:6px;border:4px solid var(--bg)}
+  .scroll::-webkit-scrollbar-button{display:none;height:0}
+  #list{max-width:848px}
+  #list.fresh > *{animation:in .32s cubic-bezier(.2,.8,.2,1) both}
+  #list.fresh > *:nth-child(2){animation-delay:.03s}#list.fresh > *:nth-child(3){animation-delay:.06s}#list.fresh > *:nth-child(4){animation-delay:.09s}
+  @keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .empty{color:var(--dim);padding:40px 0;font-size:14px}
+  .muted{color:var(--dim)}
+  .card{background:var(--card);border-radius:12px;padding:18px 20px;box-shadow:var(--shadow)}
+  .section{margin:26px 2px 10px;font-size:13px;font-weight:600;color:var(--text)}
+  .section:first-child{margin-top:0}
+  .section small{font-weight:400;color:var(--dim);margin-left:8px}
+
+  /* buttons and controls */
+  .btn{display:inline-flex;align-items:center;gap:7px;border:0;border-radius:8px;height:34px;padding:0 14px;background:var(--btn);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;transition:background .12s,transform .1s;white-space:nowrap}
+  .btn svg{width:16px;height:16px}
+  .btn:hover{background:var(--btn-hover)}.btn:active{transform:scale(.97)}
+  .btn.main{background:var(--accent);color:var(--accent-ink)}.btn.main:hover{filter:brightness(1.06)}
+  .btn.ghost{background:transparent;box-shadow:inset 0 0 0 1px var(--line2)}.btn.ghost:hover{background:var(--soft)}
+  .btn:disabled{opacity:.45;cursor:default}
+  .switch,.tc-toggle[data-toggle],.tc-toggle[data-action="sleep"],.tc-toggle[data-login]{position:relative;flex:none;width:44px;height:24px;padding:0;border:0;border-radius:999px;font-size:0;color:transparent;background:var(--toggle-off);cursor:pointer;transition:background .2s}
+  .switch::after,.tc-toggle[data-toggle]::after,.tc-toggle[data-action="sleep"]::after,.tc-toggle[data-login]::after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.35);transition:transform .22s cubic-bezier(.3,1.4,.5,1)}
+  .switch.on,.tc-toggle.on[data-toggle],.tc-toggle.on[data-action="sleep"],.tc-toggle.on[data-login]{background:var(--accent)}
+  .switch.on::after,.tc-toggle.on[data-toggle]::after,.tc-toggle.on[data-action="sleep"]::after,.tc-toggle.on[data-login]::after{transform:translateX(20px)}
+  .switch.on::after,.tc-toggle.on::after{background:var(--accent-ink)}
+  :root[data-theme="light"] .switch.on::after,:root[data-theme="light"] .tc-toggle.on::after{background:#fff}
+  .switch:disabled{opacity:.4;cursor:default}
+  .tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--soft2);color:var(--text2);white-space:nowrap}
+  .tag i{width:7px;height:7px;border-radius:50%;background:var(--c,var(--faint))}
+  .tag.good{background:var(--accent-soft);color:var(--accent-text)}
+  .tag.good i{background:var(--good)}
+  .tag.warn{background:rgba(255,179,92,.14);color:var(--warn)}
+
+  /* a grouped list: rows in one card, divided by thin lines (like Windows Settings) */
+  .group{background:var(--card);border-radius:12px;box-shadow:var(--shadow);overflow:hidden}
+  .group + .group{margin-top:12px}
+  .row{display:flex;align-items:center;gap:14px;padding:14px 18px;min-height:64px}
+  .row + .row{border-top:1px solid var(--line)}
+  .row .text{flex:1;min-width:0}
+  .row b{display:block;font-size:14px;font-weight:600;color:var(--strong)}
+  .row small{display:block;font-size:12.5px;color:var(--dim);margin-top:2px;line-height:1.4}
+  .row .note{display:block;margin-top:6px;font-size:12px;color:var(--warn)}
+  .row.soon{opacity:.6}
+  .tile{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:none;background:color-mix(in srgb,var(--c,#888) 16%,transparent);color:var(--c,var(--text))}
+  .tile svg{width:20px;height:20px}
+  :root[data-theme="light"] .tile{color:color-mix(in srgb,var(--c,#888) 62%,#000);background:color-mix(in srgb,var(--c,#888) 22%,transparent)}
+  .bot{position:relative;display:inline-block;width:40px;height:32px;border-radius:12px;background:var(--c,#ddd);box-shadow:inset 0 -4px 8px rgba(0,0,0,.18);flex:none}
+  .bot::before,.bot::after{content:"";position:absolute;top:11px;width:5px;height:9px;border-radius:3px;background:#161616}
+  .bot::before{left:12px}.bot::after{right:12px}
+  .bot.off{filter:grayscale(1);opacity:.45}
+  .bot.busy{animation:bob 1s ease-in-out infinite}
+  .bot.sm{width:22px;height:18px;border-radius:7px}.bot.sm::before,.bot.sm::after{top:6px;width:3px;height:6px}.bot.sm::before{left:6px}.bot.sm::after{right:6px}
+  @keyframes bob{50%{transform:translateY(-3px)}}
+
+  /* ---------- the island's lists (General, Kopi), in the same grouped style ---------- */
+  .tc-group{margin:26px 2px 10px;font-size:13px;font-weight:600;color:var(--text)}
+  .tc-group:first-child,.kopi-hero + .tc-group{margin-top:0}
+  .tc-group[data-icon]::before{content:none}
+  .tc-setting-row{display:flex;align-items:center;justify-content:space-between;gap:24px;background:var(--card);padding:14px 18px;min-height:64px;border-top:1px solid var(--line);box-shadow:-1px 0 0 var(--line),1px 0 0 var(--line);transition:background .12s}
+  .tc-setting-row:hover{background:var(--card2)}
+  .tc-setting-row.tc-demo{cursor:pointer}
+  .tc-group + .tc-setting-row,.tc-setting-row.first{border-top:0;border-radius:12px 12px 0 0;box-shadow:-1px 0 0 var(--line),1px 0 0 var(--line),0 -1px 0 var(--line)}
+  .tc-setting-row.last{border-radius:0 0 12px 12px;box-shadow:-1px 0 0 var(--line),1px 0 0 var(--line),0 1px 0 var(--line)}
+  .tc-setting-row.first.last,.tc-group + .tc-setting-row.last{border-radius:12px;box-shadow:var(--shadow)}
+  .tc-setting-row > div:first-child{min-width:0}
+  .tc-setting-row strong{display:block;font-size:14px;font-weight:600;color:var(--strong)}
+  .tc-setting-row small{display:block;font-size:12.5px;color:var(--dim);margin-top:2px;line-height:1.4}
+  .tc-chips{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;max-width:62%}
+  .tc-chip{border:0;border-radius:7px;height:30px;padding:0 12px;background:var(--chip);box-shadow:inset 0 0 0 1px var(--line);color:var(--text2);font-size:12.5px;font-weight:600;cursor:pointer;transition:background .12s,color .12s;white-space:nowrap}
+  .tc-chip:hover{background:var(--btn-hover);color:var(--text)}
+  .tc-chip.on{background:var(--accent);color:var(--accent-ink);box-shadow:none}
+  .tc-chip:disabled{opacity:.45;cursor:default}
+  .tc-swatch{width:26px;height:26px;border-radius:50%;border:2px solid transparent;padding:0;cursor:pointer;transition:transform .12s}
+  .tc-swatch:hover{transform:scale(1.1)}
+  .tc-swatch.on{border-color:var(--bg);box-shadow:0 0 0 2px var(--accent)}
+  .tc-toggle{flex:none;border:0;cursor:pointer;border-radius:8px;height:32px;padding:0 14px;background:var(--btn);color:var(--text);font-size:13px;font-weight:600}
+  .tc-step{display:flex;align-items:center;gap:8px}
+  .tc-input,.field{width:240px;height:34px;border:1px solid var(--input-line);border-radius:8px;padding:0 11px;background:var(--input);font-size:13px;outline:none;user-select:text}
+  .tc-input:focus,.field:focus{border-color:var(--accent-line);box-shadow:0 0 0 3px var(--accent-soft)}
+  .tc-name{width:180px}
+  .tc-step .tc-chip,.tc-step button:not(.tc-toggle){height:34px}
+  .tc-lights{flex-direction:column;align-items:stretch;gap:10px}
+  .tc-lights-head{display:flex;flex-direction:column;gap:10px}
+  .tc-lights-head .tc-chips,.tc-light-line .tc-chips{justify-content:flex-start;max-width:none}
+  .tc-light-line{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px;border-radius:9px;background:var(--soft)}
+  .tc-light-line > span{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;white-space:nowrap}
+  .tc-light-line > span i{width:10px;height:10px;border-radius:50%;display:block}
+  .tc-preview{display:inline-flex;gap:3px;margin-right:6px;vertical-align:middle}
+  .tc-preview i{width:6px;height:10px;border-radius:50%;display:block}
+  .tc-tests{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 12px}
+  .tc-tests .tc-chip{height:auto;padding:10px;border-radius:9px}
+  .tc-badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:6px}
+  .tc-badge{display:flex;flex-direction:column;align-items:center;gap:3px;padding:14px 10px;border-radius:12px;background:var(--card);box-shadow:var(--shadow);opacity:.5;text-align:center}
+  .tc-badge.on{opacity:1;box-shadow:inset 0 0 0 1px var(--accent-line)}
+  .tc-badge span{font-size:24px}.tc-badge b{font-size:13px}.tc-badge small{font-size:11px;color:var(--dim)}
+  .tc-ai-error{color:#ff9d8f;font-size:13px;margin:10px 2px}
+
+  /* Kopi's own page: him, big, on top */
+  .kopi-hero{display:flex;align-items:center;gap:22px;margin-bottom:26px;padding:6px 26px 6px 6px;border-radius:14px;background:var(--stage);box-shadow:var(--shadow);overflow:hidden}
+  .kopi-hero img{width:150px;height:150px;flex:none}
+  .kopi-hero b{display:block;font:600 24px/1.15 var(--display);letter-spacing:-.02em;color:var(--strong)}
+  .kopi-hero small{display:block;color:var(--dim);margin-top:4px;font-size:13px}
+  .kopi-hero .bar{margin-top:14px;height:6px;border-radius:3px;background:var(--soft2);overflow:hidden;max-width:320px}
+  .kopi-hero .bar i{display:block;height:100%;border-radius:3px;background:var(--accent)}
+
+  /* ---------- Home ---------- */
+  .greet{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:22px}
+  .greet h2{margin:0;font:600 28px/1.15 var(--display);letter-spacing:-.02em;color:var(--strong)}
+  .greet p{margin:6px 0 0;color:var(--dim);font-size:13.5px;max-width:520px}
+  .agents{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .agent{display:flex;align-items:center;gap:9px;padding:6px 12px 6px 7px;border-radius:999px;background:var(--card);box-shadow:var(--shadow);font-size:12.5px;font-weight:600}
+  .agent span{color:var(--dim);font-weight:500}
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px}
+  .kpi{background:var(--card);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);display:flex;align-items:center;gap:14px}
+  .kpi b{display:block;font:600 26px/1 var(--display);letter-spacing:-.02em;color:var(--strong)}
+  .kpi small{display:block;color:var(--dim);font-size:12.5px;margin-top:5px}
+  .setup{display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:12px;margin-bottom:12px;background:linear-gradient(100deg,var(--accent-soft),transparent 70%),var(--card);box-shadow:inset 0 0 0 1px var(--accent-line)}
+  .setup div{flex:1}
+  .setup b{display:block;font-size:14.5px}
+  .setup small{display:block;color:var(--dim);font-size:12.5px;margin-top:2px}
+  .home{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:12px;align-items:start}
+  .hist-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:22px 2px 10px}
+  .hist-head b{font-size:13px;font-weight:600}
+  .hist-head .field{width:220px;height:32px}
+  .day{font-size:12px;font-weight:600;color:var(--faint);padding:12px 18px 4px;background:var(--card)}
+  .group .day:first-child{padding-top:14px}
+  .job{display:grid;grid-template-columns:24px 1fr auto;gap:12px;align-items:start;padding:10px 18px 12px;background:var(--card)}
+  .job .bot{margin-top:2px}
+  .job p{margin:0;font-size:13.5px;line-height:1.45;color:var(--text)}
+  .job small{display:block;margin-top:3px;color:var(--dim);font-size:12px}
+  .job .res{font-size:12px;font-weight:600;white-space:nowrap;margin-top:1px}
+  .job .res.done{color:var(--accent-text)}.job .res.question{color:var(--warn)}.job .res.error{color:var(--bad)}
+  .side-cards{display:flex;flex-direction:column;gap:12px;margin-top:64px}
+  .quick{display:flex;flex-direction:column}
+  .quick button{display:flex;align-items:center;gap:12px;border:0;background:transparent;padding:12px 16px;text-align:left;cursor:pointer;color:var(--text);font-size:13px;font-weight:600}
+  .quick button + button{border-top:1px solid var(--line)}
+  .quick button:hover{background:var(--card2)}
+  .quick button .tile{width:32px;height:32px;border-radius:8px}
+  .quick button .tile svg{width:17px;height:17px}
+  .quick button > span:not(.tile){flex:1}
+  .quick button > svg{color:var(--faint);width:16px;height:16px}
+  .tip{position:relative;overflow:hidden;border-radius:12px;padding:16px 18px;background:var(--stage);box-shadow:var(--shadow)}
+  .tip b{display:flex;align-items:center;gap:8px;font-size:13.5px}
+  .tip p{margin:6px 0 0;color:var(--dim);font-size:12.5px;line-height:1.5}
+
+  /* ---------- Wardrobe ---------- */
+  .wardrobe{display:grid;grid-template-columns:300px 1fr;gap:28px;align-items:start}
+  .dress-stage{position:sticky;top:0;border-radius:14px;overflow:hidden;background:var(--stage);box-shadow:var(--shadow);text-align:center;padding:10px 0 22px}
+  .dress-stage::before{content:"";position:absolute;left:50%;top:-30px;width:190px;height:310px;transform:translateX(-50%);background:linear-gradient(var(--beam),rgba(255,255,255,0));clip-path:polygon(38% 0,62% 0,100% 100%,0 100%);pointer-events:none}
+  .dress-stage img{position:relative;width:270px;height:270px;display:block;margin:0 auto -10px}
+  .dress-stage .floor{position:absolute;left:50%;top:244px;width:160px;height:18px;transform:translateX(-50%);border-radius:50%;background:radial-gradient(rgba(198,233,148,.38),transparent 70%);filter:blur(5px)}
+  .dress-stage b{position:relative;display:block;font:600 19px/1.2 var(--display);margin-top:6px}
+  .dress-stage small{position:relative;display:block;color:var(--dim);font-size:12.5px;margin-top:4px}
+  .shelf{margin-bottom:24px}
+  .shelf h3{margin:0 0 10px;font-size:13px;font-weight:600;display:flex;align-items:baseline;gap:8px}
+  .shelf h3 small{font-weight:400;color:var(--dim);font-size:12px}
+  .outfits{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
+  .outfit{position:relative;border:0;border-radius:12px;background:var(--card);box-shadow:var(--shadow);padding:16px 10px 12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;transition:transform .15s,background .15s,box-shadow .15s}
+  .outfit:hover{background:var(--card2);transform:translateY(-2px)}
+  .outfit span{font-size:30px;line-height:1}
+  .outfit b{font-size:12.5px}
+  .outfit small{font-size:11px;color:var(--dim)}
+  .outfit.on{box-shadow:inset 0 0 0 2px var(--accent)}
+  .outfit.on::after{content:"";position:absolute;right:8px;top:8px;width:16px;height:16px;border-radius:50%;background:var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2315200c' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center/10px no-repeat}
+  .outfit:disabled{cursor:default;opacity:.45;transform:none}
+  .outfit:disabled span{filter:grayscale(1)}
+  .paints{display:flex;flex-wrap:wrap;gap:10px}
+  .paint{display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:transparent;cursor:pointer;padding:0;width:60px}
+  .paint i{width:42px;height:42px;border-radius:50%;box-shadow:inset 0 -5px 10px rgba(0,0,0,.22),0 0 0 1px var(--line2);transition:transform .15s;display:block}
+  .paint:hover i{transform:scale(1.08)}
+  .paint.on i{box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--accent)}
+  .paint small{font-size:11px;color:var(--dim);text-transform:capitalize}
+  .paint.on small{color:var(--text);font-weight:600}
+
+  /* ---------- Apps ---------- */
+  .apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+  .appcard{background:var(--card);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow)}
+  .appcard .top{display:flex;gap:12px;align-items:center}
+  .appcard .top div{flex:1;min-width:0}
+  .appcard .tile{width:42px;height:42px;border-radius:11px}
+  .btn.small{height:28px;padding:0 10px;font-size:12px}
+  .appcard b{display:block;font-size:14px}
+  .appcard small{display:block;color:var(--dim);font-size:12px;margin-top:1px}
+  .appcard small.in{color:var(--accent-text)}
+  .appcard p{margin:0;color:var(--text2);font-size:12.5px;line-height:1.5;flex:1}
+  .appcard.soon{background:transparent;box-shadow:inset 0 0 0 1px var(--line2)}
+
+  /* ---------- News ---------- */
+  .version{display:flex;align-items:center;gap:16px;margin-bottom:26px}
+  .version div{flex:1}
+  .version b{display:block;font-size:15px}
+  .version small{display:block;color:var(--dim);font-size:12.5px;margin-top:2px}
+  .release{position:relative;padding-left:26px;margin-bottom:22px}
+  .release::before{content:"";position:absolute;left:5px;top:20px;bottom:-22px;width:2px;background:var(--line)}
+  .release:last-child::before{display:none}
+  .release::after{content:"";position:absolute;left:0;top:5px;width:12px;height:12px;border-radius:50%;background:var(--btn);box-shadow:0 0 0 3px var(--bg)}
+  .release.latest::after{background:var(--accent)}
+  .release .rhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  .release .rhead b{font-size:15px}
+  .release .rhead span{font-size:12px;color:var(--dim)}
+  .pill{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:rgba(255,179,92,.14);color:var(--warn)}
+  .pill.new{background:var(--accent-soft);color:var(--accent-text)}
+  .notes{font-size:13.5px;line-height:1.6;color:var(--text2);user-select:text}
+  .notes h4{margin:14px 0 4px;font-size:13.5px;color:var(--strong)}
+  .notes h4:first-child{margin-top:0}
+  .notes ul{margin:4px 0;padding-left:20px}
+  .notes code{background:var(--chip);border-radius:5px;padding:1px 6px;font-family:"Cascadia Mono",Consolas,monospace;font-size:12px}
+  .release .more{margin-top:12px}
+
+  /* ---------- AI & Chat, Connections ---------- */
+  .lead{color:var(--dim);font-size:13.5px;margin:0 2px 18px;max-width:640px}
+
+  /* toast and save bar */
+  .toast{position:fixed;left:calc(50% + 124px);bottom:22px;transform:translate(-50%,16px);opacity:0;display:flex;align-items:center;gap:9px;background:var(--raised);color:var(--text);padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:var(--pop);transition:all .22s;pointer-events:none;z-index:9}
+  .toast::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--good)}
+  .toast.bad::before{background:var(--bad)}
+  .toast.on{opacity:1;transform:translate(-50%,0)}
+  .savebar{position:absolute;left:48px;right:48px;bottom:18px;max-width:848px;display:flex;align-items:center;gap:12px;padding:10px 10px 10px 18px;border-radius:12px;background:var(--raised);box-shadow:var(--pop);transform:translateY(140%);opacity:0;transition:transform .3s cubic-bezier(.2,1.2,.4,1),opacity .2s;z-index:6}
+  .savebar.on{transform:none;opacity:1}
+  .savebar i{width:8px;height:8px;border-radius:50%;background:var(--warn);flex:none}
+  .savebar span{flex:1;font-size:13.5px;font-weight:600}
+  .savebar small{display:block;font-weight:400;color:var(--dim);font-size:12px;margin-top:1px}
+
+  :root[data-theme="light"] .face{filter:drop-shadow(0 8px 14px rgba(40,40,60,.18)) drop-shadow(0 1px 2px rgba(0,0,0,.12))}
+  :root[data-theme="light"] .dress-stage .floor{background:radial-gradient(rgba(60,90,40,.22),transparent 70%)}
+  @media (max-width:980px){.home{grid-template-columns:1fr}.side-cards{margin-top:0}.wardrobe{grid-template-columns:1fr}.dress-stage{position:relative}}
+</style></head>
+<body>
+<div class="drag"></div>
+<div class="app">
+  <aside>
+    <div class="brand"><img src="assets/settings-icon-64.png" alt=""><div><b>Kopi Island</b><span data-t="settings">Settings</span></div><em class="beta">beta</em></div>
+    <nav id="nav">
+      <p class="sec" data-t="secApp">Kopi Island</p>
+      <button data-tab="home"><svg class="i" viewBox="0 0 24 24"><use href="#i-home"/></svg><em data-t="home">Home</em></button>
+      <button data-tab="connect"><svg class="i" viewBox="0 0 24 24"><use href="#i-plug"/></svg><em data-t="connect">Connections</em><i class="dot" id="connectDot"></i></button>
+      <button data-tab="ai"><svg class="i" viewBox="0 0 24 24"><use href="#i-chat"/></svg><em data-t="ai">AI &amp; Chat</em><i class="dot" id="aiDot"></i></button>
+      <button data-tab="apps"><svg class="i" viewBox="0 0 24 24"><use href="#i-grid"/></svg><em data-t="apps">Apps</em></button>
+      <p class="sec" data-t="secKopi">Kopi</p>
+      <button data-tab="character"><svg class="i" viewBox="0 0 24 24"><use href="#i-bot"/></svg><em data-t="character">Kopi</em></button>
+      <button data-tab="wardrobe"><svg class="i" viewBox="0 0 24 24"><use href="#i-shirt"/></svg><em data-t="wardrobe">Wardrobe</em></button>
+      <p class="sec" data-t="secSettings">Settings</p>
+      <button data-tab="general"><svg class="i" viewBox="0 0 24 24"><use href="#i-sliders"/></svg><em data-t="general">General</em></button>
+      <button data-tab="news"><svg class="i" viewBox="0 0 24 24"><use href="#i-news"/></svg><em data-t="news">News</em><i class="dot" id="newsDot"></i></button>
+    </nav>
+    <div class="me"><span class="avatar"><img class="face" alt=""></span><div><b class="petname">Kopi</b><small class="stats"></small></div>
+      <button class="iconbtn" id="themeBtn"><svg class="i" viewBox="0 0 24 24"><use href="#i-moon"/></svg></button></div>
+  </aside>
+  <main>
+    <header>
+      <div><h1 id="title"></h1><p id="sub"></p></div>
+      <label class="search" id="searchBox"><svg class="i" viewBox="0 0 24 24"><use href="#i-search"/></svg><input id="search" type="search" autocomplete="off" spellcheck="false"></label>
+    </header>
+    <div class="scroll" id="scroll"><div id="list"></div></div>
+    <div class="savebar" id="savebar"><i></i><span><b data-t="unsaved">Not saved yet</b><small data-t="unsavedHelp">Kopi here shows it already. Kopi Island gets it when you save.</small></span>
+      <button class="btn ghost" id="sbCancel" data-t="cancelAll">Cancel</button><button class="btn main" id="sbSave" data-t="saveAll">Save</button></div>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+<!-- line icons (Lucide, ISC licence) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 24 24"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect width="7" height="7" x="3" y="3" rx="1.5"/><rect width="7" height="7" x="14" y="3" rx="1.5"/><rect width="7" height="7" x="14" y="14" rx="1.5"/><rect width="7" height="7" x="3" y="14" rx="1.5"/></symbol>
+  <symbol id="i-bot" viewBox="0 0 24 24"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></symbol>
+  <symbol id="i-shirt" viewBox="0 0 24 24"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M21 4h-7"/><path d="M10 4H3"/><path d="M21 12h-9"/><path d="M8 12H3"/><path d="M21 20h-5"/><path d="M12 20H3"/><path d="M14 2v4"/><path d="M8 10v4"/><path d="M16 18v4"/></symbol>
+  <symbol id="i-news" viewBox="0 0 24 24"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+  <symbol id="i-timer" viewBox="0 0 24 24"><path d="M10 2h4"/><path d="m12 14 3-3"/><circle cx="12" cy="14" r="8"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+  <symbol id="i-clipboard" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></symbol>
+  <symbol id="i-note" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+  <symbol id="i-hand" viewBox="0 0 24 24"><path d="M18 11V6a2 2 0 0 0-4 0"/><path d="M14 10V4a2 2 0 0 0-4 0v2"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></symbol>
+  <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m22 4-10 10.01-3-3"/></symbol>
+  <symbol id="i-today" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></symbol>
+  <symbol id="i-flame" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
+</svg>
+<script>
+const $ = s => document.querySelector(s), list = $('#list'), scroll = $('#scroll'), S = window.settingsApp;
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const icon = (name, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24"><use href="#i-${name}"/></svg>`;
+const TABS = ['home', 'connect', 'ai', 'apps', 'character', 'wardrobe', 'general', 'news'];
+const asked = new URLSearchParams(location.search).get('tab');
+let tab = TABS.includes(asked) ? asked : 'home', lang = 'en', info = {}, lastHtml = '', busy = false;
+
+const T = {
+  ms: { secApp: 'Kopi Island', secKopi: 'Kopi', secSettings: 'Tetapan', home: 'Utama', connect: 'Sambungan',
+    hello: (n, h) => `${h < 6 ? 'Selamat malam' : h < 12 ? 'Selamat pagi' : h < 19 ? 'Selamat petang' : 'Selamat malam'}${n ? ', ' + n : ''}`,
+    helloSub: 'Kopi memerhati AI anda dan memberitahu apabila ia siap atau ada soalan.',
+    history: 'Aktiviti', searchHistory: 'Cari dalam aktiviti anda', noHistory: 'Belum ada apa-apa. Apabila AI anda menyiapkan kerja, ia muncul di sini.',
+    res: { done: 'Siap', question: 'Soalan', error: 'Ralat' }, files: n => `${n} fail`, mins: s => s >= 60 ? `${Math.round(s / 60)} min` : `${s} s`,
+    statDone: 'tugasan siap', statToday: 'hari ini', statStreak: 'hari berturut-turut', today: 'Hari ini', yesterday: 'Semalam',
+    buddyTitle: 'Tip: Kopi Buddy', buddyText: 'Seret Kopi keluar dari island ke apa sahaja di skrin anda dan tanya apa yang tertulis. Atau biar dia semak ejaan anda dalam Word.',
+    setupTitle: 'Sambungkan AI anda', setupText: 'Hidupkan Claude Code atau Codex. Kopi akan beritahu apabila AI anda siap, dan dia boleh menjawab soalan anda.', toConnect: 'Sambung',
+    quick: 'Pergi ke', qWardrobe: 'Almari', qConnect: 'Sambungan', qGeneral: 'Umum',
+    agentState: { running: 'sibuk', sending: 'sibuk', question: 'menunggu anda', done: 'siap', error: 'ralat', ready: 'rehat', off: 'rehat' },
+    cx: { claudecode: ['Claude Code', 'Mengikuti sesi Claude Code anda dalam terminal atau VS Code.'], codex: ['Codex', 'Mengikuti Codex daripada OpenAI semasa ia menulis kod untuk anda.'],
+      claude: ['Claude', 'Aplikasi Claude atau claude.ai: Kopi beritahu apabila jawapan anda sedia.'], chatgpt: ['ChatGPT', 'Aplikasi ChatGPT atau chatgpt.com: Kopi beritahu apabila jawapan anda sedia.'] },
+    cxOn: 'Disambungkan', cxOff: 'Mati', cxMissing: 'Tidak dijumpai dalam PC ini', cxSoon: 'Akan datang', cxSoonNote: 'Akan datang bersama sambungan Kopi Island untuk Chrome.',
+    cxAgents: 'AI pengaturcaraan', cxChats: 'Aplikasi sembang', cxRestart: n => `Disambungkan. Mulakan semula ${n} sekali.`, cxCodexTrust: 'Codex akan bertanya sekali sama ada anda mempercayai Kopi Island: pilih Ya.',
+    cxHow: 'Hidupkan apa yang anda guna. Kopi Island uruskan selebihnya: tiada tetingkap untuk dipilih, tiada kod.',
+    aiHow: 'Sembang Kopi menggunakan AI yang anda hidupkan dalam Sambungan. Kedua-duanya hidup? Pilih satu dalam sembang.',
+    aiClaude: 'Menggunakan akaun Claude anda sendiri, melalui Claude Code.', aiCodexOut: 'Log masuk sekali dengan akaun ChatGPT anda. Tiada kunci API diperlukan.', aiOff: 'Belum disambungkan', aiConnect: 'Sambung',
+    settings: 'Tetapan', general: 'Umum', character: 'Kopi', wardrobe: 'Almari', ai: 'AI & Sembang', apps: 'Aplikasi', news: 'Berita',
+    search: 'Cari', light: 'Cerah', dark: 'Gelap', unsaved: 'Belum disimpan', unsavedHelp: 'Kopi di sini sudah menunjukkannya. Kopi Island menerimanya apabila anda simpan.',
+    saveAll: 'Simpan', cancelAll: 'Batal', savedAll: 'Disimpan, Kopi Island sudah menerimanya', cancelled: 'Dikembalikan', none: 'Tiada apa dijumpai.', saved: 'Disimpan', wait: 'Kopi Island masih bermula…',
+    sub: { home: '', connect: 'AI mana yang Kopi perhatikan untuk anda', general: 'Bahasa, pemberitahuan, animasi dan island', character: 'Nama, mata, kelakuan dan pencapaiannya', wardrobe: 'Pilih apa yang Kopi pakai. Dia cuba terus.',
+      ai: 'AI mana yang digunakan oleh sembang Kopi', apps: 'Pilih aplikasi yang ada dalam Kopi Island anda', news: 'Apa yang baharu dalam Kopi Island' },
+    stats: i => `${i.done ?? 0} tugasan siap`, badges: i => `${i.badges ?? 0} daripada ${i.total ?? 0} pencapaian`,
+    outfit: 'Pakaian', body: 'Cawan', eyes: 'Mata', seasonal: 'Pakaian perayaan', seasonalHelp: 'Songkok untuk Hari Raya, reben merah untuk Tahun Baru Cina, topi Santa, topi ahli sihir',
+    wearing: w => `Memakai: ${w}`, locked: n => `${n} tugasan lagi`, earned: n => `Diperoleh pada ${n} tugasan`, tasksLeft: 'Dapatkan lagi dengan menyiapkan tugasan',
+    tagOn: 'Disambungkan', gptIn: (e, p) => `Log masuk${e ? ' sebagai ' + e : ''}${p ? ' · ' + p : ''}`, login: 'Log masuk dengan ChatGPT', logout: 'Log keluar', cancel: 'Batal', loggingIn: 'Semak pelayar anda untuk log masuk…',
+    inApp: 'Dalam Kopi Island anda', notIn: 'Tiada dalam Kopi Island anda', always: 'Sentiasa hidup', soon: 'Lebih banyak aplikasi akan datang', soonHelp: 'Ada idea untuk aplikasi? Beritahu kami di GitHub.',
+    added: n => `${n} ada dalam Kopi Island anda`, removed: n => `${n} telah dibuang`,
+    yours: v => `Anda ada Kopi Island ${v}`, latest: v => `Versi terbaharu: ${v}`, upToDate: 'Anda sudah terkini', update: v => `Ada kemas kini: ${v}`,
+    download: 'Muat turun', onGithub: 'Lihat di GitHub', newsError: 'Berita tidak dapat dimuatkan. Adakah anda dalam talian?', retry: 'Cuba lagi', beta: 'beta', newest: 'Terbaharu', loading: 'Memuatkan…' },
+  en: { secApp: 'Kopi Island', secKopi: 'Kopi', secSettings: 'Settings', home: 'Home', connect: 'Connections',
+    hello: (n, h) => `${h < 6 ? 'Good night' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'}${n ? ', ' + n : ''}`,
+    helloSub: 'Kopi keeps an eye on your AI and tells you when it is done or has a question.',
+    history: 'Activity', searchHistory: 'Search your activity', noHistory: 'Nothing yet. When your AI finishes a job, it shows up here.',
+    res: { done: 'Done', question: 'Question', error: 'Error' }, files: n => `${n} file${n === 1 ? '' : 's'}`, mins: s => s >= 60 ? `${Math.round(s / 60)} min` : `${s} s`,
+    statDone: 'tasks done', statToday: 'today', statStreak: 'days in a row', today: 'Today', yesterday: 'Yesterday',
+    buddyTitle: 'Tip: Kopi Buddy', buddyText: 'Drag Kopi out of the island onto anything on your screen and ask what it says. Or let him check your spelling in Word.',
+    setupTitle: 'Connect your AI', setupText: 'Turn on Claude Code or Codex. Kopi tells you when your AI is done, and he can answer your questions.', toConnect: 'Connect',
+    quick: 'Jump to', qWardrobe: 'Wardrobe', qConnect: 'Connections', qGeneral: 'General',
+    agentState: { running: 'busy', sending: 'busy', question: 'waiting for you', done: 'done', error: 'error', ready: 'idle', off: 'idle' },
+    cx: { claudecode: ['Claude Code', 'Follows your Claude Code sessions in the terminal or VS Code.'], codex: ['Codex', 'Follows OpenAI Codex while it codes for you.'],
+      claude: ['Claude', 'The Claude app or claude.ai: Kopi tells you when your answer is ready.'], chatgpt: ['ChatGPT', 'The ChatGPT app or chatgpt.com: Kopi tells you when your answer is ready.'] },
+    cxOn: 'Connected', cxOff: 'Off', cxMissing: 'Not found on this PC', cxSoon: 'Coming soon', cxSoonNote: 'Comes with the Kopi Island extension for Chrome.',
+    cxAgents: 'Coding AI', cxChats: 'Chat apps', cxRestart: n => `Connected. Restart ${n} once.`, cxCodexTrust: 'Codex asks once whether you trust Kopi Island: choose Yes.',
+    cxHow: 'Turn on what you use. Kopi Island does the rest: no windows to pick, no code.',
+    aiHow: 'Kopi\'s chat uses the AI you turned on in Connections. Both on? Then you pick one in the chat.',
+    aiClaude: 'Uses your own Claude account, through Claude Code.', aiCodexOut: 'Sign in once with your ChatGPT account. No API key needed.', aiOff: 'Not connected yet', aiConnect: 'Connect',
+    settings: 'Settings', general: 'General', character: 'Kopi', wardrobe: 'Wardrobe', ai: 'AI & Chat', apps: 'Apps', news: 'News',
+    search: 'Search', light: 'Light', dark: 'Dark', unsaved: 'Not saved yet', unsavedHelp: 'Kopi here shows it already. Kopi Island gets it when you save.',
+    saveAll: 'Save', cancelAll: 'Cancel', savedAll: 'Saved, Kopi Island has it now', cancelled: 'Put back', none: 'Nothing found.', saved: 'Saved', wait: 'Kopi Island is still starting…',
+    sub: { home: '', connect: 'Which AIs Kopi keeps an eye on for you', general: 'Language, notifications, animations and the island', character: 'His name, eyes, behaviour and badges', wardrobe: 'Pick what Kopi wears. He tries it on right away.',
+      ai: 'Which AI Kopi\'s chat talks to', apps: 'Pick which apps are in your Kopi Island', news: 'What is new in Kopi Island' },
+    stats: i => `${i.done ?? 0} tasks done`, badges: i => `${i.badges ?? 0} of ${i.total ?? 0} badges`,
+    outfit: 'Outfit', body: 'Body', eyes: 'Eyes', seasonal: 'Seasonal outfits', seasonalHelp: 'Songkok for Hari Raya, a red bow for Chinese New Year, Santa hat, witch hat',
+    wearing: w => `Wearing: ${w}`, locked: n => `${n} more tasks`, earned: n => `Earned at ${n} tasks`, tasksLeft: 'Earn more by finishing tasks',
+    tagOn: 'Connected', gptIn: (e, p) => `Signed in${e ? ' as ' + e : ''}${p ? ' · ' + p : ''}`, login: 'Sign in with ChatGPT', logout: 'Sign out', cancel: 'Cancel', loggingIn: 'Check your browser to sign in…',
+    inApp: 'In your Kopi Island', notIn: 'Not in your Kopi Island', always: 'Always on', soon: 'More apps are coming', soonHelp: 'Got an idea for an app? Tell us on GitHub.',
+    added: n => `${n} is in your Kopi Island`, removed: n => `${n} was removed`,
+    yours: v => `You have Kopi Island ${v}`, latest: v => `Newest version: ${v}`, upToDate: 'You are up to date', update: v => `There is an update: ${v}`,
+    download: 'Download', onGithub: 'View on GitHub', newsError: 'The news could not be loaded. Are you online?', retry: 'Try again', beta: 'beta', newest: 'Newest', loading: 'Loading…' }
+};
+const t = () => T[lang];
+// the slide-in plays once when you open a tab; a refresh of the same page must not replay it (that looked like flicker)
+let freshTimer = 0;
+
+// ---------- shared ----------
+let toastTimer = 0;
+function toast(text, bad) { const el = $('#toast'); el.textContent = text; el.classList.toggle('bad', !!bad); el.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('on'), 1900); }
+function labels() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-t]').forEach(el => { el.textContent = t()[el.dataset.t]; });
+  $('#search').placeholder = t().search;
+  $('#title').textContent = t()[tab]; $('#sub').textContent = t().sub[tab];
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  $('#searchBox').classList.toggle('off', !['general', 'character'].includes(tab));
+  document.querySelector('header').classList.toggle('hidden', tab === 'home'); scroll.classList.toggle('top', tab === 'home'); // the home page has its own greeting
+  $('#themeBtn').title = theme === 'dark' ? t().light : t().dark;
+  document.title = 'Kopi Island ' + t().settings;
+}
+// Changes to the island's settings are a draft until you press Save (settings-bridge-ui.js).
+let islandDirty = false;
+function updateSave() {
+  $('#savebar').classList.toggle('on', islandDirty);
+  S.dirty(islandDirty);
+}
+async function saveAll() {
+  const btn = $('#sbSave'); btn.disabled = true;
+  try {
+    const r = await S.get({ kind: 'save', which: tab === 'general' ? 'general' : 'character' });
+    if (r?.ok) showInfo(r.info);
+    lastHtml = ''; await render(false);
+    toast(t().savedAll);
+  } finally { btn.disabled = false; updateSave(); }
+}
+async function cancelAll() {
+  const r = await S.get({ kind: 'discard' });
+  if (r?.ok) showInfo(r.info);
+  lastHtml = ''; await render(false);
+  toast(t().cancelled); updateSave();
+}
+$('#sbSave').addEventListener('click', saveAll);
+$('#sbCancel').addEventListener('click', cancelAll);
+addEventListener('keydown', e => { if (e.ctrlKey && e.key.toLowerCase() === 's') { e.preventDefault(); if ($('#savebar').classList.contains('on')) saveAll(); } });
+
+// ---- light and dark ----
+let theme = localStorage.getItem('theme') || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+function setTheme(name) {
+  theme = name === 'light' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = theme; localStorage.setItem('theme', theme); S.theme(theme);
+  $('#themeBtn').innerHTML = icon(theme === 'dark' ? 'sun' : 'moon');
+  $('#themeBtn').title = theme === 'dark' ? t().light : t().dark;
+}
+$('#themeBtn').addEventListener('click', () => setTheme(theme === 'dark' ? 'light' : 'dark'));
+setTheme(theme);
+
+function showInfo(i) {
+  if (!i) return;
+  if (typeof i.dirty === 'boolean') { islandDirty = i.dirty; updateSave(); }
+  info = i; const was = lang; lang = i.lang === 'ms' ? 'ms' : 'en';
+  document.querySelectorAll('.petname').forEach(el => { el.textContent = i.name || 'Kopi'; });
+  document.querySelectorAll('.stats').forEach(el => { el.textContent = t().stats(i); });
+  if (was !== lang) labels();
+}
+function paint(html, fresh) {
+  if (html === lastHtml && !fresh) return;
+  const top = scroll.scrollTop;
+  list.innerHTML = html; lastHtml = html;
+  scroll.scrollTop = fresh ? 0 : top;
+  if (lastFace) list.querySelectorAll('.face').forEach(img => { img.src = lastFace; });
+  if (fresh) { list.classList.remove('fresh'); void list.offsetWidth; list.classList.add('fresh'); clearTimeout(freshTimer); freshTimer = setTimeout(() => list.classList.remove('fresh'), 520); }
+  filter();
+}
+const typing = () => /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName || '');
+
+// ---------- General and Kopi: the island's own lists ----------
+const WARDROBE_PREFS = ['outfit', 'body', 'eye', 'seasonal'];
+async function islandList(which) {
+  const r = await S.get({ kind: 'list', which });
+  if (tab !== which && !(tab === 'wardrobe' && which === 'character')) return null;
+  if (!r?.ok) { list.innerHTML = `<p class="empty">${t().wait}</p>`; lastHtml = ''; setTimeout(() => render(true), 1500); return null; }
+  showInfo(r.info);
+  return r.html;
+}
+// Kopi's page starts with him, big, with his name and how far he is with his badges.
+function kopiHero() {
+  const pct = info.total ? Math.round(100 * (info.badges || 0) / info.total) : 0;
+  return `<div class="kopi-hero"><img class="face" alt=""><div><b class="petname">${esc(info.name || 'Kopi')}</b><small>${esc(t().stats(info))} · ${esc(t().badges(info))}</small><div class="bar"><i style="width:${pct}%"></i></div></div></div>`;
+}
+function paintIsland(html, fresh) {
+  paint((tab === 'character' ? kopiHero() : '') + html, fresh);
+  if (tab === 'character') list.querySelectorAll('.tc-setting-row').forEach(row => { if (WARDROBE_PREFS.some(p => row.querySelector(`[data-pref="${p}"]`))) row.classList.add('hidden', 'moved'); });
+  corners();
+}
+// rounded corners on the first and last visible row of every group
+function corners() {
+  let prev = null;
+  for (const el of list.children) {
+    if (!el.classList.contains('tc-setting-row') || el.classList.contains('hidden')) { if (el.classList.contains('tc-group') || el.classList.contains('kopi-hero')) { if (prev) prev.classList.add('last'); prev = null; } continue; }
+    el.classList.remove('first', 'last');
+    if (!prev) el.classList.add('first');
+    prev = el;
+  }
+  if (prev) prev.classList.add('last');
+}
+async function press(req, button) {
+  if (busy) return; busy = true;
+  if (button?.classList.contains('tc-toggle') && (button.dataset.toggle || button.dataset.login || button.dataset.action === 'sleep')) button.classList.toggle('on');
+  else if (button?.dataset.value != null) button.closest('.tc-chips, .paints, .outfits')?.querySelectorAll('[data-value]').forEach(b => b.classList.toggle('on', b === button));
+  const which = tab === 'general' ? 'general' : 'character';
+  const values = {}; list.querySelectorAll('input[id^="tc-in-"]').forEach(i => { values[i.id] = i.value; });
+  try {
+    const r = await S.get({ kind: 'click', which, values, ...req });
+    if (r?.ok) { showInfo(r.info); if (tab === 'wardrobe') drawWardrobe(r.html); else paintIsland(r.html); }
+    if (button?.dataset.save || button?.dataset.setname) toast(t().saved);
+    setTimeout(() => render(false), 700); // some options answer a little later
+  } finally { busy = false; }
+}
+
+// ---------- Wardrobe ----------
+const OUTFIT_LOOK = { auto: ['✨', 0], none: ['🚫', 0], hat: ['🥳', 5], towel: ['☀️', 10], shades: ['😎', 15], crown: ['👑', 30] };
+function drawWardrobe(html) {
+  const src = document.createElement('div'); src.innerHTML = html;
+  const all = [...src.querySelectorAll('button')], idx = b => all.indexOf(b);
+  const outfits = all.filter(b => b.dataset.pref === 'outfit'), bodies = all.filter(b => b.dataset.pref === 'body'), eyes = all.filter(b => b.dataset.pref === 'eye');
+  const season = all.find(b => b.dataset.pref === 'seasonal');
+  const wearing = outfits.find(b => b.classList.contains('on'));
+  const name = b => b.textContent.replace('🔒', '').trim();
+  const done = info.done ?? 0;
+  const outfitCards = outfits.map(b => {
+    const [look, at] = OUTFIT_LOOK[b.dataset.value] || ['👕', 0], locked = b.disabled;
+    const note = locked ? t().locked(Math.max(0, at - done)) : at ? t().earned(at) : '';
+    return `<button class="outfit ${b.classList.contains('on') ? 'on' : ''}" data-i="${idx(b)}" data-value="${esc(b.dataset.value)}" ${locked ? 'disabled' : ''}><span>${look}</span><b>${esc(name(b))}</b><small>${esc(note)}</small></button>`;
+  }).join('');
+  const paints = items => items.map(b => `<button class="paint ${b.classList.contains('on') ? 'on' : ''}" data-i="${idx(b)}" data-value="${esc(b.dataset.value)}" title="${esc(b.title)}"><i style="background:${esc(b.style.background)}"></i><small>${esc(b.title || b.dataset.value)}</small></button>`).join('');
+  const html2 = `<div class="wardrobe">
+    <div class="dress-stage"><div class="floor"></div><img class="face" alt=""><b class="petname">${esc(info.name || 'Kopi')}</b><small>${esc(t().wearing(wearing ? name(wearing) : '—'))}</small></div>
+    <div>
+      <div class="shelf"><h3>${t().outfit} <small>${t().tasksLeft}</small></h3><div class="outfits">${outfitCards}</div></div>
+      <div class="shelf"><h3>${t().body}</h3><div class="paints">${paints(bodies)}</div></div>
+      <div class="shelf"><h3>${t().eyes}</h3><div class="paints">${paints(eyes)}</div></div>
+      ${season ? `<div class="group"><div class="row"><span class="tile" style="--c:#ff8a65">${icon('sparkles')}</span><div class="text"><b>${t().seasonal}</b><small>${t().seasonalHelp}</small></div><button class="tc-toggle ${season.classList.contains('on') ? 'on' : ''}" data-toggle="1" data-i="${idx(season)}"></button></div></div>` : ''}
+    </div></div>`;
+  paint(html2, false);
+}
+
+// ---------- AI & Chat ----------
+let ai = null, aiBusy = false, loggingIn = false;
+async function loadAi() { ai = await S.ai.get().catch(() => null); cxs = await S.connections().catch(() => cxs); drawAi(); $('#aiDot').classList.toggle('on', !!cxs?.list && !cxs.list.some(c => (c.id === 'claudecode' || c.id === 'codex') && c.on)); }
+// Kopi's chat answers with what you connected: Claude Code (your Claude account) and/or Codex (your ChatGPT account).
+function drawAi() {
+  if (tab !== 'ai') return;
+  if (!ai?.ok || !cxs?.list) { paint(`<p class="empty">${t().loading}</p>`); return; }
+  const on = id => !!cxs.list.find(c => c.id === id)?.on, g = ai.chatgpt || {};
+  const row = (id, name, sub, right, good) => `<div class="row"><span class="bot ${good ? '' : 'off'}" style="--c:${AI_COLOUR[id]}"></span><div class="text"><b>${name}</b><small>${sub}</small></div>${right}</div>`;
+  const connect = `<button class="btn" data-ai="connect">${t().aiConnect}</button>`, ok = `<span class="tag good"><i></i>${t().tagOn}</span>`;
+  const claude = on('claudecode') ? row('claudecode', 'Claude', esc(t().aiClaude), ok, true) : row('claudecode', 'Claude', esc(t().aiOff), connect, false);
+  const codex = !on('codex') ? row('codex', 'Codex', esc(t().aiOff), connect, false)
+    : g.unknown ? row('codex', 'Codex', esc(t().loading), '', false)
+    : g.ready ? row('codex', 'Codex', esc(t().gptIn(g.email, g.plan)), `<button class="btn ghost" data-ai="logout">${t().logout}</button>${ok}`, true)
+    : row('codex', 'Codex', esc(loggingIn ? t().loggingIn : t().aiCodexOut), loggingIn ? `<button class="btn ghost" data-ai="cancel">${t().cancel}</button>` : `<button class="btn main" data-ai="login">${t().login}</button>`, false);
+  if (on('codex') && g.unknown && !aiChecking) checkAi(); // never checked yet: ask Codex once, only on this tab
+  paint(`<p class="lead">${esc(t().aiHow)}</p><div class="group">${claude}${codex}</div>` + (g.error && on('codex') && !g.ready ? `<div class="tc-ai-error">${esc(g.error)}</div>` : ''), false);
+}
+// Starting Codex can take a few seconds, so it only happens here, when you look at AI & Chat.
+let aiChecking = false;
+async function checkAi() { aiChecking = true; let r = null; try { r = await S.ai.get(true); } catch {} if (r?.ok) ai = r; else if (ai?.chatgpt) ai.chatgpt.unknown = false; drawAi(); }
+async function aiAction(fn, ok) {
+  if (aiBusy) return; aiBusy = true;
+  try {
+    const r = await fn();
+    if (r && r.ok === false) toast(r.error || '?', true);
+    else if (ok) toast(ok);
+  } catch (e) { toast(String(e?.message || e), true); }
+  finally { aiBusy = false; await loadAi(); }
+}
+
+// ---------- Apps ----------
+const APPS = [
+  { id: 'claude', icon: 'bot', tint: '#c6e994', core: true, ms: ['Pembantu AI', 'Claude Code dan Codex: Kopi tunjukkan sama ada AI anda sibuk, ada soalan atau sudah siap.'], en: ['AI assistants', 'Claude Code and Codex: Kopi shows whether your AI is busy, has a question or is done.'] },
+  { id: 'buddy', icon: 'hand', tint: '#8fb8ff', ms: ['Kopi Buddy', 'Ambil Kopi keluar dari island, letakkan dia pada apa sahaja dan tanya mengenainya. Atau biar dia semak ejaan anda.'], en: ['Kopi Buddy', 'Grab Kopi out of the island, drop him on anything and ask about it. Or let him check your spelling.'] },
+  { id: 'spotify', icon: 'music', tint: '#1ed760', ms: ['Spotify', 'Apa yang sedang dimainkan, dengan kawalan. Kopi turut menari.'], en: ['Spotify', 'What is playing, with controls. Kopi dances along.'] },
+  { id: 'focus', icon: 'timer', tint: '#ffb35c', ms: ['Fokus', 'Pemasa fokus. Kopi jauhkan gangguan buat seketika.'], en: ['Focus', 'A focus timer. Kopi keeps distractions away for a while.'] },
+  { id: 'tray', icon: 'inbox', tint: '#7ab8ff', ms: ['Dulang', 'Letakkan fail dalam island dan ambil semula kemudian.'], en: ['Tray', 'Drop files into the island and grab them again later.'] },
+  { id: 'clips', icon: 'clipboard', tint: '#5ad1c4', ms: ['Papan keratan', 'Salinan terakhir anda. Klik satu untuk menyalinnya semula.'], en: ['Clipboard', 'Your last copies. Click one to copy it again.'] },
+  { id: 'note', icon: 'note', tint: '#ffd166', ms: ['Nota', 'Satu nota pantas, sentiasa ada.'], en: ['Note', 'One quick note, always at hand.'] },
+  { id: 'clock', icon: 'clock', tint: '#a99bff', ms: ['Jam', 'Masa di skrin utama anda.'], en: ['Clock', 'The time on your home screen.'] },
+  { id: 'settings', icon: 'gear', tint: '#b8b9c0', core: true, ms: ['Tetapan', 'Aplikasi ini. Sentiasa ada melalui ikon gear.'], en: ['Settings', 'This app. Always there via the gear.'] }
+];
+let appsOff = new Set();
+async function loadApps(req) {
+  const r = await S.get(req || { kind: 'apps' });
+  if (r?.ok) { appsOff = new Set(r.off || []); showInfo(r.info); }
+  drawApps();
+}
+function drawApps() {
+  if (tab !== 'apps') return;
+  const cards = APPS.map(a => {
+    const [name, about] = a[lang], on = !appsOff.has(a.id);
+    const control = a.core ? `<span class="tag">${t().always}</span>`
+      : `<button class="switch ${on ? 'on' : ''}" data-app="${a.id}" data-on="${on ? '0' : '1'}" aria-label="${esc(name)}"></button>`;
+    const state = on ? t().inApp : t().notIn;
+    return `<div class="appcard"><div class="top"><span class="tile" style="--c:${a.tint}">${icon(a.icon)}</span><div><b>${esc(name)}</b><small class="${on ? 'in' : ''}">${esc(state)}</small></div>${control}</div><p>${esc(about)}</p></div>`;
+  }).join('') + `<div class="appcard soon"><div class="top"><span class="tile" style="--c:#8a8b93">${icon('sparkles')}</span><div><b>${t().soon}</b></div></div><p>${t().soonHelp}</p></div>`;
+  paint(`<div class="apps">${cards}</div>`, false);
+}
+
+// ---------- News ----------
+let news = null;
+const parts = v => String(v || '').replace(/^v/i, '').split('-')[0].split('.').map(n => parseInt(n, 10) || 0);
+const newer = (a, b) => { const x = parts(a), y = parts(b); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); return false; };
+function notes(md) { // small and safe: headings, lists, bold, code; links show as their text
+  const out = []; let inList = false;
+  for (const raw of esc(md).split(/\r?\n/)) {
+    let line = raw.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+    if (/^\s*[-*] /.test(line)) { if (!inList) { out.push('<ul>'); inList = true; } out.push('<li>' + line.replace(/^\s*[-*] /, '') + '</li>'); continue; }
+    if (inList) { out.push('</ul>'); inList = false; }
+    if (/^-{3,}$/.test(line.trim())) continue;
+    if (/^#{1,6} /.test(line)) out.push('<h4>' + line.replace(/^#{1,6} /, '') + '</h4>');
+    else if (line.trim()) out.push('<p style="margin:4px 0">' + line + '</p>');
+  }
+  if (inList) out.push('</ul>');
+  return out.join('');
+}
+async function loadNews() {
+  if (!news && tab === 'news') paint(`<p class="empty">${t().loading}</p>`, true);
+  news = await S.news().catch(() => null);
+  const latest = news?.releases?.[0];
+  $('#newsDot').classList.toggle('on', !!(latest && newer(latest.tag, news.version)));
+  drawNews();
+}
+function drawNews() {
+  if (tab !== 'news' || !news) return;
+  const latest = news.releases?.[0], hasUpdate = latest && newer(latest.tag, news.version);
+  const head = `<div class="card version"><span class="tile" style="--c:${hasUpdate ? '#ffb35c' : '#c6e994'}">${icon(hasUpdate ? 'download' : 'check')}</span><div><b>${esc(hasUpdate ? t().update(latest.tag) : t().yours(news.version))}</b><small>${esc(hasUpdate ? t().yours(news.version) : latest ? t().upToDate + ' · ' + t().latest(latest.tag) : '')}</small></div>
+    <button class="btn ${hasUpdate ? 'main' : 'ghost'}" data-url="https://github.com/chowkuanlaw/kopi-island/releases/latest">${icon('download')}${t().download}</button></div>`;
+  if (!news.ok) { paint(head + `<div class="card"><p class="muted" style="margin:0 0 12px">${t().newsError}</p><button class="btn" data-news="retry">${t().retry}</button></div>`, false); return; }
+  const date = d => d ? new Date(d).toLocaleDateString(lang === 'ms' ? 'ms-MY' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+  const items = news.releases.map((r, i) => `<div class="release ${i === 0 ? 'latest' : ''}"><div class="rhead"><b>${esc(r.name || r.tag)}</b>${i === 0 ? `<span class="pill new">${t().newest}</span>` : ''}${r.beta ? `<span class="pill">${t().beta}</span>` : ''}<span>${esc(date(r.date))}</span></div>
+    <div class="card"><div class="notes">${notes(r.body) || '<span class="muted">—</span>'}</div><div class="more"><button class="btn ghost" data-url="${esc(r.url)}">${t().onGithub}${icon('external')}</button></div></div></div>`).join('');
+  paint(head + items, false);
+}
+
+// ---------- Home ----------
+const AI_COLOUR = { claudecode: '#d97757', codex: '#3b82f6', claude: '#e8a87c', chatgpt: '#10a37f' };
+const LAMP = { running: '#ffb35c', sending: '#ffb35c', question: '#ffb35c', done: '#8fd65a', error: '#ff6b6b', ready: '#8fd65a', off: '#8fd65a' };
+const AGENT_OF = { 'Claude Code': 'claudecode', Codex: 'codex', Claude: 'claude', ChatGPT: 'chatgpt' };
+let home = null, cxs = null;
+async function loadHome() {
+  const [h, c] = await Promise.all([S.home(), S.connections()]);
+  home = h; cxs = c; drawHome();
+}
+function dayLabel(at) {
+  const d = new Date(at), today = new Date(); const diff = Math.round((new Date(today.toDateString()) - new Date(d.toDateString())) / 864e5);
+  return diff === 0 ? t().today : diff === 1 ? t().yesterday : d.toLocaleDateString(lang === 'ms' ? 'ms-MY' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+function streak(list) { // days in a row with at least one finished job, up to today
+  const days = new Set(list.map(j => new Date(j.at).toDateString())); let n = 0; const d = new Date();
+  while (days.has(d.toDateString())) { n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
+function drawHome() {
+  if (tab !== 'home' || !home) return;
+  const q = ($('#histSearch')?.value || '').toLowerCase(), all = home.history || [], list = all.filter(j => !q || (j.prompt + ' ' + j.project + ' ' + j.name).toLowerCase().includes(q));
+  const on = (cxs?.list || []).filter(c => c.on && !c.soon);
+  const agents = on.map(c => `<span class="agent"><span class="bot sm ${['running', 'sending'].includes(c.state) ? 'busy' : ''}" style="--c:${AI_COLOUR[c.id]}"></span>${esc(t().cx[c.id][0])}<span>${esc(t().agentState[c.state] || t().agentState.ready)}</span></span>`).join('');
+  let jobs = '', lastDay = '';
+  for (const j of list.slice(0, 60)) {
+    const day = dayLabel(j.at); if (day !== lastDay) { jobs += `<p class="day">${esc(day)}</p>`; lastDay = day; }
+    const time = new Date(j.at).toLocaleTimeString(lang === 'ms' ? 'ms-MY' : 'en-GB', { hour: '2-digit', minute: '2-digit' });
+    const extra = [time, j.name, j.project, j.files ? t().files(j.files) : '', j.seconds ? t().mins(j.seconds) : ''].filter(Boolean).join(' · ');
+    jobs += `<div class="job"><span class="bot sm" style="--c:${AI_COLOUR[AGENT_OF[j.name]] || '#aaa'}"></span><div><p>${esc(j.prompt)}</p><small>${esc(extra)}</small></div><span class="res ${esc(j.result)}">${esc(t().res[j.result] || '')}</span></div>`;
+  }
+  const today = all.filter(j => new Date(j.at).toDateString() === new Date().toDateString()).length;
+  const keepSearch = $('#histSearch')?.value || '', focused = document.activeElement?.id === 'histSearch';
+  const kpi = (ic, c, n, label) => `<div class="kpi"><span class="tile" style="--c:${c}">${icon(ic)}</span><div><b>${n}</b><small>${label}</small></div></div>`;
+  const quick = (ic, c, label, to) => `<button data-goto="${to}"><span class="tile" style="--c:${c}">${icon(ic)}</span><span>${label}</span>${icon('chevron')}</button>`;
+  paint(`<div class="greet"><div><h2>${esc(t().hello(home.user, new Date().getHours()))}</h2><p>${esc(t().helloSub)}</p></div><div class="agents">${agents}</div></div>
+    ${on.length ? '' : `<div class="setup"><span class="tile" style="--c:#c6e994">${icon('plug')}</span><div><b>${t().setupTitle}</b><small>${t().setupText}</small></div><button class="btn main" data-goto="connect">${t().toConnect}</button></div>`}
+    <div class="kpis">${kpi('check', '#c6e994', info.done ?? 0, t().statDone)}${kpi('today', '#8fb8ff', today, t().statToday)}${kpi('flame', '#ffb35c', streak(all), t().statStreak)}</div>
+    <div class="home"><div>
+      <div class="hist-head"><b>${t().history}</b><input class="field" id="histSearch" type="search" placeholder="${t().searchHistory}" autocomplete="off"></div>
+      ${jobs ? `<div class="group">${jobs}</div>` : `<div class="card muted" style="font-size:13.5px">${t().noHistory}</div>`}
+    </div><div class="side-cards">
+      <div class="group quick">${quick('shirt', '#ff86c2', t().qWardrobe, 'wardrobe')}${quick('plug', '#c6e994', t().qConnect, 'connect')}${quick('sliders', '#8fb8ff', t().qGeneral, 'general')}</div>
+      <div class="tip"><b>${icon('hand')}${t().buddyTitle}</b><p>${t().buddyText}</p></div>
+    </div></div>`, false);
+  const box = $('#histSearch'); if (box) { box.value = keepSearch; if (focused) { box.focus(); box.setSelectionRange(keepSearch.length, keepSearch.length); } }
+}
+list.addEventListener('input', e => { if (e.target.id === 'histSearch') drawHome(); });
+
+// ---------- Connections: one switch per AI, Kopi Island does the rest ----------
+let cxNote = {};
+async function loadConnect() { cxs = await S.connections(); drawConnect(); }
+function drawConnect() {
+  if (tab !== 'connect' || !cxs?.list) return;
+  const rows = cxs.list.map(c => {
+    const [name, about] = t().cx[c.id];
+    if (c.soon) return `<div class="row soon"><span class="bot off" style="--c:${AI_COLOUR[c.id]}"></span><div class="text"><b>${esc(name)}</b><small>${esc(about)} ${esc(t().cxSoonNote)}</small></div><span class="tag">${esc(t().cxSoon)}</span></div>`;
+    const busy = ['running', 'sending'].includes(c.state);
+    const status = !c.available ? `<span class="tag warn">${t().cxMissing}</span>` : c.on ? `<span class="tag good"><i></i>${t().cxOn}</span>` : '';
+    return `<div class="row"><span class="bot ${c.on ? '' : 'off'} ${busy ? 'busy' : ''}" style="--c:${AI_COLOUR[c.id]}"></span><div class="text"><b>${esc(name)}</b><small>${esc(about)}</small>${cxNote[c.id] ? `<span class="note">${esc(cxNote[c.id])}</span>` : ''}</div>
+      ${status}<button class="switch ${c.on ? 'on' : ''}" data-cx="${c.id}" ${c.available ? '' : 'disabled'} aria-label="${esc(name)}"></button></div>`;
+  });
+  const agents = cxs.list.map((c, i) => c.soon ? '' : rows[i]).join(''), chats = cxs.list.map((c, i) => c.soon ? rows[i] : '').join('');
+  paint(`<p class="lead">${t().cxHow}</p><p class="section">${t().cxAgents}</p><div class="group">${agents}</div>${chats ? `<p class="section">${t().cxChats}</p><div class="group">${chats}</div>` : ''}`, false);
+  $('#connectDot').classList.toggle('on', !cxs.list.some(c => c.on && !c.soon));
+}
+async function toggleConnect(id, on) {
+  const name = t().cx[id][0];
+  const r = await S.connect(id, on);
+  if (r?.ok === false) { toast(r.error || '?', true); return loadConnect(); }
+  cxNote[id] = on && (id === 'claudecode' || id === 'codex') ? t().cxRestart(name) + (id === 'codex' ? ' ' + t().cxCodexTrust : '') : '';
+  cxs = r; drawConnect();
+}
+
+// ---------- clicks ----------
+function go(where) { if (!TABS.includes(where) || where === tab) return; tab = where; localStorage.setItem('tab', tab); $('#search').value = ''; lastHtml = ''; labels(); render(true); }
+list.addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (tab === 'general' || tab === 'character') {
+    if (b) { if (b.disabled) return; const index = islandIndex(b); if (index >= 0) press({ index }, b); return; }
+    const row = e.target.closest('.tc-setting-row');
+    if (row?.dataset.demo && !e.target.closest('input')) press({ row: [...list.querySelectorAll('.tc-setting-row')].indexOf(row) }); // a block with an example: Kopi shows it
+    return;
+  }
+  if (!b || b.disabled) return;
+  if (b.dataset.goto) return go(b.dataset.goto);
+  if (tab === 'connect' && b.dataset.cx) { b.classList.toggle('on'); toggleConnect(b.dataset.cx, b.classList.contains('on')); return; }
+  if (tab === 'wardrobe' && b.dataset.i != null) {
+    if (b.classList.contains('tc-toggle')) b.classList.toggle('on');
+    press({ index: Number(b.dataset.i) }, b);
+  }
+  if (tab === 'ai') {
+    const act = b.dataset.ai;
+    if (act === 'login') { loggingIn = true; drawAi(); aiAction(() => S.ai.chatgptLogin(), 'ChatGPT ✓').finally(() => { loggingIn = false; drawAi(); }); }
+    if (act === 'cancel') { S.ai.chatgptCancel(); loggingIn = false; drawAi(); }
+    if (act === 'logout') aiAction(() => S.ai.chatgptLogout());
+    if (act === 'connect') go('connect');
+  }
+  if (tab === 'apps' && b.dataset.app) {
+    const a = APPS.find(x => x.id === b.dataset.app), on = b.dataset.on === '1';
+    b.classList.toggle('on', on);
+    loadApps({ kind: 'app', id: a.id, on }).then(() => toast(on ? t().added(a[lang][0]) : t().removed(a[lang][0])));
+  }
+  if (b.dataset.url) S.openUrl(b.dataset.url);
+  if (b.dataset.news === 'retry') loadNews();
+});
+// the island counts the buttons of its own list (the hero on Kopi's page is ours, so it is left out)
+function islandIndex(b) { return [...list.querySelectorAll('button')].filter(x => !x.closest('.kopi-hero')).indexOf(b); }
+list.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (e.target.matches('input[id^="tc-in-"]')) { e.preventDefault(); e.target.closest('.tc-step')?.querySelector('button')?.click(); }
+});
+
+// ---------- tabs and search ----------
+async function render(fresh) {
+  if (tab === 'home') { if (fresh) lastHtml = ''; showInfo((await S.get({ kind: 'apps' }))?.info); await loadHome(); }
+  if (tab === 'connect') { if (fresh) lastHtml = ''; await loadConnect(); }
+  if (tab === 'general' || tab === 'character') { const html = await islandList(tab); if (html != null) paintIsland(html, fresh); }
+  if (tab === 'wardrobe') { const html = await islandList('character'); if (html != null && tab === 'wardrobe') drawWardrobe(html); }
+  if (tab === 'ai') { if (fresh) lastHtml = ''; await loadAi(); }
+  if (tab === 'apps') { if (fresh) lastHtml = ''; await loadApps(); }
+  if (tab === 'news') { if (fresh) lastHtml = ''; drawNews(); if (fresh || !news) loadNews(); }
+  if (fresh) { scroll.scrollTop = 0; list.classList.remove('fresh'); void list.offsetWidth; list.classList.add('fresh'); clearTimeout(freshTimer); freshTimer = setTimeout(() => list.classList.remove('fresh'), 520); }
+}
+$('#nav').addEventListener('click', e => { const b = e.target.closest('button[data-tab]'); if (b) go(b.dataset.tab); });
+function filter() {
+  if (!['general', 'character'].includes(tab)) return;
+  const q = $('#search').value.trim().toLowerCase(), items = [...list.children];
+  let shown = 0;
+  for (const el of items) {
+    if (el.classList.contains('tc-group') || el.classList.contains('moved') || el.classList.contains('empty')) continue;
+    const hit = !q || el.textContent.toLowerCase().includes(q);
+    el.classList.toggle('hidden', !hit); if (hit && el.classList.contains('tc-setting-row')) shown++;
+  }
+  items.forEach((el, i) => { // a group title only shows when something under it does
+    if (!el.classList.contains('tc-group')) return;
+    let any = false;
+    for (let j = i + 1; j < items.length && !items[j].classList.contains('tc-group'); j++) if (!items[j].classList.contains('hidden')) { any = true; break; }
+    el.classList.toggle('hidden', !any);
+  });
+  let empty = list.querySelector(':scope > .empty');
+  if (q && !shown) { if (!empty) { empty = document.createElement('p'); empty.className = 'empty'; list.appendChild(empty); } empty.textContent = t().none; }
+  else if (q || shown) empty?.remove();
+  corners();
+}
+$('#search').addEventListener('input', filter);
+addEventListener('keydown', e => { if (e.ctrlKey && e.key.toLowerCase() === 'f' && !$('#searchBox').classList.contains('off')) { e.preventDefault(); $('#search').focus(); } });
+
+// ---------- Kopi, live ----------
+let lastFace = '';
+S.onFace(url => { lastFace = url; document.querySelectorAll('.face').forEach(img => { img.src = url; }); });
+
+// keep up with changes made elsewhere, but never while you type
+addEventListener('focus', () => { if (!typing() && !busy) render(false); });
+setInterval(() => { if (!document.hidden && !busy && !typing() && ['general', 'character', 'wardrobe', 'apps', 'home', 'connect'].includes(tab)) render(false); }, 3000);
+window.settingsApp.onGoto?.(where => go(where));
+
+labels();
+render(true);
+loadAi();   // the red dot on AI & Chat when nothing is connected yet
+loadNews(); // and on News when there is an update
+</script></body></html>

@@ -1,0 +1,65 @@
+{
+  "name": "kopi-island",
+  "productName": "Kopi Island",
+  "version": "0.1.1",
+  "description": "Kopi Island: a Dynamic Island for Windows that follows Claude Code and Codex.",
+  "main": "main.js",
+  "scripts": {
+    "test": "node --test tests/monitor.test.cjs tests/windows-check.test.cjs tests/claude-code-hooks.test.cjs tests/extras.test.cjs",
+    "start": "electron .",
+    "check:windows": "node check-windows.cjs",
+    "dist:zip": "electron-builder --win zip",
+    "dist:store": "electron-builder --win appx"
+  },
+  "keywords": [],
+  "author": "Chow Kuan",
+  "homepage": "https://github.com/chowkuanlaw/kopi-island",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "electron": "^44.5.1",
+    "electron-builder": "^26.0.12"
+  },
+  "dependencies": {
+    "@openai/codex": "^0.160.0"
+  },
+  "build": {
+    "appId": "com.chowkuanlaw.kopiisland",
+    "productName": "Kopi Island",
+    "copyright": "Copyright (c) 2026 Chow Kuan",
+    "files": [
+      "**/*",
+      "!tests/**",
+      "!tools/**",
+      "!vscode-editor/**",
+      "!*.cmd",
+      "!dist/**"
+    ],
+    "extraFiles": [
+      {
+        "from": "LICENSE",
+        "to": "LICENSE"
+      }
+    ],
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+        "zip",
+        "appx"
+      ]
+    },
+    "appx": {
+      "applicationId": "KopiIsland",
+      "identityName": "REPLACE_WITH_PARTNER_CENTER_IDENTITY_NAME",
+      "publisher": "CN=REPLACE_WITH_PARTNER_CENTER_PUBLISHER_ID",
+      "publisherDisplayName": "Chow Kuan",
+      "displayName": "Kopi Island",
+      "backgroundColor": "#0F0F10",
+      "languages": [
+        "en-US"
+      ]
+    },
+    "asar": false,
+    "artifactName": "KopiIsland-${version}-win.${ext}"
+  }
+}

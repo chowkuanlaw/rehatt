@@ -1,0 +1,80 @@
+name: Build Windows app
+
+# Builds the portable Windows zip (with Kopi Island.exe inside).
+# - Every push to main, or "Run workflow" in the Actions tab: the zip is kept as a download on the run.
+# - Publishing a release on GitHub: the zip is also attached to that release.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Attach the build to this existing release tag (e.g. v0.1.1). Leave empty for a plain build.'
+        required: false
+        default: ''
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Which release
+        id: rel
+        shell: bash
+        run: echo "tag=${{ github.event.release.tag_name || inputs.release_tag }}" >> "$GITHUB_OUTPUT"
+
+      - name: Take the version from the release tag
+        if: steps.rel.outputs.tag != ''
+        shell: bash
+        run: npm version "${TAG#v}" --no-git-tag-version --allow-same-version
+        env:
+          TAG: ${{ steps.rel.outputs.tag }}
+
+      - name: Test
+        shell: bash
+        run: |
+          # On failure, also post the failing tests as an annotation so they show on the run page
+          if ! npm test > test-output.txt 2>&1; then
+            cat test-output.txt
+            msg=$(grep -E -A25 '^not ok|^# (fail|pass)' test-output.txt | head -c 3500 | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')
+            echo "::error title=Tests failed::$msg"
+            exit 1
+          fi
+          tail -n 12 test-output.txt
+
+      - name: Build zip
+        run: npx electron-builder --win zip --publish never
+
+      - name: Upload to the run
+        uses: actions/upload-artifact@v4
+        with:
+          name: KopiIsland-Windows
+          path: dist/*.zip
+          retention-days: 30
+
+      - name: Attach to the release
+        if: steps.rel.outputs.tag != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.rel.outputs.tag }}
+        run: |
+          # replace any older build zip on this release, then upload the new one
+          for old in $(gh release view "$TAG" --json assets --jq '.assets[].name' | grep -- '-win\.zip$' || true); do
+            gh release delete-asset "$TAG" "$old" --yes
+          done
+          gh release upload "$TAG" dist/*.zip --clobber

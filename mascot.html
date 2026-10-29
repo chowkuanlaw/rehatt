@@ -1,0 +1,5547 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<style>
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: transparent;
+  user-select: none;
+  font-family: Arial, sans-serif;
+}
+
+canvas {
+  position: absolute;
+  inset: 0;
+
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  touch-action: none;
+}
+
+
+/* =========================================================
+   PROJECT QUERY INPUT
+
+   This is a real HTML input on purpose,
+   so the user can type, select, use backspace,
+   Ctrl+A and so on as usual.
+========================================================= */
+
+#project-query {
+  position: absolute;
+
+  z-index: 20;
+
+  display: none;
+
+  height: 34px;
+
+  border: 1px solid rgba(255,255,255,.09);
+
+  border-radius: 17px;
+
+  outline: none;
+
+  background:
+    #151a15;
+
+  color:
+    #f2f5f0;
+
+  padding:
+    0 15px;
+
+  font:
+    500 11px Arial, sans-serif;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.025);
+}
+
+#project-query::placeholder {
+  color:
+    #6f796d;
+}
+
+#project-query:focus {
+  border-color:
+    rgba(198,233,148,.42);
+
+  background:
+    #181e18;
+}
+
+</style>
+
+</head>
+
+<body>
+
+
+<canvas id="canvas"></canvas>
+
+
+<input
+  id="project-query"
+  type="text"
+  autocomplete="off"
+  spellcheck="false"
+  placeholder="What do you want to find in this project?"
+>
+
+
+<script>
+
+'use strict';
+
+// English, or Bahasa Melayu when chosen in Settings → General → Language.
+const kopiT = (ms, en) => window.__kopiPrefs?.().lang === 'ms' ? ms : en;
+
+
+const canvas =
+  document.getElementById(
+    'canvas'
+  );
+
+
+const ctx =
+  canvas.getContext(
+    '2d'
+  );
+
+
+const projectInput =
+  document.getElementById(
+    'project-query'
+  );
+
+
+// ============================================================
+// UI
+// ============================================================
+
+const UI = {
+  REST_W:
+    80,
+
+  COMPACT_W:
+    300,
+
+  // Medium island (music, focus, messages) is a bit taller than the resting bar, so everything fits.
+  COMPACT_H:
+    36,
+
+  BAR_H:
+    24,
+
+  EXPANDED_W:
+    760,
+
+  COMPACT_RADIUS:
+    14,
+
+  EXPANDED_RADIUS:
+    30,
+
+  HOME_H:
+    150,
+
+  SETTINGS_H:
+    196,
+
+  APPS_H:
+    238,
+
+  PROJECT_H:
+    270,
+
+  PROMPT_H:
+    156,
+
+  SPOTIFY_H:
+    196,
+
+  HOME_BODY:
+    62,
+
+  OVERVIEW_BODY:
+    70,
+
+  COMPACT_BODY:
+    20,
+
+  NORMAL_PEEK_DELAY:
+    330,
+
+  NORMAL_LEAVE_DELAY:
+    220,
+
+  HOME_LEAVE_DELAY:
+    450,
+
+  VIEW_LEAVE_DELAY:
+    2500,
+
+  SPOTIFY_COLLAPSE_DELAY:
+    240,
+
+  SPOTIFY_EXPAND_DELAY:
+    90
+};
+
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+function clamp(
+  value,
+  min = 0,
+  max = 1
+) {
+  return Math.max(
+    min,
+    Math.min(
+      max,
+      value
+    )
+  );
+}
+
+
+function lerp(
+  a,
+  b,
+  t
+) {
+  return (
+    a +
+    (
+      b -
+      a
+    ) *
+    t
+  );
+}
+
+
+function smooth(
+  value
+) {
+  const t =
+    clamp(
+      value
+    );
+
+
+  return (
+    t *
+    t *
+    (
+      3 -
+      2 *
+      t
+    )
+  );
+}
+
+
+function range(
+  value,
+  start,
+  end
+) {
+  return smooth(
+    clamp(
+      (
+        value -
+        start
+      ) /
+      (
+        end -
+        start
+      )
+    )
+  );
+}
+
+
+function inside(
+  x,
+  y,
+  bounds
+) {
+  if (!bounds) {
+    return false;
+  }
+
+
+  return (
+    x >=
+      bounds.x &&
+    x <=
+      bounds.x +
+      bounds.width &&
+    y >=
+      bounds.y &&
+    y <=
+      bounds.y +
+      bounds.height
+  );
+}
+
+
+function bodyScale(
+  diameter
+) {
+  return (
+    diameter /
+    82
+  );
+}
+
+
+// ============================================================
+// CANVAS
+// ============================================================
+
+function resize() {
+  const dpr =
+    Math.min(
+      devicePixelRatio ||
+      1,
+      2
+    );
+
+
+  canvas.width =
+    Math.round(
+      innerWidth *
+      dpr
+    );
+
+
+  canvas.height =
+    Math.round(
+      innerHeight *
+      dpr
+    );
+
+
+  canvas.style.width =
+    innerWidth +
+    'px';
+
+
+  canvas.style.height =
+    innerHeight +
+    'px';
+
+
+  ctx.setTransform(
+    dpr,
+    0,
+    0,
+    dpr,
+    0,
+    0
+  );
+}
+
+
+resize();
+
+
+addEventListener(
+  'resize',
+  resize
+);
+
+
+// ============================================================
+// POINTER
+// ============================================================
+
+let pointer = {
+  x:
+    -1000,
+
+  y:
+    -1000,
+
+  known:
+    false
+};
+
+
+let interactiveSent =
+  null;
+
+
+// ============================================================
+// ISLAND STATE
+// ============================================================
+
+let mode =
+  'intro';
+
+
+let currentView =
+  'home';
+
+
+let visual = {
+  width:
+    UI.REST_W,
+
+  height:
+    UI.BAR_H,
+
+  radius:
+    UI.COMPACT_RADIUS
+};
+
+
+let transition =
+  null;
+
+
+let islandBounds = {
+  x:
+    innerWidth /
+    2 -
+    UI.REST_W /
+    2,
+
+  y:
+    0,
+
+  width:
+    UI.REST_W,
+
+  height:
+    UI.BAR_H
+};
+
+
+let hoverStartedAt =
+  null;
+
+
+let leaveStartedAt =
+  null;
+
+
+let lastActivity =
+  performance.now();
+
+
+let hit = {};
+
+
+// ============================================================
+// PROJECT MODE
+// ============================================================
+
+let projectState = {
+  ok:
+    true,
+
+  selected:
+    false
+};
+
+
+let projectLoading =
+  false;
+
+
+let projectError =
+  '';
+
+
+let projectSearchLoading =
+  false;
+
+
+let projectSearchError =
+  '';
+
+
+let projectSearchResults =
+  [];
+
+
+let projectSearchMeta =
+  null;
+
+
+let projectSelectedResult =
+  null;
+
+
+let projectReadLoading =
+  false;
+
+
+let projectReadData =
+  null;
+
+
+let projectInputBounds =
+  null;
+
+
+let projectInputFocused =
+  false;
+
+
+// ============================================================
+// PROJECT INPUT EVENTS
+// ============================================================
+
+projectInput.addEventListener(
+  'focus',
+
+  () => {
+    projectInputFocused =
+      true;
+
+
+    lastActivity =
+      performance.now();
+
+
+    sendInteractive(
+      true
+    );
+  }
+);
+
+
+projectInput.addEventListener(
+  'blur',
+
+  () => {
+    projectInputFocused =
+      false;
+  }
+);
+
+
+projectInput.addEventListener(
+  'keydown',
+
+  async event => {
+    if (
+      event.key ===
+      'Enter'
+    ) {
+      event.preventDefault();
+
+
+      await performProjectSearch();
+    }
+
+
+    if (
+      event.key ===
+      'Escape'
+    ) {
+      event.preventDefault();
+
+
+      projectInput.blur();
+    }
+  }
+);
+
+
+// ============================================================
+// CHARACTER
+// ============================================================
+
+let ghostLookX =
+  0;
+
+let ghostLookY =
+  0;
+
+
+let angry =
+  0;
+
+let angryUntil =
+  0;
+
+
+let dizzy =
+  0;
+
+let dizzyUntil =
+  0;
+
+
+let sleepy =
+  0;
+
+
+let clicks =
+  [];
+
+
+let movement =
+  [];
+
+
+let danceEnergy =
+  0;
+
+let dancePhase =
+  0;
+
+
+// ============================================================
+// SETTINGS
+// ============================================================
+
+let soundEnabled =
+  localStorage.getItem(
+    'kopi:sound'
+  ) !==
+  'off';
+
+
+let sleepEnabled =
+  localStorage.getItem(
+    'kopi:sleep'
+  ) !==
+  'off';
+
+
+// ============================================================
+// SPOTIFY
+// ============================================================
+
+let spotifyConnected =
+  false;
+
+
+let spotifyState = {
+  active:
+    false,
+
+  is_playing:
+    false,
+
+  progress_ms:
+    0,
+
+  duration_ms:
+    0,
+
+  track:
+    null
+};
+
+
+let spotifySyncAt =
+  performance.now();
+
+
+let albumImage =
+  null;
+
+let albumUrl =
+  '';
+
+
+// ============================================================
+// AUDIO
+// ============================================================
+
+let audioContext =
+  null;
+
+
+function getAudio() {
+  if (
+    !soundEnabled
+  ) {
+    return null;
+  }
+
+
+  if (
+    !audioContext
+  ) {
+    audioContext =
+      new AudioContext();
+  }
+
+
+  return audioContext;
+}
+
+
+function tone(
+  from,
+  to,
+  duration,
+  volume = 0.018,
+  delay = 0
+) {
+  const audio =
+    getAudio();
+
+
+  if (!audio) {
+    return;
+  }
+
+
+  try {
+    const oscillator =
+      audio.createOscillator();
+
+
+    const gain =
+      audio.createGain();
+
+
+    const start =
+      audio.currentTime +
+      delay;
+
+
+    oscillator.type =
+      'sine';
+
+
+    oscillator.frequency
+      .setValueAtTime(
+        from,
+        start
+      );
+
+
+    oscillator.frequency
+      .exponentialRampToValueAtTime(
+        Math.max(
+          20,
+          to
+        ),
+        start +
+        duration
+      );
+
+
+    gain.gain
+      .setValueAtTime(
+        0.0001,
+        start
+      );
+
+
+    gain.gain
+      .linearRampToValueAtTime(
+        volume,
+        start +
+        0.01
+      );
+
+
+    gain.gain
+      .exponentialRampToValueAtTime(
+        0.0001,
+        start +
+        duration
+      );
+
+
+    oscillator.connect(
+      gain
+    );
+
+
+    gain.connect(
+      audio.destination
+    );
+
+
+    oscillator.start(
+      start
+    );
+
+
+    oscillator.stop(
+      start +
+      duration +
+      0.02
+    );
+
+  } catch {}
+}
+
+
+function sound(
+  name
+) {
+  if (
+    !soundEnabled
+  ) {
+    return;
+  }
+
+
+  if (
+    name ===
+    'intro'
+  ) {
+    tone(
+      340,
+      540,
+      0.12,
+      0.022
+    );
+
+
+    tone(
+      540,
+      740,
+      0.16,
+      0.018,
+      0.10
+    );
+  }
+
+
+  if (
+    name ===
+    'peek'
+  ) {
+    tone(
+      350,
+      520,
+      0.07,
+      0.011
+    );
+  }
+
+
+  if (
+    name ===
+    'open'
+  ) {
+    tone(
+      310,
+      570,
+      0.12,
+      0.017
+    );
+  }
+
+
+  if (
+    name ===
+    'close'
+  ) {
+    tone(
+      510,
+      290,
+      0.11,
+      0.015
+    );
+  }
+
+
+  if (
+    name ===
+    'click'
+  ) {
+    tone(
+      630,
+      430,
+      0.055,
+      0.015
+    );
+  }
+
+
+  if (
+    name ===
+    'angry'
+  ) {
+    tone(
+      160,
+      95,
+      0.17,
+      0.025
+    );
+  }
+
+
+  if (
+    name ===
+    'dizzy'
+  ) {
+    tone(
+      430,
+      760,
+      0.19,
+      0.021
+    );
+  }
+}
+
+
+// ============================================================
+// TRANSITIONS
+// ============================================================
+
+function targetHeight() {
+  if (
+    currentView ===
+    'home'
+  ) {
+    return UI.HOME_H;
+  }
+
+
+  if (
+    currentView ===
+    'spotify'
+  ) {
+    return UI.SPOTIFY_H;
+  }
+
+
+  if (
+    currentView ===
+    'apps'
+  ) {
+    return UI.APPS_H;
+  }
+
+
+  if (
+    currentView ===
+    'settings'
+  ) {
+    return UI.SETTINGS_H;
+  }
+
+
+  if (
+    currentView ===
+    'project'
+  ) {
+    return UI.PROJECT_H;
+  }
+
+
+  return UI.PROMPT_H;
+}
+
+
+function modeTarget(
+  targetMode
+) {
+  if (
+    targetMode ===
+    'rest'
+  ) {
+    return {
+      width:
+        UI.REST_W,
+
+      height:
+        UI.BAR_H,
+
+      radius:
+        UI.COMPACT_RADIUS
+    };
+  }
+
+
+  if (
+    targetMode ===
+    'compact'
+  ) {
+    return {
+      width:
+        UI.COMPACT_W,
+
+      height:
+        UI.COMPACT_H,
+
+      radius:
+        UI.COMPACT_H / 2
+    };
+  }
+
+
+  return {
+    width:
+      UI.EXPANDED_W,
+
+    height:
+      targetHeight(),
+
+    radius:
+      UI.EXPANDED_RADIUS
+  };
+}
+
+
+function setMode(
+  next,
+  playSound = true
+) {
+  const target =
+    modeTarget(
+      next
+    );
+
+
+  const same =
+    mode ===
+      next &&
+    Math.abs(
+      visual.width -
+      target.width
+    ) <
+      1 &&
+    Math.abs(
+      visual.height -
+      target.height
+    ) <
+      1;
+
+
+  if (
+    same &&
+    !transition
+  ) {
+    return;
+  }
+
+
+  const growing =
+    target.width *
+    target.height >
+    visual.width *
+    visual.height;
+
+
+  transition = {
+    from: {
+      ...visual
+    },
+
+    to:
+      target,
+
+    started:
+      performance.now(),
+
+    // Opening and closing use the same speed and the same motion.
+    duration:
+      380,
+
+    growing
+  };
+
+
+  mode =
+    next;
+
+
+  if (
+    playSound
+  ) {
+    sound(
+      growing
+        ?
+          'open'
+        :
+          'close'
+    );
+  }
+}
+
+
+function updateTransition(
+  now
+) {
+  if (
+    !transition
+  ) {
+    return;
+  }
+
+
+  const raw =
+    clamp(
+      (
+        now -
+        transition.started
+      ) /
+      transition.duration
+    );
+
+
+  const amount =
+    1 -
+    Math.pow(
+      1 -
+      raw,
+      3
+    );
+
+
+  // The shape moves like a spring (Apple's Dynamic Island): it overshoots a few percent and settles.
+  // The corners just ease, so the shape never looks bent.
+  const springy = transition.ease === 'in' ? raw * raw * raw // the blob squish: slow start, quick end
+    : transition.bounce ? 1 - Math.exp(-4.6 * raw) * Math.cos(12.5 * raw) // the blob opening: a real bounce
+    : 1 - Math.exp(-7 * raw) * Math.cos(7.2 * raw);
+
+
+  visual.width =
+    lerp(
+      transition.from.width,
+      transition.to.width,
+      springy
+    );
+
+
+  visual.height =
+    lerp(
+      transition.from.height,
+      transition.to.height,
+      springy
+    );
+
+
+  visual.radius =
+    lerp(
+      transition.from.radius,
+      transition.to.radius,
+      amount
+    );
+
+
+  if (
+    raw >=
+    1
+  ) {
+    visual = {
+      ...transition.to
+    };
+
+
+    transition =
+      null;
+  }
+}
+
+
+// ============================================================
+// DRAW HELPERS
+// ============================================================
+
+function islandPath(
+  x,
+  y,
+  width,
+  height,
+  radius
+) {
+  ctx.beginPath();
+
+
+  ctx.moveTo(
+    x,
+    y
+  );
+
+
+  ctx.lineTo(
+    x +
+    width,
+    y
+  );
+
+
+  ctx.lineTo(
+    x +
+    width,
+    y +
+    height -
+    radius
+  );
+
+
+  ctx.quadraticCurveTo(
+    x +
+    width,
+    y +
+    height,
+
+    x +
+    width -
+    radius,
+    y +
+    height
+  );
+
+
+  ctx.lineTo(
+    x +
+    radius,
+    y +
+    height
+  );
+
+
+  ctx.quadraticCurveTo(
+    x,
+    y +
+    height,
+
+    x,
+    y +
+    height -
+    radius
+  );
+
+
+  ctx.closePath();
+}
+
+
+function box(
+  x,
+  y,
+  width,
+  height,
+  radius,
+  fill
+) {
+  width = Math.max(0, width || 0); height = Math.max(0, height || 0);
+  radius = Math.max(0, Math.min(radius || 0, width / 2, height / 2)); // never negative
+  ctx.beginPath();
+
+
+  ctx.roundRect(
+    x,
+    y,
+    width,
+    height,
+    Math.min(
+      radius,
+      width /
+      2,
+      height /
+      2
+    )
+  );
+
+
+  ctx.fillStyle =
+    fill;
+
+
+  ctx.fill();
+}
+
+
+function text(
+  value,
+  x,
+  y,
+  size = 12,
+  color = '#fff',
+  weight = 400,
+  align = 'left',
+  maxWidth = null
+) {
+  // Windows 11 font for a sharp, modern look.
+  ctx.font =
+    `${weight} ${size}px "Segoe UI Variable Text", "Segoe UI", Arial, sans-serif`;
+
+
+  ctx.fillStyle =
+    color;
+
+
+  ctx.textAlign =
+    align;
+
+
+  ctx.textBaseline =
+    'alphabetic';
+
+
+  let content =
+    String(
+      value ||
+      ''
+    );
+
+
+  if (
+    maxWidth &&
+    align ===
+    'left'
+  ) {
+    while (
+      content.length >
+        1 &&
+      ctx.measureText(
+        content
+      ).width >
+        maxWidth
+    ) {
+      content =
+        content.slice(
+          0,
+          -2
+        ) +
+        '…';
+    }
+  }
+
+
+  ctx.fillText(
+    content,
+    x,
+    y
+  );
+}
+
+
+function codeText(
+  value,
+  x,
+  y,
+  size = 9,
+  color = '#d5ddd2',
+  maxWidth = null
+) {
+  ctx.font =
+    `${size}px Consolas, monospace`;
+
+
+  ctx.fillStyle =
+    color;
+
+
+  ctx.textAlign =
+    'left';
+
+
+  ctx.textBaseline =
+    'alphabetic';
+
+
+  let content =
+    String(
+      value ??
+      ''
+    )
+      .replace(
+        /\t/g,
+        '  '
+      );
+
+
+  if (
+    maxWidth
+  ) {
+    while (
+      content.length >
+        1 &&
+      ctx.measureText(
+        content
+      ).width >
+        maxWidth
+    ) {
+      content =
+        content.slice(
+          0,
+          -2
+        ) +
+        '…';
+    }
+  }
+
+
+  ctx.fillText(
+    content,
+    x,
+    y
+  );
+}
+
+
+// ============================================================
+// SPEAKER
+// ============================================================
+
+function drawSpeakerIcon(
+  x,
+  y,
+  muted = false
+) {
+  ctx.save();
+
+
+  ctx.strokeStyle =
+    '#d8e2d4';
+
+
+  ctx.fillStyle =
+    '#d8e2d4';
+
+
+  ctx.lineWidth =
+    1.5;
+
+
+  ctx.lineCap =
+    'round';
+
+
+  ctx.lineJoin =
+    'round';
+
+
+  ctx.beginPath();
+
+
+  ctx.moveTo(
+    x -
+    8,
+    y -
+    3
+  );
+
+
+  ctx.lineTo(
+    x -
+    4,
+    y -
+    3
+  );
+
+
+  ctx.lineTo(
+    x +
+    1,
+    y -
+    7
+  );
+
+
+  ctx.lineTo(
+    x +
+    1,
+    y +
+    7
+  );
+
+
+  ctx.lineTo(
+    x -
+    4,
+    y +
+    3
+  );
+
+
+  ctx.lineTo(
+    x -
+    8,
+    y +
+    3
+  );
+
+
+  ctx.closePath();
+
+
+  ctx.fill();
+
+
+  if (
+    muted
+  ) {
+    ctx.beginPath();
+
+
+    ctx.moveTo(
+      x +
+      5,
+      y -
+      5
+    );
+
+
+    ctx.lineTo(
+      x +
+      11,
+      y +
+      5
+    );
+
+
+    ctx.moveTo(
+      x +
+      11,
+      y -
+      5
+    );
+
+
+    ctx.lineTo(
+      x +
+      5,
+      y +
+      5
+    );
+
+
+    ctx.stroke();
+
+  } else {
+    ctx.beginPath();
+
+
+    ctx.arc(
+      x +
+      1,
+      y,
+      5,
+      -0.75,
+      0.75
+    );
+
+
+    ctx.stroke();
+
+
+    ctx.beginPath();
+
+
+    ctx.arc(
+      x +
+      1,
+      y,
+      9,
+      -0.72,
+      0.72
+    );
+
+
+    ctx.stroke();
+  }
+
+
+  ctx.restore();
+}
+
+
+// ============================================================
+// GHOST
+// ============================================================
+
+function drawGhost(
+  x,
+  y,
+  diameter
+) {
+  // Kopi is out of the island (buddy-ui.js): there is only one Kopi
+  if (window.__kopiCarried?.() && !window.__kopiBuddyDrawing) return;
+
+  const scale =
+    bodyScale(
+      diameter
+    );
+
+
+  /*
+    Cup colour: chosen in
+    Settings (kopi-fun.js).
+  */
+
+  const look =
+    window.__kopiLook?.() ||
+    {};
+
+
+  const shell1 =
+    angry >
+      0.05
+      ?
+        '#795151'
+      :
+        look.shell1 ||
+        '#59695d';
+
+
+  const shell2 =
+    angry >
+      0.05
+      ?
+        '#462929'
+      :
+        look.shell2 ||
+        '#344239';
+
+
+  /*
+    The eyes are the traffic light (ai-monitor-ui.js):
+    blinking orange = working, orange = question,
+    green = done, red = error.
+  */
+
+  const status =
+    window.__kopiEyes?.();
+
+
+  const eye =
+    angry >
+      0.05
+      ?
+        '#ff6b6b'
+      :
+        status?.color ||
+        look.eye ||
+        '#e3ffd4';
+
+
+  const eyeAlpha =
+    status?.blink
+      ?
+        0.3 +
+        0.7 *
+        (
+          0.5 +
+          0.5 *
+          Math.cos(
+            performance.now() /
+            200
+          )
+        )
+      :
+        1;
+
+
+  ctx.save();
+
+
+  ctx.translate(
+    x,
+    y
+  );
+
+
+  ctx.rotate(
+    Math.sin(
+      performance.now() *
+      0.006
+    ) *
+    0.08 *
+    dizzy
+  );
+
+
+  ctx.scale(
+    scale,
+    scale
+  );
+
+
+  /*
+    kopi-fun.js: jumping, dancing,
+    faces and outfits.
+  */
+
+  const fx =
+    window.__kopiGhostFx?.() ||
+    {};
+
+
+  ctx.translate(
+    0,
+    fx.dy || 0
+  );
+
+
+  // sx / sy: squash and stretch (wider + lower, or thinner + taller), like a jelly blob.
+  ctx.scale(
+    (fx.scale ?? 1) * (fx.sx ?? 1), // ?? not ||: a scale of 0 must really make him invisible
+    (fx.scale ?? 1) * (fx.sy ?? 1)
+  );
+
+
+  ctx.rotate(
+    fx.tilt || 0
+  );
+
+
+  // "Cloud" look: a bright white, soft rounded blob with dark eyes (the eyes take the traffic-light colour),
+  // and a small status dot. Pops on the black island.
+  if (look.style === 'blob') {
+    drawBlob(look, status, eye, eyeAlpha, fx);
+    window.__kopiGhostDecor?.(ctx);
+    ctx.restore();
+    return;
+  }
+
+
+  ctx.beginPath();
+
+
+  ctx.moveTo(
+    -8,
+    -28
+  );
+
+
+  ctx.quadraticCurveTo(
+    0,
+    -42,
+    8,
+    -28
+  );
+
+
+  ctx.lineTo(
+    13,
+    -13
+  );
+
+
+  ctx.fillStyle =
+    shell2;
+
+
+  ctx.fill();
+
+
+  const gradient =
+    ctx.createRadialGradient(
+      -13,
+      -10,
+      3,
+      0,
+      0,
+      43
+    );
+
+
+  gradient.addColorStop(
+    0,
+    shell1
+  );
+
+
+  gradient.addColorStop(
+    1,
+    '#101511'
+  );
+
+
+  ctx.beginPath();
+
+
+  ctx.ellipse(
+    0,
+    0,
+    41,
+    32,
+    0,
+    0,
+    Math.PI *
+    2
+  );
+
+
+  ctx.fillStyle =
+    gradient;
+
+
+  ctx.fill();
+
+
+  ctx.beginPath();
+
+
+  ctx.ellipse(
+    0,
+    3,
+    28,
+    22,
+    0,
+    0,
+    Math.PI *
+    2
+  );
+
+
+  ctx.fillStyle =
+    '#030504';
+
+
+  ctx.fill();
+
+
+  for (
+    const side of [
+      -1,
+      1
+    ]
+  ) {
+    ctx.save();
+
+
+    ctx.translate(
+      side *
+      15 +
+      ghostLookX,
+
+      3 +
+      ghostLookY
+    );
+
+
+    ctx.globalAlpha *=
+      eyeAlpha;
+
+
+    ctx.shadowColor =
+      eye;
+
+
+    ctx.shadowBlur =
+      status
+        ? 14
+        : 9;
+
+
+    drawEye(
+      side,
+      eye,
+      angry > 0.05
+        ? null
+        : fx.mood
+    );
+
+
+    ctx.restore();
+  }
+
+
+  window.__kopiGhostDecor?.(
+    ctx
+  );
+
+
+  ctx.restore();
+}
+
+
+// "Kopi" look: a kopi-O cup with a kopitiam green rim, sitting on its saucer. The steam is the status light
+// (orange = Claude busy, your colour = done, red = error) and the cup glows in that colour too.
+// Drawn in the same box the old character used (about x -46..46, y -50..34), so hats and effects still line up.
+const KOPI = { ink: '#3B2A20', rim: '#2E8B57', coffee: '#5A3420', saucer: '#EDE6DA', saucerLine: '#C9BBA6', blush: 'rgba(244,166,160,.8)', handle: '#F3E6CF' };
+const KOPI_S = 0.85; // scale from the 120-unit design grid
+const kx = x => (x - 60) * KOPI_S, ky = y => (y - 44) * KOPI_S - 22;
+function drawBlob(look, status, eye, eyeAlpha, fx) {
+  const top = angry > 0.05 ? '#fff0f0' : look.shell1 || '#FFFDF8';
+  const tint = angry > 0.05 ? '#ffd9d9' : look.shell2 || '#EFE6D8';
+  const mood = angry > 0.05 ? 'angry' : fx.mood;
+  const empty = mood === 'hungry' || window.__kopiHungry?.() === true;
+  const now = performance.now();
+
+  // shadow and saucer
+  ctx.save(); ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(0, 34, 34, 4, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  ctx.save(); ctx.beginPath(); ctx.ellipse(0, ky(104), 44 * KOPI_S, 8 * KOPI_S, 0, 0, Math.PI * 2);
+  ctx.fillStyle = KOPI.saucer; ctx.fill(); ctx.lineWidth = 1.6; ctx.strokeStyle = KOPI.saucerLine; ctx.stroke(); ctx.restore();
+
+  // steam: three wisps that sway; they carry the status colour and blink when Claude needs you
+  if (!empty) {
+    const wearing = !!window.__kopiOutfitOn?.();
+    const steam = status?.color || 'rgba(217,203,184,.85)';
+    const blink = status?.blink ? 0.55 + 0.45 * Math.cos(now / 200) : 1;
+    ctx.save(); ctx.strokeStyle = steam; ctx.lineWidth = status?.color ? 3 : 2.4; ctx.lineCap = 'round'; ctx.globalAlpha = blink;
+    if (status?.color) { ctx.shadowColor = steam; ctx.shadowBlur = 12; }
+    for (const [i, x] of [[0, -11], [1, 0], [2, 11]]) {
+      if (wearing && i === 1) continue; // the hat sits where the middle wisp would be
+      const sway = Math.sin(now / 420 + i * 1.7) * 2.2, base = wearing ? -40 : -30, lift = (now / 900 + i * 0.33) % 1;
+      ctx.globalAlpha = blink * (0.45 + 0.55 * (1 - lift));
+      ctx.beginPath(); ctx.moveTo(x, base - lift * 3);
+      ctx.bezierCurveTo(x - 5 + sway, base - 6 - lift * 3, x + 5 + sway, base - 10 - lift * 3, x + sway, base - 16 - lift * 3);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // handle (light, so it shows on the black island)
+  ctx.save(); ctx.strokeStyle = KOPI.handle; ctx.lineWidth = 4.5; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(kx(94), ky(58)); ctx.bezierCurveTo(kx(112), ky(60), kx(109), ky(78), kx(95), ky(84)); ctx.stroke(); ctx.restore();
+
+  // cup body, glowing in the status colour
+  const cup = () => {
+    ctx.beginPath(); ctx.moveTo(kx(24), ky(44)); ctx.lineTo(kx(30), ky(92));
+    ctx.quadraticCurveTo(kx(32), ky(100), kx(40), ky(100)); ctx.lineTo(kx(80), ky(100));
+    ctx.quadraticCurveTo(kx(88), ky(100), kx(90), ky(92)); ctx.lineTo(kx(96), ky(44)); ctx.closePath();
+  };
+  const glaze = ctx.createLinearGradient(0, ky(44), 0, ky(100));
+  glaze.addColorStop(0, top); glaze.addColorStop(1, tint);
+  ctx.save(); ctx.shadowColor = status?.color || 'rgba(255,255,255,.25)'; ctx.shadowBlur = status?.color ? 14 : 8;
+  cup(); ctx.fillStyle = glaze; ctx.fill(); ctx.restore();
+  ctx.save(); cup(); ctx.lineWidth = 2.4; ctx.lineJoin = 'round'; ctx.strokeStyle = KOPI.ink; ctx.stroke();
+  // the green kopitiam band, clipped to the cup
+  cup(); ctx.clip(); ctx.fillStyle = KOPI.rim; ctx.fillRect(kx(20), ky(53), 80 * KOPI_S, 8 * KOPI_S); ctx.restore();
+
+  // rim and the kopi inside (an empty cup shows just a little ring at the bottom)
+  ctx.save(); ctx.beginPath(); ctx.ellipse(0, ky(44), 36 * KOPI_S, 8 * KOPI_S, 0, 0, Math.PI * 2);
+  ctx.fillStyle = top; ctx.fill(); ctx.lineWidth = 2.4; ctx.strokeStyle = KOPI.ink; ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(0, ky(44), 30 * KOPI_S, 5 * KOPI_S, 0, 0, Math.PI * 2); ctx.fillStyle = empty ? '#EFE5D6' : KOPI.coffee; ctx.fill();
+  if (empty) { ctx.beginPath(); ctx.ellipse(0, ky(46), 8 * KOPI_S, 1.4 * KOPI_S, 0, 0, Math.PI * 2); ctx.fillStyle = '#8A6A55'; ctx.fill(); }
+  ctx.restore();
+
+  // face: dark eyes (they keep every mood from drawEye), rosy cheeks and a small mouth
+  const faceY = ky(76);
+  for (const side of [-1, 1]) {
+    ctx.save(); ctx.translate(side * 10.2 + ghostLookX * 0.6, faceY + ghostLookY * 0.6); ctx.scale(0.62, 0.62);
+    ctx.globalAlpha *= eyeAlpha;
+    drawEye(side, KOPI.ink, mood === 'angry' ? null : mood);
+    ctx.restore();
+  }
+  ctx.save(); ctx.fillStyle = KOPI.blush;
+  for (const side of [-1, 1]) { ctx.beginPath(); ctx.ellipse(side * 17 + ghostLookX * 0.4, ky(85), 4, 2.4, 0, 0, Math.PI * 2); ctx.fill(); }
+  ctx.restore();
+  drawKopiMouth(mood, ghostLookX * 0.5, ky(84) + ghostLookY * 0.5);
+}
+
+function drawKopiMouth(mood, x, y) {
+  ctx.save(); ctx.translate(x, y); ctx.strokeStyle = KOPI.ink; ctx.fillStyle = KOPI.ink; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+  ctx.beginPath();
+  if (mood === 'surprised' || mood === 'curious' || mood === 'focus') { ctx.arc(0, 2, 2.6, 0, Math.PI * 2); ctx.stroke(); }
+  else if (mood === 'sad' || mood === 'angry' || mood === 'hungry') { ctx.moveTo(-5, 4); ctx.quadraticCurveTo(0, -1, 5, 4); ctx.stroke(); }
+  else if (mood === 'sleep') { ctx.moveTo(-3, 2); ctx.lineTo(3, 2); ctx.stroke(); }
+  else if (mood === 'happy' || mood === 'heart') { ctx.moveTo(-7, 0); ctx.quadraticCurveTo(0, 9, 7, 0); ctx.closePath(); ctx.fill(); }
+  else { ctx.moveTo(-6, 0); ctx.quadraticCurveTo(0, 6, 6, 0); ctx.stroke(); }
+  ctx.restore();
+}
+
+/*
+  Faces:
+  focus = squinting, curious = big eyes,
+  happy = ^ ^, sad = droopy eyes,
+  sleep = closed eyes.
+*/
+
+function drawEye(
+  side,
+  eye,
+  mood
+) {
+  ctx.fillStyle =
+    eye;
+
+
+  ctx.strokeStyle =
+    eye;
+
+
+  ctx.lineWidth =
+    3;
+
+
+  ctx.lineCap =
+    'round';
+
+
+  ctx.beginPath();
+
+
+  if (
+    mood ===
+    'happy'
+  ) {
+    ctx.arc(
+      0,
+      3,
+      5,
+      Math.PI * 1.15,
+      Math.PI * 1.85
+    );
+
+
+    ctx.stroke();
+
+
+    return;
+  }
+
+
+  if (
+    mood ===
+    'heart'
+  ) {
+    ctx.moveTo(
+      0,
+      6
+    );
+
+
+    ctx.bezierCurveTo(
+      -9, -1,
+      -5, -9,
+      0, -4
+    );
+
+
+    ctx.bezierCurveTo(
+      5, -9,
+      9, -1,
+      0, 6
+    );
+
+
+    ctx.fillStyle =
+      '#ff5c8a';
+
+
+    ctx.fill();
+
+
+    return;
+  }
+
+
+  if (
+    mood ===
+    'dizzy'
+  ) {
+    // Spinning spiral eyes
+    const turn =
+      performance.now() /
+      140 *
+      side;
+
+
+    for (
+      let a = 0;
+      a < Math.PI * 4;
+      a += 0.3
+    ) {
+      const r =
+        a *
+        0.55;
+
+
+      ctx.lineTo(
+        Math.cos(a + turn) * r,
+        Math.sin(a + turn) * r
+      );
+    }
+
+
+    ctx.lineWidth =
+      2.2;
+
+
+    ctx.stroke();
+
+
+    return;
+  }
+
+
+  if (
+    mood ===
+      'wink' &&
+    side ===
+      1
+  ) {
+    ctx.moveTo(
+      -5,
+      2
+    );
+
+
+    ctx.lineTo(
+      5,
+      2
+    );
+
+
+    ctx.stroke();
+
+
+    return;
+  }
+
+
+  if (
+    mood ===
+      'sleep' ||
+    mood ===
+      'blink'
+  ) {
+    ctx.arc(
+      0,
+      -2,
+      5,
+      Math.PI * 0.15,
+      Math.PI * 0.85
+    );
+
+
+    ctx.stroke();
+
+
+    return;
+  }
+
+
+  if (
+    mood ===
+    'focus'
+  ) {
+    ctx.ellipse(
+      0,
+      1,
+      5.5,
+      4,
+      0,
+      0,
+      Math.PI * 2
+    );
+  } else if (
+    mood ===
+    'sad'
+  ) {
+    ctx.ellipse(
+      0,
+      2,
+      4.5,
+      6.5,
+      side * -0.45,
+      0,
+      Math.PI * 2
+    );
+  } else if (
+    mood ===
+    'surprised'
+  ) {
+    ctx.arc(
+      0,
+      0,
+      7,
+      0,
+      Math.PI * 2
+    );
+  } else if (
+    mood ===
+    'curious'
+  ) {
+    ctx.ellipse(
+      0,
+      0,
+      6,
+      9.5,
+      0,
+      0,
+      Math.PI * 2
+    );
+  } else {
+    ctx.ellipse(
+      0,
+      0,
+      5,
+      8,
+      0,
+      0,
+      Math.PI * 2
+    );
+  }
+
+
+  ctx.fill();
+}
+
+
+// ============================================================
+// ISLAND
+// ============================================================
+
+function drawIsland() {
+  const centerX =
+    innerWidth /
+    2;
+
+
+  const x =
+    centerX -
+    visual.width /
+    2;
+
+
+  islandBounds = {
+    x,
+
+    y:
+      0,
+
+    width:
+      visual.width,
+
+    height:
+      visual.height
+  };
+
+
+  // Soft glow in Claude's colour around the island (like light from the stoplight eyes).
+  const glow =
+    window.__kopiEyes?.()?.color;
+
+
+  ctx.save();
+
+
+  ctx.shadowColor =
+    glow
+      ? glow + '55'
+      : 'rgba(0,0,0,.42)';
+
+
+  ctx.shadowBlur =
+    glow
+      ? 22
+      : 16;
+
+
+  ctx.shadowOffsetY =
+    glow
+      ? 2
+      : 4;
+
+
+  islandPath(
+    x,
+    0,
+    visual.width,
+    visual.height,
+    visual.radius
+  );
+
+
+  ctx.fillStyle =
+    '#000';
+
+
+  ctx.fill();
+
+
+  ctx.restore();
+
+
+  // Subtle top-lit edge: brighter at the bottom rim, like glass.
+  islandPath(
+    x,
+    0,
+    visual.width,
+    visual.height,
+    visual.radius
+  );
+
+
+  const edge =
+    ctx.createLinearGradient(
+      0,
+      0,
+      0,
+      visual.height
+    );
+
+
+  edge.addColorStop(
+    0,
+    'rgba(255,255,255,.02)'
+  );
+
+
+  edge.addColorStop(
+    1,
+    glow
+      ? glow + '40'
+      : 'rgba(255,255,255,.10)'
+  );
+
+
+  ctx.strokeStyle =
+    edge;
+
+
+  ctx.lineWidth =
+    1;
+
+
+  ctx.stroke();
+}
+
+
+// ============================================================
+// CONTENT
+// ============================================================
+
+function contentRect() {
+  const padding =
+    24;
+
+
+  const headerHeight =
+    36;
+
+
+  return {
+    x:
+      islandBounds.x +
+      padding,
+
+    y:
+      headerHeight +
+      10,
+
+    width:
+      islandBounds.width -
+      padding *
+      2,
+
+    height:
+      islandBounds.height -
+      headerHeight -
+      22
+  };
+}
+
+
+// ============================================================
+// HEADER
+// ============================================================
+
+function drawHeader(
+  alpha
+) {
+  const left =
+    islandBounds.x;
+
+
+  const right =
+    islandBounds.x +
+    islandBounds.width;
+
+
+  ctx.save();
+
+
+  ctx.globalAlpha =
+    alpha;
+
+
+  ctx.strokeStyle =
+    'rgba(255,255,255,.055)';
+
+
+  ctx.beginPath();
+
+
+  ctx.moveTo(
+    left +
+    12,
+    35
+  );
+
+
+  ctx.lineTo(
+    right -
+    12,
+    35
+  );
+
+
+  ctx.stroke();
+
+
+  const homeX =
+    left +
+    27;
+
+
+  text(
+    '⌂',
+    homeX,
+    22,
+    15,
+    '#dce4d9',
+    600,
+    'center'
+  );
+
+
+  const appsX =
+    left +
+    63;
+
+
+  text(
+    '+',
+    appsX,
+    23,
+    18,
+    '#dce4d9',
+    600,
+    'center'
+  );
+
+
+  const soundX =
+    right -
+    68;
+
+
+  drawSpeakerIcon(
+    soundX,
+    17,
+    !soundEnabled
+  );
+
+
+  const settingsX =
+    right -
+    30;
+
+
+  text(
+    '⚙',
+    settingsX,
+    21,
+    13,
+    '#dce4d9',
+    600,
+    'center'
+  );
+
+
+  if (
+    alpha >
+    0.85
+  ) {
+    hit.home = {
+      x:
+        homeX -
+        16,
+
+      y:
+        2,
+
+      width:
+        32,
+
+      height:
+        30
+    };
+
+
+    hit.apps = {
+      x:
+        appsX -
+        16,
+
+      y:
+        2,
+
+      width:
+        32,
+
+      height:
+        30
+    };
+
+
+    hit.sound = {
+      x:
+        soundX -
+        16,
+
+      y:
+        1,
+
+      width:
+        32,
+
+      height:
+        31
+    };
+
+
+    hit.settings = {
+      x:
+        settingsX -
+        15,
+
+      y:
+        2,
+
+      width:
+        30,
+
+      height:
+        30
+    };
+  }
+
+
+  ctx.restore();
+}
+
+
+// ============================================================
+// BUTTON
+// ============================================================
+
+function button(
+  x,
+  y,
+  width,
+  label,
+  key,
+  primary = false
+) {
+  const bounds = {
+    x,
+    y,
+    width,
+
+    height:
+      30
+  };
+
+
+  const over =
+    inside(
+      pointer.x,
+      pointer.y,
+      bounds
+    );
+
+
+  box(
+    x,
+    y,
+    width,
+    30,
+    15,
+
+    primary
+      ?
+        over
+          ?
+            '#d4f6a5'
+          :
+            '#c6e994'
+      :
+        over
+          ?
+            '#222822'
+          :
+            '#171c17'
+  );
+
+
+  text(
+    label,
+    x +
+    width /
+    2,
+    y +
+    20,
+    10,
+
+    primary
+      ?
+        '#12180f'
+      :
+        '#dce4da',
+
+    600,
+    'center'
+  );
+
+
+  hit[
+    key
+  ] =
+    bounds;
+}
+
+
+// ============================================================
+// PILL
+// ============================================================
+
+function pill(
+  x,
+  y,
+  width,
+  icon,
+  label,
+  key
+) {
+  const bounds = {
+    x,
+    y,
+    width,
+
+    height:
+      34
+  };
+
+
+  const over =
+    inside(
+      pointer.x,
+      pointer.y,
+      bounds
+    );
+
+
+  box(
+    x,
+    y,
+    width,
+    34,
+    17,
+
+    over
+      ?
+        '#202620'
+      :
+        '#151915'
+  );
+
+
+  box(
+    x +
+    5,
+    y +
+    5,
+    24,
+    24,
+    12,
+    '#232a22'
+  );
+
+
+  text(
+    icon,
+    x +
+    17,
+    y +
+    22,
+    12,
+    '#dcefcf',
+    600,
+    'center'
+  );
+
+
+  text(
+    label,
+    x +
+    38,
+    y +
+    22,
+    10,
+    '#dde4da',
+    500
+  );
+
+
+  hit[
+    key
+  ] =
+    bounds;
+}
+
+
+// ============================================================
+// HOME
+// ============================================================
+
+function drawHome(
+  content
+) {
+  const ghostX =
+    content.x +
+    48;
+
+
+  const ghostY =
+    content.y +
+    content.height /
+    2;
+
+
+  drawGhost(
+    ghostX,
+    ghostY,
+    UI.HOME_BODY
+  );
+
+
+  hit.ghost = {
+    x:
+      ghostX -
+      42,
+
+    y:
+      ghostY -
+      38,
+
+    width:
+      84,
+
+    height:
+      76
+  };
+
+
+  const textX =
+    content.x +
+    100;
+
+
+  text(
+    'Kopi Island',
+    textX,
+    content.y +
+    25,
+    10,
+    '#849080',
+    600
+  );
+
+
+  text(
+    'How can I help?',
+    textX,
+    content.y +
+    48,
+    16,
+    '#fff',
+    600
+  );
+
+
+  const appsX =
+    content.x +
+    content.width -
+    280;
+
+
+  pill(
+    appsX,
+    content.y +
+    3,
+    132,
+    '♫',
+    'Spotify',
+    'spotifyApp'
+  );
+
+
+  pill(
+    appsX +
+    140,
+    content.y +
+    3,
+    132,
+    '◷',
+    'Today',
+    'todayApp'
+  );
+
+
+  pill(
+    appsX,
+    content.y +
+    45,
+    132,
+    '✦',
+    'Assistant',
+    'assistantApp'
+  );
+
+
+  pill(
+    appsX +
+    140,
+    content.y +
+    45,
+    132,
+    '⌘',
+    'Project',
+    'projectApp'
+  );
+}
+
+
+// ============================================================
+// APPS
+// ============================================================
+
+function drawApps(
+  content
+) {
+  const ghostX =
+    content.x +
+    48;
+
+
+  const ghostY =
+    content.y +
+    content.height /
+    2;
+
+
+  drawGhost(
+    ghostX,
+    ghostY,
+    64
+  );
+
+
+  const startX =
+    content.x +
+    101;
+
+
+  text(
+    'Apps',
+    startX,
+    content.y +
+    19,
+    16,
+    '#fff',
+    600
+  );
+
+
+  const width =
+    180;
+
+
+  pill(
+    startX,
+    content.y +
+    52,
+    width,
+    '♫',
+    'Spotify',
+    'spotifyApp'
+  );
+
+
+  pill(
+    startX +
+    190,
+    content.y +
+    52,
+    width,
+    '◷',
+    'Today',
+    'todayApp'
+  );
+
+
+  pill(
+    startX,
+    content.y +
+    94,
+    width,
+    '✦',
+    'Assistant',
+    'assistantApp'
+  );
+
+
+  pill(
+    startX +
+    190,
+    content.y +
+    94,
+    width,
+    '⌘',
+    'Project',
+    'projectApp'
+  );
+}
+
+
+// ============================================================
+// PROJECT LOAD
+// ============================================================
+
+async function loadProject() {
+  projectLoading =
+    true;
+
+
+  projectError =
+    '';
+
+
+  try {
+    const result =
+      await window.kopi
+        .projectGet();
+
+
+    projectState =
+      result ||
+      {
+        ok:
+          false,
+
+        selected:
+          false
+      };
+
+
+    if (
+      !projectState.ok
+    ) {
+      projectError =
+        projectState.error ||
+        'The project could not be loaded.';
+    }
+
+  } catch {
+    projectError =
+      'The project could not be loaded.';
+  }
+
+
+  projectLoading =
+    false;
+}
+
+
+async function chooseProject() {
+  projectLoading =
+    true;
+
+
+  projectError =
+    '';
+
+
+  projectSearchResults =
+    [];
+
+
+  projectReadData =
+    null;
+
+
+  try {
+    const result =
+      await window.kopi
+        .projectChoose();
+
+
+    if (
+      result?.cancelled
+    ) {
+      projectLoading =
+        false;
+
+      return;
+    }
+
+
+    projectState =
+      result;
+
+
+    if (
+      !result?.ok
+    ) {
+      projectError =
+        result?.error ||
+        'The project could not be opened.';
+    }
+
+  } catch {
+    projectError =
+      'The project could not be opened.';
+  }
+
+
+  projectLoading =
+    false;
+}
+
+
+async function rescanProject() {
+  projectLoading =
+    true;
+
+
+  projectError =
+    '';
+
+
+  try {
+    const result =
+      await window.kopi
+        .projectRescan();
+
+
+    projectState =
+      result;
+
+
+    if (
+      !result?.ok
+    ) {
+      projectError =
+        result?.error ||
+        'The project could not be scanned again.';
+    }
+
+  } catch {
+    projectError =
+      'The project could not be scanned again.';
+  }
+
+
+  projectLoading =
+    false;
+}
+
+
+// ============================================================
+// PROJECT SEARCH
+// ============================================================
+
+async function performProjectSearch() {
+  const query =
+    projectInput.value
+      .trim();
+
+
+  if (
+    !query
+  ) {
+    projectSearchError =
+      'First type what you want to search for.';
+
+    return;
+  }
+
+
+  projectSearchLoading =
+    true;
+
+
+  projectSearchError =
+    '';
+
+
+  projectSearchResults =
+    [];
+
+
+  projectReadData =
+    null;
+
+
+  projectSelectedResult =
+    null;
+
+
+  try {
+    const result =
+      await window.kopi
+        .projectSearch(
+          query
+        );
+
+
+    if (
+      !result?.ok
+    ) {
+      projectSearchError =
+        result?.error ||
+        'Search failed.';
+
+    } else {
+      projectSearchResults =
+        result.results ||
+        [];
+
+
+      projectSearchMeta =
+        result;
+
+
+      if (
+        projectSearchResults.length ===
+        0
+      ) {
+        projectSearchError =
+          'I didn’t find relevant code for this yet.';
+      }
+    }
+
+  } catch {
+    projectSearchError =
+      'Searching the project failed.';
+  }
+
+
+  projectSearchLoading =
+    false;
+}
+
+
+// ============================================================
+// PROJECT READ
+// ============================================================
+
+async function openProjectResult(
+  result
+) {
+  if (
+    !result
+  ) {
+    return;
+  }
+
+
+  projectInput.blur();
+
+
+  projectReadLoading =
+    true;
+
+
+  projectReadData =
+    null;
+
+
+  projectSelectedResult =
+    result;
+
+
+  const line =
+    result.matches?.[0]
+      ?.line ||
+    1;
+
+
+  try {
+    const read =
+      await window.kopi
+        .projectRead(
+          result.file,
+          line
+        );
+
+
+    if (
+      !read?.ok
+    ) {
+      projectSearchError =
+        read?.error ||
+        'The file could not be read.';
+
+    } else {
+      projectReadData =
+        read;
+    }
+
+  } catch {
+    projectSearchError =
+      'The file could not be read.';
+  }
+
+
+  projectReadLoading =
+    false;
+}
+
+
+// ============================================================
+// PROJECT DRAW
+// ============================================================
+
+function drawProject(
+  content
+) {
+  projectInputBounds =
+    null;
+
+
+  const ghostX =
+    content.x +
+    43;
+
+
+  const ghostY =
+    content.y +
+    content.height /
+    2;
+
+
+  drawGhost(
+    ghostX,
+    ghostY,
+    58
+  );
+
+
+  hit.ghost = {
+    x:
+      ghostX -
+      40,
+
+    y:
+      ghostY -
+      36,
+
+    width:
+      80,
+
+    height:
+      72
+  };
+
+
+  const startX =
+    content.x +
+    92;
+
+
+  const right =
+    content.x +
+    content.width;
+
+
+  const width =
+    right -
+    startX;
+
+
+  text(
+    'Project',
+    startX,
+    content.y +
+    20,
+    16,
+    '#fff',
+    600
+  );
+
+
+  if (
+    projectLoading
+  ) {
+    text(
+      'Scanning project...',
+      startX,
+      content.y +
+      53,
+      11,
+      '#aeb8ab',
+      500
+    );
+
+
+    return;
+  }
+
+
+  if (
+    projectError
+  ) {
+    text(
+      projectError,
+      startX,
+      content.y +
+      50,
+      10,
+      '#ff9090',
+      500,
+      'left',
+      width
+    );
+
+
+    button(
+      startX,
+      content.y +
+      72,
+      125,
+      'Other folder',
+      'projectChoose',
+      true
+    );
+
+
+    return;
+  }
+
+
+  if (
+    !projectState
+      ?.selected
+  ) {
+    text(
+      'No project chosen yet',
+      startX,
+      content.y +
+      50,
+      12,
+      '#dde5da',
+      600
+    );
+
+
+    text(
+      'Kopi Island only reads the folder you choose.',
+      startX,
+      content.y +
+      70,
+      9,
+      '#818b7f'
+    );
+
+
+    button(
+      startX,
+      content.y +
+      92,
+      135,
+      'Choose project folder',
+      'projectChoose',
+      true
+    );
+
+
+    return;
+  }
+
+
+  if (
+    projectReadLoading
+  ) {
+    text(
+      projectSelectedResult
+        ?.file ||
+      'Opening file...',
+
+      startX,
+      content.y +
+      48,
+      11,
+      '#dce5d9',
+      600
+    );
+
+
+    text(
+      'Fetching the real local code...',
+      startX,
+      content.y +
+      70,
+      9,
+      '#7e897c'
+    );
+
+
+    return;
+  }
+
+
+  if (
+    projectReadData
+  ) {
+    drawProjectCode(
+      content,
+      startX,
+      width
+    );
+
+
+    return;
+  }
+
+
+  // project name
+  text(
+    projectState.name,
+    startX,
+    content.y +
+    43,
+    12,
+    '#f4f6f3',
+    600,
+    'left',
+    width
+  );
+
+
+  text(
+    `${projectState.technology || 'Project'} · ${projectState.textFileCount || 0} ${kopiT('fail boleh dibaca', 'readable files')}`,
+    startX,
+    content.y +
+    60,
+    9,
+    '#7f8a7c'
+  );
+
+
+  // input
+  const searchButtonWidth =
+    72;
+
+
+  const gap =
+    8;
+
+
+  const inputWidth =
+    width -
+    searchButtonWidth -
+    gap;
+
+
+  projectInputBounds = {
+    x:
+      startX,
+
+    y:
+      content.y +
+      72,
+
+    width:
+      inputWidth,
+
+    height:
+      34
+  };
+
+
+  button(
+    startX +
+    inputWidth +
+    gap,
+    content.y +
+    74,
+    searchButtonWidth,
+    'Search',
+    'projectSearch',
+    true
+  );
+
+
+  if (
+    projectSearchLoading
+  ) {
+    text(
+      'Searching the code...',
+      startX,
+      content.y +
+      127,
+      10,
+      '#a9b4a5',
+      500
+    );
+
+
+    return;
+  }
+
+
+  if (
+    projectSearchError
+  ) {
+    text(
+      projectSearchError,
+      startX,
+      content.y +
+      128,
+      9,
+      '#c79696',
+      500,
+      'left',
+      width
+    );
+
+
+    return;
+  }
+
+
+  if (
+    projectSearchResults.length ===
+    0
+  ) {
+    text(
+      'For example:',
+      startX,
+      content.y +
+      128,
+      9,
+      '#697468'
+    );
+
+
+    text(
+      '"where is the Spotify wave?"',
+      startX,
+      content.y +
+      145,
+      9,
+      '#8a9587'
+    );
+
+
+    text(
+      '"which file handles the settings?"',
+      startX,
+      content.y +
+      162,
+      9,
+      '#8a9587'
+    );
+
+
+    return;
+  }
+
+
+  text(
+    kopiT(`${projectSearchResults.length} hasil berkaitan dijumpai`, `${projectSearchResults.length} relevant results found`),
+    startX,
+    content.y +
+    126,
+    9,
+    '#879384',
+    500
+  );
+
+
+  const maxRows =
+    3;
+
+
+  for (
+    let i = 0;
+    i <
+    Math.min(
+      maxRows,
+      projectSearchResults.length
+    );
+    i++
+  ) {
+    const result =
+      projectSearchResults[
+        i
+      ];
+
+
+    const rowY =
+      content.y +
+      137 +
+      i *
+      37;
+
+
+    drawProjectResultRow(
+      startX,
+      rowY,
+      width,
+      result,
+      i
+    );
+  }
+}
+
+
+// ============================================================
+// PROJECT RESULT ROW
+// ============================================================
+
+function drawProjectResultRow(
+  x,
+  y,
+  width,
+  result,
+  index
+) {
+  const bounds = {
+    x,
+    y,
+    width,
+    height:
+      32
+  };
+
+
+  const over =
+    inside(
+      pointer.x,
+      pointer.y,
+      bounds
+    );
+
+
+  box(
+    x,
+    y,
+    width,
+    32,
+    10,
+
+    over
+      ?
+        '#1c231c'
+      :
+        '#131713'
+  );
+
+
+  const match =
+    result.matches?.[0];
+
+
+  text(
+    result.file,
+    x +
+    10,
+    y +
+    13,
+    9,
+    '#e0e7dd',
+    600,
+    'left',
+    width -
+    90
+  );
+
+
+  if (
+    match
+  ) {
+    text(
+      kopiT(`baris ${match.line}`, `line ${match.line}`),
+      x +
+      width -
+      10,
+      y +
+      13,
+      8,
+      '#81907c',
+      500,
+      'right'
+    );
+
+
+    codeText(
+      match.text.trim(),
+      x +
+      10,
+      y +
+      26,
+      8,
+      '#899586',
+      width -
+      20
+    );
+  }
+
+
+  hit[
+    `projectResult${index}`
+  ] =
+    bounds;
+}
+
+
+// ============================================================
+// PROJECT CODE VIEW
+// ============================================================
+
+function drawProjectCode(
+  content,
+  startX,
+  width
+) {
+  const data =
+    projectReadData;
+
+
+  text(
+    data.file,
+    startX,
+    content.y +
+    45,
+    11,
+    '#f2f4f1',
+    600,
+    'left',
+    width -
+    95
+  );
+
+
+  text(
+    kopiT(`baris ${data.startLine}-${data.endLine} daripada ${data.totalLines}`, `lines ${data.startLine}-${data.endLine} of ${data.totalLines}`),
+    startX,
+    content.y +
+    62,
+    8,
+    '#788375'
+  );
+
+
+  button(
+    startX +
+    width -
+    86,
+    content.y +
+    34,
+    86,
+    '← Results',
+    'projectReadBack'
+  );
+
+
+  const codeY =
+    content.y +
+    75;
+
+
+  const codeHeight =
+    126;
+
+
+  box(
+    startX,
+    codeY,
+    width,
+    codeHeight,
+    11,
+    '#0c100c'
+  );
+
+
+  ctx.save();
+
+
+  ctx.beginPath();
+
+
+  ctx.roundRect(
+    startX,
+    codeY,
+    width,
+    codeHeight,
+    11
+  );
+
+
+  ctx.clip();
+
+
+  const focusLine =
+    data.focusLine;
+
+
+  const lineHeight =
+    11;
+
+
+  for (
+    let i = 0;
+    i <
+    data.lines.length;
+    i++
+  ) {
+    const line =
+      data.lines[
+        i
+      ];
+
+
+    const lineY =
+      codeY +
+      15 +
+      i *
+      lineHeight;
+
+
+    if (
+      line.number ===
+      focusLine
+    ) {
+      box(
+        startX +
+        4,
+        lineY -
+        9,
+        width -
+        8,
+        11,
+        4,
+        '#1d2919'
+      );
+    }
+
+
+    codeText(
+      String(
+        line.number
+      ).padStart(
+        4,
+        ' '
+      ),
+
+      startX +
+      8,
+      lineY,
+      8,
+
+      line.number ===
+      focusLine
+        ?
+          '#c6e994'
+        :
+          '#536050'
+    );
+
+
+    codeText(
+      line.text,
+      startX +
+      42,
+      lineY,
+      8,
+
+      line.number ===
+      focusLine
+        ?
+          '#eff6e8'
+        :
+          '#b8c2b5',
+
+      width -
+      52
+    );
+  }
+
+
+  ctx.restore();
+
+
+  text(
+    'This was read straight from your local project.',
+    startX,
+    codeY +
+    codeHeight +
+    16,
+    8,
+    '#647061'
+  );
+}
+
+
+// ============================================================
+// SETTINGS
+// ============================================================
+
+function drawSettings(
+  content
+) {
+  drawGhost(
+    content.x +
+    45,
+    content.y +
+    content.height /
+    2,
+    64
+  );
+
+
+  text(
+    'Settings',
+    content.x +
+    95,
+    content.y +
+    20,
+    16,
+    '#fff',
+    600
+  );
+
+
+  text(
+    'Sound effects',
+    content.x +
+    95,
+    content.y +
+    65,
+    10,
+    '#dce3d9'
+  );
+
+
+  text(
+    soundEnabled
+      ?
+        'On'
+      :
+        'Off',
+
+    content.x +
+    400,
+    content.y +
+    65,
+    10,
+    '#c6e994'
+  );
+}
+
+
+// ============================================================
+// PLACEHOLDER
+// ============================================================
+
+function drawPrompt(
+  content,
+  title,
+  description
+) {
+  drawGhost(
+    content.x +
+    38,
+    content.y +
+    content.height /
+    2,
+    44
+  );
+
+
+  text(
+    title,
+    content.x +
+    78,
+    content.y +
+    29,
+    16,
+    '#fff',
+    600
+  );
+
+
+  text(
+    description,
+    content.x +
+    78,
+    content.y +
+    51,
+    10,
+    '#828d80'
+  );
+}
+
+
+// ============================================================
+// SPOTIFY
+// ============================================================
+
+function setAlbum(
+  url
+) {
+  if (
+    url ===
+    albumUrl
+  ) {
+    return;
+  }
+
+
+  albumUrl =
+    url;
+
+
+  if (!url) {
+    albumImage =
+      null;
+
+    return;
+  }
+
+
+  const image =
+    new Image();
+
+
+  image.onload =
+    () => {
+      albumImage =
+        image;
+    };
+
+
+  image.src =
+    url;
+}
+
+
+async function refreshSpotify() {
+  try {
+    const result =
+      await window.kopi
+        .spotifyGetState();
+
+
+    if (!result) {
+      return;
+    }
+
+
+    spotifyConnected =
+      Boolean(
+        result.connected
+      );
+
+
+    if (
+      result.connected
+    ) {
+      spotifyState = {
+        active:
+          Boolean(
+            result.active
+          ),
+
+        is_playing:
+          Boolean(
+            result.is_playing
+          ),
+
+        progress_ms:
+          Number(
+            result.progress_ms ||
+            0
+          ),
+
+        duration_ms:
+          Number(
+            result.duration_ms ||
+            0
+          ),
+
+        track:
+          result.track ||
+          null,
+
+        // where it plays (this PC, your phone, the car…)
+        device:
+          result.device ||
+          null
+      };
+
+
+      spotifySyncAt =
+        performance.now();
+
+
+      setAlbum(
+        result.track
+          ?.image_url ||
+        ''
+      );
+    }
+
+  } catch {}
+}
+
+
+function drawSpotify(
+  content
+) {
+  drawGhost(
+    content.x +
+    content.width -
+    42,
+    content.y +
+    content.height /
+    2,
+    58
+  );
+
+
+  text(
+    spotifyState.track
+      ?.name ||
+      'No music playing',
+
+    content.x +
+    110,
+    content.y +
+    32,
+    14,
+    '#fff',
+    600
+  );
+
+
+  text(
+    spotifyState.track
+      ?.artist ||
+      'Open Spotify and start some music',
+
+    content.x +
+    110,
+    content.y +
+    52,
+    10,
+    '#8f998d'
+  );
+}
+
+
+// ============================================================
+// VIEW
+// ============================================================
+
+function setView(
+  next
+) {
+  projectInput.blur();
+
+
+  projectInput.style.display =
+    'none';
+
+
+  const leavingProject =
+    currentView === 'project' && next !== 'project';
+
+
+  currentView =
+    next;
+
+
+  lastActivity =
+    performance.now();
+
+
+  leaveStartedAt =
+    null;
+
+
+  hoverStartedAt =
+    null;
+
+
+  setMode(
+    leavingProject ? 'compact' : 'expanded'
+  );
+
+
+  if (
+    next ===
+    'project'
+  ) {
+    loadProject();
+  }
+
+
+  if (
+    next ===
+    'spotify'
+  ) {
+    refreshSpotify();
+  }
+}
+
+
+// ============================================================
+// INTRO
+// ============================================================
+
+const introStarted =
+  performance.now();
+
+
+let introFinished =
+  false;
+
+
+function drawIntro(
+  now
+) {
+  const centerX =
+    innerWidth /
+    2;
+
+
+  const progress =
+    clamp(
+      (
+        now -
+        introStarted
+      ) /
+      1200
+    );
+
+
+  const grow =
+    range(
+      progress,
+      0,
+      0.34
+    );
+
+
+  const settle =
+    range(
+      progress,
+      0.62,
+      1
+    );
+
+
+  const width =
+    lerp(
+      UI.REST_W,
+      UI.COMPACT_W,
+      grow
+    );
+
+
+  visual.width =
+    lerp(
+      width,
+      UI.REST_W,
+      settle
+    );
+
+
+  visual.height =
+    UI.BAR_H;
+
+
+  visual.radius =
+    UI.COMPACT_RADIUS;
+
+
+  drawIsland();
+
+
+  drawGhost(
+    centerX,
+    12,
+    16
+  );
+
+
+  if (
+    progress >=
+      1 &&
+    !introFinished
+  ) {
+    introFinished =
+      true;
+
+
+    mode =
+      'rest';
+
+
+    visual = {
+      width:
+        UI.REST_W,
+
+      height:
+        UI.BAR_H,
+
+      radius:
+        UI.COMPACT_RADIUS
+    };
+
+
+    sound(
+      'intro'
+    );
+  }
+}
+
+
+// ============================================================
+// POINTER FROM ELECTRON
+// ============================================================
+
+window.kopi.onPointer(
+  position => {
+    if (
+      !position ||
+      !Number.isFinite(
+        position.x
+      ) ||
+      !Number.isFinite(
+        position.y
+      )
+    ) {
+      return;
+    }
+
+
+    pointer = {
+      x:
+        position.x,
+
+      y:
+        position.y,
+
+      known:
+        Boolean(
+          position.insideWindow
+        )
+    };
+  }
+);
+
+
+// ============================================================
+// SMALL STATE
+// ============================================================
+
+function drawSmall() {
+  const centerX =
+    innerWidth /
+    2;
+
+
+  if (
+    mode ===
+    'rest'
+  ) {
+    drawGhost(
+      centerX,
+      12,
+      16
+    );
+
+
+    hit.ghost = {
+      x:
+        centerX -
+        19,
+
+      y:
+        0,
+
+      width:
+        38,
+
+      height:
+        24
+    };
+
+
+    return;
+  }
+
+
+  drawGhost(
+    islandBounds.x +
+    27,
+    12,
+    UI.COMPACT_BODY
+  );
+
+
+  const indicatorState =
+    window.__kopiProjectIndicator?.state;
+
+  const indicatorColors = {
+    ready: '#70d88a',
+    question: '#f2c94c',
+    error: '#ef6b63'
+  };
+
+  if (indicatorColors[indicatorState]) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(islandBounds.x + 53, 12, 4, 0, Math.PI * 2);
+    ctx.fillStyle = indicatorColors[indicatorState];
+    ctx.shadowColor = indicatorColors[indicatorState];
+    ctx.shadowBlur = 6;
+    ctx.fill();
+    ctx.restore();
+  }
+
+
+  hit.ghost = {
+    x:
+      islandBounds.x +
+      6,
+
+    y:
+      0,
+
+    width:
+      42,
+
+    height:
+      24
+  };
+}
+
+
+// ============================================================
+// HOVER
+// ============================================================
+
+function updateHover(
+  now
+) {
+  if (
+    !introFinished
+  ) {
+    return;
+  }
+
+
+  if (
+    currentView ===
+      'project' &&
+    mode !==
+      'expanded'
+  ) {
+    return;
+  }
+
+
+  const over =
+    pointer.known &&
+    inside(
+      pointer.x,
+      pointer.y,
+      islandBounds
+    );
+
+
+  if (
+    mode ===
+    'rest'
+  ) {
+    if (
+      over
+    ) {
+      hoverStartedAt =
+        now;
+
+
+      // Silent: the "open" sound plays once, when it really opens.
+      setMode(
+        'compact',
+        false
+      );
+    }
+
+
+    return;
+  }
+
+
+  if (
+    mode ===
+    'compact'
+  ) {
+    if (
+      over
+    ) {
+      if (
+        hoverStartedAt ===
+        null
+      ) {
+        hoverStartedAt =
+          now;
+      }
+
+
+      if (
+        now -
+        hoverStartedAt >
+        UI.NORMAL_PEEK_DELAY
+      ) {
+        setMode(
+          'expanded'
+        );
+
+
+        hoverStartedAt =
+          null;
+      }
+
+    } else {
+      setMode(
+        'rest'
+      );
+    }
+
+
+    return;
+  }
+
+
+  if (
+    mode ===
+    'expanded'
+  ) {
+    /*
+      Every screen folds away when you are not using it.
+      Not while you type: then it stays open.
+    */
+
+    if (
+      !over &&
+      !isTyping()
+    ) {
+      if (
+        leaveStartedAt ===
+        null
+      ) {
+        leaveStartedAt =
+          now;
+      }
+
+
+      const delay =
+        currentView ===
+          'home'
+          ? UI.HOME_LEAVE_DELAY
+          : UI.VIEW_LEAVE_DELAY;
+
+
+      if (
+        now -
+        leaveStartedAt >
+        delay
+      ) {
+        collapseIdle();
+
+
+        leaveStartedAt =
+          null;
+      }
+
+    } else {
+      leaveStartedAt =
+        null;
+    }
+  }
+}
+
+
+function isTyping() {
+  const element =
+    document.activeElement;
+
+
+  return (
+    document.hasFocus() &&
+    Boolean(
+      element &&
+      (
+        element.tagName === 'INPUT' ||
+        element.tagName === 'TEXTAREA' ||
+        element.isContentEditable
+      )
+    )
+  );
+}
+
+
+function collapseIdle() {
+  /*
+    Same as Escape: back to home and small.
+    island-window-ui.js puts the screen back when you click the island again.
+  */
+
+  if (
+    currentView !==
+    'home'
+  ) {
+    projectInput.blur();
+
+
+    projectInput.style.display =
+      'none';
+
+
+    currentView =
+      'home';
+  }
+
+
+  setMode(
+    'rest'
+  );
+}
+
+
+// ============================================================
+// CHARACTER
+// ============================================================
+
+function updateCharacter(
+  dt
+) {
+  let ghostX =
+    innerWidth /
+    2;
+
+
+  let ghostY =
+    12;
+
+
+  if (
+    mode ===
+    'expanded'
+  ) {
+    const content =
+      contentRect();
+
+
+    ghostX =
+      content.x +
+      45;
+
+
+    ghostY =
+      content.y +
+      content.height /
+      2;
+  }
+
+
+  const targetX =
+    pointer.known
+      ?
+        Math.tanh(
+          (
+            pointer.x -
+            ghostX
+          ) /
+          260
+        ) *
+        4
+      :
+        0;
+
+
+  const targetY =
+    pointer.known
+      ?
+        Math.tanh(
+          (
+            pointer.y -
+            ghostY
+          ) /
+          200
+        ) *
+        2.8
+      :
+        0;
+
+
+  ghostLookX +=
+    (
+      targetX -
+      ghostLookX
+    ) *
+    (
+      1 -
+      Math.exp(
+        -10 *
+        dt
+      )
+    );
+
+
+  ghostLookY +=
+    (
+      targetY -
+      ghostLookY
+    ) *
+    (
+      1 -
+      Math.exp(
+        -10 *
+        dt
+      )
+    );
+}
+
+
+// ============================================================
+// EXPANDED
+// ============================================================
+
+function drawExpanded(
+  alpha
+) {
+  const content =
+    contentRect();
+
+
+  drawHeader(
+    alpha
+  );
+
+
+  ctx.save();
+
+
+  ctx.globalAlpha =
+    alpha;
+
+
+  ctx.beginPath();
+
+
+  ctx.rect( content.x - 16, content.y - 10, content.width + 32, content.height + 20 ); // a little room: wiggling widgets and their badges never get cut off
+
+
+  ctx.clip();
+
+
+  if (
+    currentView ===
+    'home'
+  ) {
+    drawHome(
+      content
+    );
+  }
+
+
+  if (
+    currentView ===
+    'apps'
+  ) {
+    drawApps(
+      content
+    );
+  }
+
+
+  if (
+    currentView ===
+    'project'
+  ) {
+    drawProject(
+      content
+    );
+  }
+
+
+  if (
+    currentView ===
+    'settings'
+  ) {
+    drawSettings(
+      content
+    );
+  }
+
+  // Kopi's chat (chat-ui.js): Kopi himself sits bottom left, drawn on the canvas
+  if (currentView === 'chat') window.__kopiDrawChat?.(content);
+
+
+  if (
+    currentView ===
+    'spotify'
+  ) {
+    drawSpotify(
+      content
+    );
+  }
+
+
+  if (
+    currentView ===
+    'assistant'
+  ) {
+    drawPrompt(
+      content,
+      'Assistant',
+      'The AI interface comes here.'
+    );
+  }
+
+
+  ctx.restore();
+}
+
+
+// ============================================================
+// PROJECT INPUT POSITION
+// ============================================================
+
+function updateProjectInput() {
+  const shouldShow =
+    currentView ===
+      'project' &&
+    mode ===
+      'expanded' &&
+    projectState
+      ?.selected &&
+    !projectLoading &&
+    !projectReadData &&
+    !projectReadLoading &&
+    projectInputBounds &&
+    visual.width >
+      600 &&
+    visual.height >
+      220;
+
+
+  if (
+    !shouldShow
+  ) {
+    projectInput.style.display =
+      'none';
+
+
+    return;
+  }
+
+
+  projectInput.style.display =
+    'block';
+
+
+  projectInput.style.left =
+    `${projectInputBounds.x}px`;
+
+
+  projectInput.style.top =
+    `${projectInputBounds.y}px`;
+
+
+  projectInput.style.width =
+    `${projectInputBounds.width}px`;
+
+
+  projectInput.style.height =
+    `${projectInputBounds.height}px`;
+}
+
+
+// ============================================================
+// INTERACTIVE
+// ============================================================
+
+// Whether the window catches clicks (on the island) or lets them through to the apps below (Chrome, ...).
+// Everything goes through here. Once a second the state is sent again anyway, so it can never get stuck
+// (it used to stay "catching clicks" after Claude finished, until you hovered Kopi Island).
+let interactiveSentAt = 0;
+
+function sendInteractive(
+  next
+) {
+  // while Kopi is carried the island keeps the mouse, so letting go anywhere on screen reaches us
+  if (window.__kopiDragging?.()) next = true;
+  if (
+    next ===
+    interactiveSent &&
+    performance.now() - interactiveSentAt < 1000
+  ) {
+    return;
+  }
+
+
+  interactiveSent =
+    next;
+
+  interactiveSentAt =
+    performance.now();
+
+
+  window.kopi
+    .setIslandInteractive(
+      next
+    );
+}
+
+
+// "Typing" only counts while a visible text field really has focus and Kopi Island's window is active.
+// (A text field that was removed or hidden while focused used to keep this on forever.)
+function typingNow() {
+  const el =
+    document.activeElement;
+
+  return Boolean(
+    projectInputFocused &&
+    document.hasFocus() &&
+    el &&
+    /^(INPUT|TEXTAREA)$/.test(el.tagName) &&
+    el.offsetParent !== null
+  );
+}
+
+
+// ============================================================
+// RENDER
+// ============================================================
+
+let lastFrame =
+  performance.now();
+
+
+function drawIslandFrame(
+  now
+) {
+  const dt =
+    Math.min(
+      (
+        now -
+        lastFrame
+      ) /
+      1000,
+      0.04
+    );
+
+
+  lastFrame =
+    now;
+
+
+  ctx.clearRect(
+    0,
+    0,
+    innerWidth,
+    innerHeight
+  );
+
+
+  hit = {};
+
+
+  projectInputBounds =
+    null;
+
+
+  if (
+    !introFinished
+  ) {
+    drawIntro(
+      now
+    );
+
+
+    projectInput.style.display =
+      'none';
+
+
+    sendInteractive(
+      false
+    );
+
+
+    
+
+
+    return;
+  }
+
+
+  updateTransition(
+    now
+  );
+
+
+  drawIsland();
+
+
+  updateHover(
+    now
+  );
+
+
+  updateCharacter(
+    dt
+  );
+
+
+  ctx.save();
+
+
+  islandPath(
+    islandBounds.x,
+    0,
+    islandBounds.width,
+    islandBounds.height,
+    visual.radius
+  );
+
+
+  ctx.clip();
+
+
+  const alpha =
+    range(
+      visual.width,
+      360,
+      600
+    );
+
+
+  // Small content in the small/medium island (it can be wide, e.g. with answer buttons), big content when open.
+  if (
+    mode !== 'expanded' ||
+    visual.width <
+    380
+  ) {
+    drawSmall();
+
+  } else {
+    drawExpanded(
+      alpha
+    );
+  }
+
+
+  ctx.restore();
+
+
+  updateProjectInput();
+
+
+  const overIsland =
+    pointer.known &&
+    inside(
+      pointer.x,
+      pointer.y,
+      islandBounds
+    );
+
+
+  const overHit =
+    pointer.known &&
+    Object.values(
+      hit
+    ).some(
+      bounds =>
+        inside(
+          pointer.x,
+          pointer.y,
+          bounds
+        )
+    );
+
+
+  // Catch the mouse only while it is really on the island. Typing does not need it (keyboard focus
+  // stays anyway), and catching the mouse while typing made the invisible window (860×320, over the
+  // browser's tabs and address bar) eat clicks meant for Chrome until you clicked Kopi Island again.
+  sendInteractive(
+    overIsland ||
+    overHit
+  );
+
+
+  const cursorNow = overHit ? 'pointer' : 'default';
+
+  if (canvas.style.cursor !== cursorNow) {
+    canvas.style.cursor = cursorNow;
+  }
+
+
+  
+}
+
+
+
+let kopiLastFrameError = -Infinity;
+let kopiLastDraw = -Infinity;
+
+function render(now) {
+  try {
+    // Resting and the mouse is elsewhere: 30 frames a second is plenty for the small pill
+    // and halves the work the PC does all day long.
+    if (mode === 'rest' && !pointer.known && now - kopiLastDraw < 30) return;
+    kopiLastDraw = now;
+    drawIslandFrame(now);
+  } catch (error) {
+    if (now - kopiLastFrameError >= 1000) {
+      kopiLastFrameError = now;
+
+      console.error(
+        '[Kopi Island frame]',
+        error.stack || error.message || String(error)
+      );
+    }
+
+    try { ctx.reset?.(); } catch {} // a half-drawn frame can leave ctx.save() states behind
+    try {
+      resize();
+    } catch {}
+    // Still decide if the window catches clicks: otherwise one broken frame left the island "click-through"
+    // until you hovered or clicked Kopi Island again.
+    try { sendInteractive(pointer.known && inside(pointer.x, pointer.y, islandBounds)); } catch {}
+  } finally {
+    requestAnimationFrame(render);
+  }
+}
+
+requestAnimationFrame(
+  render
+);
+
+
+// ============================================================
+// LOCAL POINTER
+// ============================================================
+
+addEventListener(
+  'mousemove',
+
+  event => {
+    pointer.x =
+      event.clientX;
+
+
+    pointer.y =
+      event.clientY;
+
+
+    pointer.known =
+      true;
+  }
+);
+
+
+// ============================================================
+// CLICK
+// ============================================================
+
+canvas.addEventListener(
+  'click',
+
+  async event => {
+    const x =
+      event.clientX;
+
+
+    const y =
+      event.clientY;
+
+
+    // ======================================================
+    // PROJECT
+    // ======================================================
+
+    if (
+      inside(
+        x,
+        y,
+        hit.projectChoose
+      )
+    ) {
+      await chooseProject();
+
+      return;
+    }
+
+
+    if (
+      inside(
+        x,
+        y,
+        hit.projectSearch
+      )
+    ) {
+      await performProjectSearch();
+
+      return;
+    }
+
+
+    if (
+      inside(
+        x,
+        y,
+        hit.projectReadBack
+      )
+    ) {
+      projectReadData =
+        null;
+
+
+      projectSelectedResult =
+        null;
+
+
+      return;
+    }
+
+
+    for (
+      let i = 0;
+      i <
+      3;
+      i++
+    ) {
+      if (
+        inside(
+          x,
+          y,
+          hit[
+            `projectResult${i}`
+          ]
+        )
+      ) {
+        await openProjectResult(
+          projectSearchResults[
+            i
+          ]
+        );
+
+
+        return;
+      }
+    }
+
+
+    // ======================================================
+    // SMALL ISLAND
+    // ======================================================
+
+    if (
+      mode !==
+        'expanded' &&
+      inside(
+        x,
+        y,
+        islandBounds
+      )
+    ) {
+      setMode(
+        'expanded'
+      );
+
+
+      return;
+    }
+
+
+    // ======================================================
+    // HEADER
+    // ======================================================
+
+    if (
+      inside(
+        x,
+        y,
+        hit.home
+      )
+    ) {
+      setView(
+        'home'
+      );
+
+
+      return;
+    }
+
+
+    if (
+      inside(
+        x,
+        y,
+        hit.apps
+      )
+    ) {
+      setView(
+        'apps'
+      );
+
+
+      return;
+    }
+
+
+    if (
+      inside(
+        x,
+        y,
+        hit.settings
+      )
+    ) {
+      setView(
+        'settings'
+      );
+
+
+      return;
+    }
+
+
+    if (
+      inside(
+        x,
+        y,
+        hit.sound
+      )
+    ) {
+      soundEnabled =
+        !soundEnabled;
+
+
+      localStorage.setItem(
+        'kopi:sound',
+        soundEnabled
+          ?
+            'on'
+          :
+            'off'
+      );
+
+
+      return;
+    }
+
+
+    // ======================================================
+    // APPS
+    // ======================================================
+
+    if (
+      inside(
+        x,
+        y,
+        hit.projectApp
+      )
+    ) {
+      setView(
+        'project'
+      );
+
+
+      return;
+    }
+
+
+    if (
+      inside(
+        x,
+        y,
+        hit.spotifyApp
+      )
+    ) {
+      try {
+        const state =
+          await window.kopi
+            .spotifyGetState();
+
+
+        if (
+          !state?.connected
+        ) {
+          await window.kopi
+            .spotifyConnect();
+        }
+
+
+        await refreshSpotify();
+
+
+        setView(
+          'spotify'
+        );
+
+      } catch {}
+
+
+      return;
+    }
+
+
+    if (
+      inside(
+        x,
+        y,
+        hit.todayApp
+      )
+    ) {
+      window.kopi
+        .openUrl(
+          'https://github.com/chowkuanlaw/kopi-island'
+        );
+
+
+      return;
+    }
+
+
+    if (
+      inside(
+        x,
+        y,
+        hit.assistantApp
+      )
+    ) {
+      setView(
+        'assistant'
+      );
+
+
+      return;
+    }
+  }
+);
+
+
+// ============================================================
+// ESCAPE
+// ============================================================
+
+addEventListener(
+  'keydown',
+
+  event => {
+    if (
+      event.key !==
+      'Escape'
+    ) {
+      return;
+    }
+
+
+    if (
+      document.activeElement ===
+      projectInput
+    ) {
+      projectInput.blur();
+
+      return;
+    }
+
+
+    if (
+      currentView ===
+        'project' &&
+      projectReadData
+    ) {
+      projectReadData =
+        null;
+
+
+      projectSelectedResult =
+        null;
+
+
+      return;
+    }
+
+
+    const leavingProject = currentView === 'project';
+
+    currentView =
+      'home';
+
+
+    projectInput.style.display =
+      'none';
+
+
+    setMode(
+      leavingProject ? 'compact' : 'rest'
+    );
+  }
+);
+
+
+// ============================================================
+// SPOTIFY POLL
+// ============================================================
+
+setInterval(
+  () => {
+    if (
+      currentView ===
+      'spotify'
+    ) {
+      refreshSpotify();
+    }
+  },
+
+  2200
+);
+
+</script>
+<script src="./i18n-ui.js"></script>
+<script src="./project-mode-ui.js"></script>
+<script src="./pages-ui.js"></script>
+<script src="./icons-ui.js"></script>
+<script src="./ai-settings-ui.js"></script>
+<script src="./ai-monitor-ui.js"></script>
+<script src="./spotify-ui.js"></script>
+<script src="./kopi-fun.js"></script>
+<script src="./buddy-ui.js"></script>
+<script src="./settings-bridge-ui.js"></script>
+<script src="./chat-ui.js"></script>
+<script src="./extras-ui.js"></script>
+<script src="./focus-ui.js"></script>
+<script src="./blob-ui.js"></script>
+<script src="./tools-ui.js"></script>
+<script src="./island-window-ui.js"></script>
+
+</body>
+
+</html>
