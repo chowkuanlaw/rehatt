@@ -27,15 +27,41 @@
     onAiMonitorState: callback => subscribe('ai-monitor:state', callback),
     onAiMonitorOpen: callback => subscribe('ai-monitor:open', callback),
 
-    // Stretch breaks (stretch-main.cjs, from Lapis)
-    stretchGet: () => ipcRenderer.invoke('stretch:get'),
-    stretchAction: (action, value) => ipcRenderer.invoke('stretch:action', { action, value }),
-    onStretch: callback => subscribe('stretch:state', callback),
+    // Stretch breaks: Lapis Stretch inside Rehatt (lapis/engine.cjs). Actions with Lapis's own names; a few
+    // old island names are mapped (water → water-drank, waterLater → water-later).
+    stretchGet: () => ipcRenderer.invoke('lapis:get-state'),
+    stretchAction: (action, value) => {
+      const type = { water: 'water-drank', waterLater: 'water-later' }[action] || String(action);
+      const payload = action === 'set' ? { key: value?.key, value: value?.value }
+        : action === 'pause' || action === 'test' ? { kind: value }
+        : action === 'now' ? { start: true, ...(value && typeof value === 'object' ? value : {}) }
+        : value && typeof value === 'object' ? value : {};
+      ipcRenderer.send('lapis:action', { ...payload, type });
+      return ipcRenderer.invoke('lapis:get-state');
+    },
+    lapisAct: (type, payload) => ipcRenderer.send('lapis:action', { ...(payload || {}), type: String(type) }),
+    onStretch: callback => subscribe('lapis:state', callback),
+    onLapisChime: callback => subscribe('lapis:chime', callback),
 
-    // Your Claude usage (meter-main.cjs, from Teh Tarik Meter)
-    meterGet: () => ipcRenderer.invoke('meter:get'),
-    meterAction: action => ipcRenderer.invoke('meter:action', { action }),
-    onMeter: callback => subscribe('meter:state', callback),
+    // Your Claude usage: Teh Tarik Meter inside Rehatt (tehtarik/engine.cjs)
+    meterGet: () => ipcRenderer.invoke('ttm:get-state'),
+    meterAction: (type, payload) => ipcRenderer.send('ttm:action', { ...(payload || {}), type: String(type) }),
+    meterHistory: () => ipcRenderer.invoke('ttm:get-history'),
+    meterSessionKey: value => ipcRenderer.invoke('ttm:session-key', String(value || '')),
+    onMeter: callback => subscribe('ttm:state', callback),
+    onTarik: callback => subscribe('ttm:tarik', callback),
+    onShowOver: callback => subscribe('ttm:show-over', callback),
+    onMeterAlert: callback => subscribe('ttm:alert', callback),
+
+    // Rehatt itself: updates, one language for everything, the tray icon
+    updateGet: () => ipcRenderer.invoke('rehatt:update-get'),
+    updateAct: what => ipcRenderer.send('rehatt:update', String(what)),
+    onUpdate: callback => subscribe('rehatt:update', callback),
+    setLang: lang => ipcRenderer.send('rehatt:lang', String(lang)),
+    onLang: callback => subscribe('rehatt:lang', callback),
+    trayIconGet: () => ipcRenderer.invoke('rehatt:tray-icon'),
+    onTrayWant: callback => subscribe('rehatt:tray-want', callback),
+    trayImages: (kind, images) => ipcRenderer.send('rehatt:tray-images', String(kind), images),
 
     // Extras: file tray, calendar, weather, volume, Bluetooth battery
     pathForFile: file => { try { return webUtils.getPathForFile(file); } catch { return ''; } },

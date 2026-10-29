@@ -1,14 +1,15 @@
 {
   "name": "rehatt",
   "productName": "Rehatt",
-  "version": "0.1.1",
-  "description": "Rehatt: a Dynamic Island for Windows. Kopi nudges you when Claude Code or Codex has a question or is done, reminds you to stretch and drink water, and shows your Claude usage as a glass of teh tarik.",
+  "version": "0.2.0",
+  "description": "Rehatt: a Dynamic Island for Windows. Kopi nudges you when Claude Code or Codex has a question or is done, and it has Lapis Stretch (stretch breaks, water, your kuih) and Teh Tarik Meter (your Claude usage as a glass of teh tarik) inside.",
   "main": "main.js",
   "scripts": {
     "test": "node --test tests/*.test.cjs",
     "start": "electron .",
     "dist:zip": "electron-builder --win zip",
-    "dist:store": "electron-builder --win appx"
+    "dist:store": "electron-builder --win appx",
+    "dist:installer": "electron-builder --win nsis --x64 --publish never"
   },
   "keywords": [],
   "author": "Chow Kuan",
@@ -29,7 +30,8 @@
       "!tools/**",
       "!*.cmd",
       "!dist/**",
-      "!smoke/**"
+      "!smoke/**",
+      "!installer/**"
     ],
     "extraFiles": [
       {
@@ -40,9 +42,11 @@
     "win": {
       "icon": "assets/icon.ico",
       "target": [
+        "nsis",
         "zip",
         "appx"
-      ]
+      ],
+      "executableName": "Rehatt"
     },
     "appx": {
       "applicationId": "Rehatt",
@@ -57,6 +61,32 @@
       ]
     },
     "asar": false,
-    "artifactName": "Rehatt-${version}-win.${ext}"
+    "artifactName": "Rehatt-${version}-win.${ext}",
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowElevation": false,
+      "runAfterFinish": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Rehatt",
+      "deleteAppDataOnUninstall": false,
+      "include": "installer/uninstall.nsh",
+      "artifactName": "Rehatt-Setup-${version}.${ext}"
+    },
+    "directories": {
+      "buildResources": "installer"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "chowkuanlaw",
+        "repo": "rehatt",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "6.8.10"
   }
 }

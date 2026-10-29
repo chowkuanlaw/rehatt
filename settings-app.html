@@ -397,8 +397,8 @@
   <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
   <symbol id="i-gear" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
 </svg>
-<script src="lapis/data.js"></script>
-<script src="lapis/mascot.js"></script>
+<script src="lapis/renderer/data.js"></script>
+<script src="lapis/renderer/mascot.js"></script>
 <script>
 const $ = s => document.querySelector(s), list = $('#list'), scroll = $('#scroll'), S = window.settingsApp;
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -426,7 +426,7 @@ const T = {
     search: 'Cari', light: 'Cerah', dark: 'Gelap', unsaved: 'Belum disimpan', unsavedHelp: 'Kopi di sini sudah menunjukkannya. Rehatt menerimanya apabila anda simpan.',
     saveAll: 'Simpan', cancelAll: 'Batal', savedAll: 'Disimpan, Rehatt sudah menerimanya', cancelled: 'Dikembalikan', none: 'Tiada apa dijumpai.', saved: 'Disimpan', wait: 'Rehatt masih bermula…',
     sub: { home: '', connect: 'AI mana yang Kopi perhatikan untuk anda', general: 'Bahasa, pemberitahuan, animasi dan island', character: 'Nama, mata, kelakuan dan pencapaiannya', wardrobe: 'Pilih apa yang Kopi pakai. Dia cuba terus.',
-      stretch: 'Rehat regangan, waktu kerja, air dan kuih anda', usage: 'Had Claude anda, sebagai segelas teh tarik', apps: 'Pilih aplikasi yang ada dalam Rehatt anda', news: 'Apa yang baharu dalam Rehatt' },
+      stretch: 'Lapis Stretch, dalam Rehatt: hari ini, kemajuan, regangan, kuih anda dan tetapan', usage: 'Teh Tarik Meter, dalam Rehatt: tetapan, rupa, Claude, sejarah dan perihal', apps: 'Pilih aplikasi yang ada dalam Rehatt anda', news: 'Apa yang baharu dalam Rehatt' },
     stats: i => `${i.done ?? 0} tugasan siap`, badges: i => `${i.badges ?? 0} daripada ${i.total ?? 0} pencapaian`,
     outfit: 'Pakaian', body: 'Cawan', eyes: 'Mata', seasonal: 'Pakaian perayaan', seasonalHelp: 'Songkok untuk Hari Raya, reben merah untuk Tahun Baru Cina, topi Santa, topi ahli sihir',
     wearing: w => `Memakai: ${w}`, locked: n => `${n} tugasan lagi`, earned: n => `Diperoleh pada ${n} tugasan`, tasksLeft: 'Dapatkan lagi dengan menyiapkan tugasan',
@@ -453,7 +453,7 @@ const T = {
     search: 'Search', light: 'Light', dark: 'Dark', unsaved: 'Not saved yet', unsavedHelp: 'Kopi here shows it already. Rehatt gets it when you save.',
     saveAll: 'Save', cancelAll: 'Cancel', savedAll: 'Saved, Rehatt has it now', cancelled: 'Put back', none: 'Nothing found.', saved: 'Saved', wait: 'Rehatt is still starting…',
     sub: { home: '', connect: 'Which AIs Kopi keeps an eye on for you', general: 'Language, notifications, animations and the island', character: 'His name, eyes, behaviour and badges', wardrobe: 'Pick what Kopi wears. He tries it on right away.',
-      stretch: 'Stretch breaks, working hours, water and your kuih', usage: 'Your Claude limits, as a glass of teh tarik', apps: 'Pick which apps are in your Rehatt', news: 'What is new in Rehatt' },
+      stretch: 'Lapis Stretch, inside Rehatt: today, progress, stretches, your kuih and settings', usage: 'Teh Tarik Meter, inside Rehatt: general, look, Claude, history and about', apps: 'Pick which apps are in your Rehatt', news: 'What is new in Rehatt' },
     stats: i => `${i.done ?? 0} tasks done`, badges: i => `${i.badges ?? 0} of ${i.total ?? 0} badges`,
     outfit: 'Outfit', body: 'Body', eyes: 'Eyes', seasonal: 'Seasonal outfits', seasonalHelp: 'Songkok for Hari Raya, a red bow for Chinese New Year, Santa hat, witch hat',
     wearing: w => `Wearing: ${w}`, locked: n => `${n} more tasks`, earned: n => `Earned at ${n} tasks`, tasksLeft: 'Earn more by finishing tasks',
@@ -607,78 +607,18 @@ function drawWardrobe(html) {
   paint(html2, false);
 }
 
-// ---------- Stretch (stretch-main.cjs, from Lapis): changes apply at once ----------
-const L2 = (ms, en) => (lang === 'ms' ? ms : en);
+// ---------- Stretch and Usage: Lapis Stretch's and Teh Tarik Meter's own screens ----------
+// settings-app-main.cjs shows the original app's page right over the content area of the tab.
 let sx = null;
-S.stretch.onState(v => { sx = v; if (tab === 'stretch') drawStretch(); if (tab === 'home') drawHome(); });
-async function loadStretch() { sx = await S.stretch.get().catch(() => sx); drawStretch(); }
-const setStretch = (key, value) => S.stretch.action('set', { key, value }).then(v => { if (v?.ok) { sx = v; drawStretch(); } });
-const hhmm = m => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
-function timeSelect(key, value, from = 0, to = 1440) {
-  let o = ''; for (let m = from; m <= to; m += 15) o += `<option value="${m}" ${m === value ? 'selected' : ''}>${hhmm(m % 1440 === 0 && m ? 1439 : m).replace('23:59', '24:00')}</option>`;
-  return `<select data-sk="${key}">${o}</select>`;
+S.stretch.onState(v => { sx = v; });
+function embedNow() {
+  const want = tab === 'stretch' || tab === 'usage' ? tab : null;
+  document.body.classList.toggle('embedded', Boolean(want));
+  if (!want) { S.embed?.(null); return; }
+  paint('');
+  requestAnimationFrame(() => { const r = scroll.getBoundingClientRect(); S.embed?.(want, { x: r.left, y: r.top, width: r.width, height: r.height }); });
 }
-function drawStretch() {
-  if (tab !== 'stretch') return;
-  if (!sx?.ok) { paint(`<p class="empty">${t().loading}</p>`); return; }
-  const sw = (key, on) => `<button class="switch ${on ? 'on' : ''}" data-sk="${key}" data-sv="${on ? '0' : '1'}"></button>`;
-  const chips = (key, opts) => `<div class="tc-chips">${opts.map(([v, l]) => `<button class="tc-chip ${sx[key] === v ? 'on' : ''}" data-sk="${key}" data-sv="${v}">${l}</button>`).join('')}</div>`;
-  const row = (ic, c, title, sub, control) => `<div class="row"><span class="tile" style="--c:${c}">${icon(ic)}</span><div class="text"><b>${title}</b><small>${sub}</small></div>${control}</div>`;
-  const DAYS = lang === 'ms' ? ['Ahd', 'Isn', 'Sel', 'Rab', 'Kha', 'Jum', 'Sab'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const days = `<div class="tc-chips">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button class="tc-chip ${sx.workDays.includes(d) ? 'on' : ''}" data-day="${d}">${DAYS[d]}</button>`).join('')}</div>`;
-  const max = Math.max(sx.goal, ...sx.week.map(d => d.total), 1);
-  const week = `<div class="card week">${sx.week.map(d => `<div><b>${d.total || ''}</b><i style="height:${Math.round(78 * d.total / max)}px"></i><span>${new Date(d.day + 'T12:00').toLocaleDateString(lang === 'ms' ? 'ms-MY' : 'en-GB', { weekday: 'short' })}</span></div>`).join('')}</div>`;
-  const D = window.LapisData, kuih = D ? `<div class="kuihs">${D.KUIH.map(k => `<button class="kuih ${sx.kuih === k.id ? 'on' : ''}" data-kuih="${k.id}" title="${esc(lang === 'ms' && k.ms ? k.ms.note : k.note)}">${window.lapisSVG?.(sx.kuih === k.id ? 'wave' : 'idle', k.name, false, k.id) || ''}<span>${esc(k.name)}</span></button>`).join('')}</div>` : '';
-  paint(`<p class="lead">${L2('Setiap beberapa minit kuih anda muncul dalam island dengan satu regangan meja yang pantas. Apabila Claude Code atau Codex mula bekerja dan regangan hampir tiba, ia datang sekarang: anda berehat semasa AI anda bekerja.', 'Every so often your kuih pops up in the island with one quick desk stretch. When Claude Code or Codex starts a job and a stretch is due soon anyway, it comes right then: you rest while your AI works.')}</p>
-    <p class="section">${L2('Minggu ini', 'This week')} · ${L2(`${sx.today.total} daripada ${sx.goal} hari ini`, `${sx.today.total} of ${sx.goal} today`)}${sx.streak ? ' · 🔥 ' + L2(`${sx.streak} hari berturut-turut`, `${sx.streak}-day streak`) : ''}</p>${week}
-    <p class="section">${L2('Peringatan', 'Reminders')}</p><div class="group">
-      ${row('stretch', '#ff8fb1', L2('Rehat regangan', 'Stretch breaks'), L2('Kuih anda mengingatkan anda dalam island', 'Your kuih reminds you in the island'), sw('on', sx.on))}
-      ${row('timer', '#ffb35c', L2('Ingatkan setiap', 'Remind me every'), L2('Rehat pendek yang kerap paling berkesan', 'Short, frequent breaks work best'), chips('interval', [15, 20, 30, 45, 60].map(m => [m, m + ' min'])))}
-      ${row('clock', '#a99bff', L2('Tunda', 'Snooze'), L2('Apabila anda tekan Tunda', 'When you press Snooze'), chips('snooze', [5, 10, 15].map(m => [m, m + ' min'])))}
-      ${row('check', '#8fd65a', L2('Sasaran harian', 'Daily goal'), L2('Regangan sehari', 'Stretches a day'), chips('goal', [4, 6, 8, 10, 12].map(n => [n, String(n)])))}
-      ${row('bot', '#d97757', L2('Regang semasa AI anda bekerja', 'Stretch while your AI works'), L2('Regangan yang hampir tiba datang sebaik sahaja Claude Code atau Codex mula bekerja', 'A stretch that is almost due comes as soon as Claude Code or Codex starts working'), sw('withAi', sx.withAi))}
-      ${row('hand', '#8fb8ff', L2('Masa jauh dikira sebagai rehat', 'Time away counts as a break'), L2('5 minit tanpa papan kekunci atau tetikus, atau skrin dikunci', '5 minutes without keyboard or mouse, or a locked screen'), sw('awayReset', sx.awayReset))}
-      ${row('sparkles', '#c9b3ff', L2('Senyap semasa mesyuarat', 'Quiet in meetings'), L2('Menunggu semasa aplikasi skrin penuh, persembahan atau Jangan Ganggu', 'Waits while an app is full screen, presenting, or Do not disturb is on'), sw('quietMeetings', sx.quietMeetings))}
-      ${row('news', '#5ad1c4', L2('Pemberitahuan Windows', 'Windows notification'), L2('Juga satu pemberitahuan apabila regangan tiba', 'Also a notification when a stretch is due'), sw('notify', sx.notify))}
-    </div>
-    <p class="section">${L2('Waktu kerja', 'Working hours')}</p><div class="group">
-      ${row('today', '#8fb8ff', L2('Hanya semasa waktu kerja', 'Only during working hours'), L2('Di luar waktu ini Kopi berehat juga', 'Outside these hours Kopi rests too'), sw('workOn', sx.workOn))}
-      ${sx.workOn ? `${row('today', '#8fb8ff', L2('Hari', 'Days'), '', days)}
-      ${row('clock', '#a99bff', L2('Dari', 'From'), '', `<span class="times">${timeSelect('workStart', sx.workStart, 0, 1410)} ${L2('hingga', 'to')} ${timeSelect('workEnd', sx.workEnd, 30, 1440)}</span>`)}
-      ${row('clock', '#ffb35c', L2('Rehat makan tengah hari', 'Lunch break'), sx.lunchOn ? `<span class="times">${timeSelect('lunchStart', sx.lunchStart, 0, 1410)} ${L2('hingga', 'to')} ${timeSelect('lunchEnd', sx.lunchEnd, 30, 1440)}</span>` : '', sw('lunchOn', sx.lunchOn))}` : ''}
-    </div>
-    <p class="section">${L2('Air', 'Water')}</p><div class="group">
-      ${row('drop', '#7fc8ff', L2('Peringatan air', 'Water reminders'), L2(`${sx.today.water} daripada ${sx.waterGoal} gelas hari ini`, `${sx.today.water} of ${sx.waterGoal} glasses today`), sw('waterOn', sx.waterOn))}
-      ${sx.waterOn ? row('timer', '#7fc8ff', L2('Setiap', 'Every'), '', chips('waterEvery', [30, 45, 60, 90, 120].map(m => [m, m < 60 ? m + ' min' : m / 60 + L2(' jam', ' h')]))) : ''}
-      ${row('flame', '#ffb35c', L2('Mod Ramadan', 'Ramadan mode'), L2('Semasa bulan puasa: tiada peringatan air, dan jalan sekejap ditinggalkan', 'During the fasting month: no water reminders, and the walkaround is left out'), sw('ramadanOn', sx.ramadanOn))}
-    </div>
-    <p class="section">${L2('Kuih anda', 'Your kuih')}</p>${kuih}`, false);
-}
-
-// ---------- Usage (meter-main.cjs, from Teh Tarik Meter) ----------
-let mx = null;
-S.meter.onState(v => { mx = v; if (tab === 'usage') drawUsage(); });
-async function loadUsage() { mx = await S.meter.get().catch(() => mx); cxs = await S.connections().catch(() => cxs); drawUsage(); }
-function drawUsage() {
-  if (tab !== 'usage') return;
-  if (!mx?.ok) { paint(`<p class="empty">${t().loading}</p>`); return; }
-  const left = w => (w && w.pct != null ? Math.max(0, Math.min(100, Math.round(100 - w.pct))) : null);
-  const when = ts => ts ? new Date(ts).toLocaleString(lang === 'ms' ? 'ms-MY' : 'en-GB', { weekday: 'short', hour: '2-digit', minute: '2-digit' }) : '';
-  const bar = (label, w) => { const l = left(w); return `<div><div class="head"><span>${label}</span><b>${l == null ? '—' : l + '% ' + L2('lagi', 'left')}</b></div><div class="track"><i style="width:${l ?? 0}%"></i></div>${w?.resetsAt ? `<small>${L2('Penuh semula', 'Full again')} ${esc(when(w.resetsAt))}</small>` : ''}</div>`; };
-  const cc = (cxs?.list || []).find(c => c.id === 'claudecode');
-  const row = (ic, c, title, sub, control) => `<div class="row"><span class="tile" style="--c:${c}">${icon(ic)}</span><div class="text"><b>${title}</b><small>${sub}</small></div>${control}</div>`;
-  const status = { ok: L2('Disambungkan: nombor langsung', 'Connected: live numbers'), offline: L2('Tiada internet sekarang', 'Offline right now'), error: L2('Tidak dapat dibaca sebentar tadi', 'Could not read it just now'), checking: L2('Menyemak…', 'Checking…') }[mx.status] || '';
-  paint(`<p class="lead">${L2('Gelas menunjukkan berapa banyak had Claude anda yang masih tinggal: penuh pada permulaan, kosong apabila anda mencapai had. Kopi memberi amaran pada 80% dan 95%.', 'The glass shows how much of your Claude limit is left: full at the start, empty when you hit the limit. Kopi warns you at 80% and 95%.')}</p>
-    <div class="card meter-now"><div><div class="big">${left(mx.session) == null ? '—' : left(mx.session) + '%'}</div><small>${L2('lagi dalam 5 jam ini', 'left in this 5-hour window')}</small></div>
-      <div class="bars">${bar(L2('5 jam', '5 hours'), mx.session)}${bar(L2('Minggu ini', 'This week'), mx.weekly)}${(mx.models || []).slice(0, 3).map(m => bar(esc(m.name), m)).join('')}</div></div>
-    <p class="section">${L2('Dari mana nombor datang', 'Where the numbers come from')}</p><div class="group">
-      ${row('cup', '#e0a96d', 'claude.ai', mx.signedIn ? status : L2('Log masuk sekali dalam tetingkap claude.ai peribadi di dalam Rehatt. Kata laluan anda tidak pernah sampai kepada Rehatt.', 'Sign in once in a private claude.ai window inside Rehatt. Your password never reaches Rehatt.'),
-        mx.signedIn ? `<button class="btn ghost" data-mx="refresh">${L2('Muat semula', 'Refresh')}</button><button class="btn ghost" data-mx="signout">${L2('Log keluar', 'Sign out')}</button>` : `<button class="btn main" data-mx="signin">${L2('Log masuk', 'Sign in')}</button>`)}
-      ${row('bot', '#d97757', 'Claude Code', cc?.on ? (mx.claudeCode ? L2('Garis status menghantar penggunaan anda selepas setiap jawapan', 'The status line sends your usage after every answer') : L2('Disambungkan. Nombor datang selepas jawapan Claude yang seterusnya.', 'Connected. Numbers arrive after Claude\'s next answer.')) : L2('Sambungkan Claude Code untuk bacaan segera', 'Connect Claude Code for instant readings'),
-        cc?.on ? `<span class="tag good"><i></i>${t().cxOn}</span>` : `<button class="btn" data-goto="connect">${t().toConnect}</button>`)}
-      ${row('sparkles', '#ffb35c', L2('Amaran pada 80% dan 95%', 'Alerts at 80% and 95%'), L2('Dalam island dan sebagai pemberitahuan Windows', 'In the island and as a Windows notification'), `<button class="switch ${mx.alerts ? 'on' : ''}" data-mx="${mx.alerts ? 'alertsOff' : 'alertsOn'}"></button>`)}
-    </div>`, false);
-}
+addEventListener('resize', () => { if (tab === 'stretch' || tab === 'usage') embedNow(); });
 
 // ---------- Apps ----------
 const APPS = [
@@ -793,7 +733,7 @@ function drawHome() {
   const box = $('#histSearch'); if (box) { box.value = keepSearch; if (focused) { box.focus(); box.setSelectionRange(keepSearch.length, keepSearch.length); } }
 }
 list.addEventListener('input', e => { if (e.target.id === 'histSearch') drawHome(); });
-list.addEventListener('change', e => { if (tab === 'stretch' && e.target.matches('select[data-sk]')) setStretch(e.target.dataset.sk, Number(e.target.value)); });
+
 
 // ---------- Connections: one switch per AI, Rehatt does the rest ----------
 let cxNote = {};
@@ -837,12 +777,6 @@ list.addEventListener('click', e => {
     if (b.classList.contains('tc-toggle')) b.classList.toggle('on');
     press({ index: Number(b.dataset.i) }, b);
   }
-  if (tab === 'stretch' && sx) {
-    if (b.dataset.sk) { const v = b.dataset.sv; setStretch(b.dataset.sk, v === '1' ? true : v === '0' ? false : Number(v)); }
-    if (b.dataset.day) { const d = Number(b.dataset.day), list2 = sx.workDays.includes(d) ? sx.workDays.filter(x => x !== d) : [...sx.workDays, d]; if (list2.length) setStretch('workDays', list2); }
-    if (b.dataset.kuih) { setStretch('kuih', b.dataset.kuih); toast(b.querySelector('span')?.textContent || ''); }
-  }
-  if (tab === 'usage' && b.dataset.mx) S.meter.action(b.dataset.mx).then(v => { if (v?.ok) { mx = v; drawUsage(); } });
   if (tab === 'apps' && b.dataset.app) {
     const a = APPS.find(x => x.id === b.dataset.app), on = b.dataset.on === '1';
     b.classList.toggle('on', on);
@@ -864,8 +798,7 @@ async function render(fresh) {
   if (tab === 'connect') { if (fresh) lastHtml = ''; await loadConnect(); }
   if (tab === 'general' || tab === 'character') { const html = await islandList(tab); if (html != null) paintIsland(html, fresh); }
   if (tab === 'wardrobe') { const html = await islandList('character'); if (html != null && tab === 'wardrobe') drawWardrobe(html); }
-  if (tab === 'stretch') { if (fresh) lastHtml = ''; await loadStretch(); }
-  if (tab === 'usage') { if (fresh) lastHtml = ''; await loadUsage(); }
+  embedNow();
   if (tab === 'apps') { if (fresh) lastHtml = ''; await loadApps(); }
   if (tab === 'news') { if (fresh) lastHtml = ''; drawNews(); if (fresh || !news) loadNews(); }
   if (fresh) { scroll.scrollTop = 0; list.classList.remove('fresh'); void list.offsetWidth; list.classList.add('fresh'); clearTimeout(freshTimer); freshTimer = setTimeout(() => list.classList.remove('fresh'), 520); }
@@ -900,7 +833,7 @@ S.onFace(url => { lastFace = url; document.querySelectorAll('.face').forEach(img
 
 // keep up with changes made elsewhere, but never while you type
 addEventListener('focus', () => { if (!typing() && !busy) render(false); });
-setInterval(() => { if (!document.hidden && !busy && !typing() && ['general', 'character', 'wardrobe', 'apps', 'home', 'connect', 'usage'].includes(tab)) render(false); }, 3000);
+setInterval(() => { if (!document.hidden && !busy && !typing() && ['general', 'character', 'wardrobe', 'apps', 'home', 'connect'].includes(tab)) render(false); }, 3000);
 window.settingsApp.onGoto?.(where => go(where));
 
 labels();

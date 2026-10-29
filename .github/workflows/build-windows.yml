@@ -1,8 +1,10 @@
 name: Build Windows app
 
-# Builds the portable Windows zip (with Rehatt.exe inside).
-# - Every push to main, or "Run workflow" in the Actions tab: the zip is kept as a download on the run.
-# - Publishing a release on GitHub: the zip is also attached to that release.
+# Builds Rehatt for Windows:
+#   Rehatt-Setup-<version>.exe (+ .blockmap, latest.yml)  per-user installer that updates itself from these releases
+#   Rehatt-<version>-win.zip                              portable copy (says when a new version is out)
+# - Every push to main, or "Run workflow" in the Actions tab: kept as a download on the run.
+# - Publishing a release on GitHub: also attached to that release, which is what installed copies update from.
 on:
   push:
     branches: [main]
@@ -80,14 +82,18 @@ jobs:
           cd "$RUNNER_TEMP/ci-smoke" && cp "$RUNNER_TEMP"/shots/* . && echo "${GITHUB_SHA}" > commit.txt
           git add -A && git commit -q -m "Smoke screenshots for ${GITHUB_SHA::7}" && git push -f -q origin ci-smoke
 
-      - name: Build zip
-        run: npx electron-builder --win zip --publish never
+      - name: Build installer and zip
+        run: npx electron-builder --win nsis zip --x64 --publish never
 
       - name: Upload to the run
         uses: actions/upload-artifact@v4
         with:
           name: Rehatt-Windows
-          path: dist/*.zip
+          path: |
+            dist/*.zip
+            dist/Rehatt-Setup-*.exe
+            dist/Rehatt-Setup-*.exe.blockmap
+            dist/latest.yml
           retention-days: 30
 
       - name: Attach to the release
@@ -97,8 +103,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.rel.outputs.tag }}
         run: |
-          # replace any older build zip on this release, then upload the new one
-          for old in $(gh release view "$TAG" --json assets --jq '.assets[].name' | grep -- '-win\.zip$' || true); do
+          # replace any older build on this release, then upload the new one (latest.yml is what installed copies read)
+          for old in $(gh release view "$TAG" --json assets --jq '.assets[].name' | grep -E -- '-win\.zip$|^Rehatt-Setup-|^latest\.yml$' || true); do
             gh release delete-asset "$TAG" "$old" --yes
           done
-          gh release upload "$TAG" dist/*.zip --clobber
+          gh release upload "$TAG" dist/*.zip dist/Rehatt-Setup-*.exe dist/Rehatt-Setup-*.exe.blockmap dist/latest.yml --clobber

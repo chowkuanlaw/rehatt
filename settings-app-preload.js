@@ -10,17 +10,23 @@ contextBridge.exposeInMainWorld('settingsApp', {
   connections: () => ipcRenderer.invoke('settings-app:connections'),
   connect: (id, value) => ipcRenderer.invoke('settings-app:connect', { id, on: value }),
   openUrl: url => ipcRenderer.send('settings-app:open-url', url),
-  // stretch breaks (stretch-main.cjs): settings apply at once
+  // Lapis Stretch and Teh Tarik Meter inside Rehatt (lapis/engine.cjs, tehtarik/engine.cjs)
   stretch: {
-    get: () => ipcRenderer.invoke('stretch:get'),
-    action: (action, value) => ipcRenderer.invoke('stretch:action', { action, value }),
-    onState: on('stretch:state')
+    get: () => ipcRenderer.invoke('lapis:get-state'),
+    action: (type, payload) => ipcRenderer.send('lapis:action', { ...(payload || {}), type: String(type) }),
+    onState: on('lapis:state')
   },
-  // the usage glass (meter-main.cjs)
   meter: {
-    get: () => ipcRenderer.invoke('meter:get'),
-    action: action => ipcRenderer.invoke('meter:action', { action }),
-    onState: on('meter:state')
+    get: () => ipcRenderer.invoke('ttm:get-state'),
+    action: (type, payload) => ipcRenderer.send('ttm:action', { ...(payload || {}), type: String(type) }),
+    onState: on('ttm:state')
+  },
+  // their own screens, shown over the Stretch and Usage tabs (settings-app-main.cjs)
+  embed: (tab, bounds) => ipcRenderer.send('settings-app:embed', tab || null, bounds || null),
+  update: {
+    get: () => ipcRenderer.invoke('rehatt:update-get'),
+    act: what => ipcRenderer.send('rehatt:update', String(what)),
+    onState: on('rehatt:update')
   },
   onGoto: on('settings-app:goto'),
   onFace: on('settings-app:face')

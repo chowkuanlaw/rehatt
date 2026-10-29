@@ -1,7 +1,7 @@
 // Rehatt Settings: settings as their own app, with a big live Kopi who shows off every choice.
 // Opened from the island's gear (settings-bridge-ui.js) or from the tray menu (tray-main.cjs).
 // The settings code itself stays in the island: this window asks it for the lists and passes clicks on.
-const { app, BrowserWindow, ipcMain, nativeTheme, net, shell, dialog } = require('electron');
+const { app, BrowserWindow, WebContentsView, ipcMain, nativeTheme, net, shell, dialog } = require('electron');
 const path = require('node:path');
 
 let win = null, dirty = false, closing = false;
@@ -17,8 +17,9 @@ const faceWanted = on => island()?.webContents.executeJavaScript(`window.__kopiF
 let theme = 'dark', appLang = 'en';
 const lang = () => appLang;
 const TABS = ['home', 'connect', 'stretch', 'usage', 'apps', 'news', 'character', 'wardrobe', 'general'];
-function open(tab) {
+function open(tab, sub) {
   tab = TABS.includes(tab) ? tab : '';
+  if ((tab === 'stretch' || tab === 'usage') && typeof sub === 'string' && /^[a-z]{3,10}$/.test(sub)) pendingSub[tab] = sub;
   if (win && !win.isDestroyed()) {
     if (win.isMinimized()) win.restore();
     win.show(); win.focus();
@@ -60,6 +61,7 @@ function open(tab) {
       });
   });
   win.on('closed', () => {
+    for (const k of Object.keys(views)) { try { views[k].webContents.close(); } catch {} delete views[k]; }
     win = null; dirty = false; closing = false; faceWanted(false);
     island()?.webContents.executeJavaScript('window.__kopiSettingsClosed?.()').catch(() => {}); // an unsaved draft is gone
   });
@@ -100,7 +102,58 @@ ipcMain.on('settings-app:theme', (e, name) => {
 ipcMain.on('settings-app:frame', (e, url) => { // the app's own Kopi, drawn by the island from your draft
   if (fromIsland(e) && win && !win.isDestroyed() && typeof url === 'string' && url.startsWith('data:image/')) win.webContents.send('settings-app:face', url);
 });
-app.on('kopi-open-settings', tab => open(tab)); // tray menu, or the Start menu shortcut while Rehatt runs
+app.on('kopi-open-settings', (tab, sub) => open(tab, sub)); // tray menu, the engines, or the Start menu shortcut while Rehatt runs
+
+// ---------- Stretch and Usage: Lapis's and Teh Tarik Meter's own screens, inside this window ----------
+// Each is the original app's page (lapis://app/, tehtarik://app/), shown over the content area of its tab.
+// Options that only made sense for the separate apps (their desktop widgets, the corner pop-up) are hidden:
+// in Rehatt the island does those jobs.
+const views = {}, pendingSub = {};
+const EMBED_CSS = {
+  stretch: `.set:has(> .switch[data-set="widget"]), .set:has(> .switch[data-set="widgetOnTop"]), .set:has(> .switch[data-set="widgetHideFull"]),
+    .set:has(> .switch[data-set="trayRing"]) { display: none !important; }`,
+  usage: `.setrow:has(#sw-onTop), .setrow:has(#sw-hideFull), .setrow:has(#sw-compact) { display: none !important; }`
+};
+const viewBg = () => (nativeTheme.shouldUseDarkColors ? '#0F1612' : '#F2F5EE');
+function urlFor(tab, sub) {
+  const E = app.rehattEngines;
+  if (tab === 'stretch') return E.lapis.viewURL('main', { embedded: '1' });
+  const q = { embedded: '1' };
+  if (sub === 'welcome' || !E.ttm.welcomed()) q.welcome = '1'; else if (sub) q.tab = sub;
+  return E.ttm.viewURL('app', q);
+}
+function viewFor(tab) {
+  const E = app.rehattEngines; if (!E) return null;
+  let v = views[tab];
+  const sub = pendingSub[tab]; delete pendingSub[tab];
+  if (v && !v.webContents.isDestroyed()) { if (sub) v.webContents.loadURL(urlFor(tab, sub)); return v; }
+  const engine = tab === 'stretch' ? E.lapis : E.ttm;
+  v = new WebContentsView({ webPreferences: { preload: engine.preload, contextIsolation: true, sandbox: true, nodeIntegration: false, spellcheck: false, autoplayPolicy: 'no-user-gesture-required' } });
+  v.setBackgroundColor(viewBg());
+  const wc = v.webContents;
+  wc.setWindowOpenHandler(() => ({ action: 'deny' }));
+  wc.on('will-navigate', e => e.preventDefault());
+  wc.on('did-finish-load', () => {
+    wc.insertCSS(EMBED_CSS[tab]).catch(() => {});
+    wc.setZoomFactor(E.zoom()[tab === 'stretch' ? 'lapis' : 'ttm'] || 1);
+  });
+  wc.loadURL(urlFor(tab, sub));
+  views[tab] = v;
+  return v;
+}
+ipcMain.on('settings-app:embed', (e, tab, b) => {
+  if (!fromApp(e)) return;
+  for (const [k, v] of Object.entries(views)) if (k !== tab) { try { v.setVisible(false); } catch {} }
+  if (!['stretch', 'usage'].includes(tab) || !b) return;
+  const v = viewFor(tab); if (!v) return;
+  if (!win.contentView.children.includes(v)) win.contentView.addChildView(v);
+  const n = k => Math.max(0, Math.round(Number(b[k]) || 0));
+  v.setBounds({ x: n('x'), y: n('y'), width: n('width'), height: n('height') });
+  v.setVisible(true);
+});
+app.on('rehatt-zoom', (kind, z) => { const v = views[kind === 'lapis' ? 'stretch' : 'usage']; if (v && !v.webContents.isDestroyed()) v.webContents.setZoomFactor(z || 1); });
+app.on('rehatt-ttm-welcomed', () => { const v = views.usage; if (v && !v.webContents.isDestroyed()) v.webContents.loadURL(urlFor('usage', '')); });
+nativeTheme.on('updated', () => { for (const v of Object.values(views)) { try { v.setBackgroundColor(viewBg()); } catch {} } });
 if (process.argv.includes('--settings')) app.whenReady().then(() => setTimeout(() => open(), 1200)); // started from the Start menu shortcut
 
 // Home and Connections: your name, what your AI did, and which coding agents Rehatt follows (agents-main.cjs).

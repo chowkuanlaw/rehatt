@@ -10,6 +10,7 @@ const { BrowserWindow, screen } = require('electron');
 const { HOOK_URL } = require('../agent-hooks.cjs');
 
 const SETTINGS_TABS = ['home', 'connect', 'stretch', 'usage', 'apps', 'general'];
+const findWin = re => BrowserWindow.getAllWindows().find(w => !w.isDestroyed() && re.test(w.webContents.getURL()));
 
 module.exports = function smoke(getWindow, app) {
   const out = path.resolve(process.env.REHATT_SMOKE);
@@ -43,7 +44,7 @@ module.exports = function smoke(getWindow, app) {
     await wait(9000); // intro + hello
     const island = getWindow();
     const js = code => island.webContents.executeJavaScript(`(() => { ${code} })()`).catch(e => { errors.push('js: ' + e.message); return null; });
-    const state = () => js(`const p = window.__rehattDirector?.pick(); return { mode, view: currentView, kind: p?.kind || null, text: p?.text || '', banner: !document.getElementById('rehatt-banner')?.hidden, stretch: window.__rehattStretch?.state()?.mode, water: window.__rehattStretch?.state()?.water, glasses: window.__rehattStretch?.state()?.today?.water }`);
+    const state = () => js(`const p = window.__rehattDirector?.pick(); return { mode, view: currentView, kind: p?.kind || null, text: p?.text || '', banner: !document.getElementById('rehatt-banner')?.hidden, stretch: window.__rehattStretch?.state()?.mode, water: window.__rehattStretch?.state()?.water, glasses: window.__rehattStretch?.state()?.today?.water, golden: !!window.__rehattStretch?.state()?.golden, notice: window.__rehattStretch?.notice()?.type || null, meterData: !!window.__rehattMeter?.state()?.view?.hasData }`);
     const shot = async name => { try { fs.writeFileSync(path.join(out, `${name}.png`), (await island.webContents.capturePage()).toPNG()); } catch (e) { errors.push(`shot ${name}: ${e.message}`); } };
     const check = async (flow, what, test) => {
       const s = await state(); let ok = false;
@@ -193,6 +194,75 @@ module.exports = function smoke(getWindow, app) {
         for (const view of ['home', 'apps', 'focus', 'tray', 'clips', 'note', 'stretch']) { await js(`setView('${view}'); return 1`); await wait(1200); await shot(`page-${view}`); }
       },
 
+      async L1() { // Lapis's own notices: a nudge on the island, the card on the Stretch page, its buttons work
+        for (const kind of ['summary', 'wrap', 'teh', 'night', 'unlock', 'restored']) {
+          await reset();
+          await js(`window.__rehattStretch.test('${kind}'); return 1`); await wait(900);
+          await check('L1', `the ${kind} notice shows as a nudge`, s => s.mode === 'compact' && s.kind === 'notice'); await shot(`L1-${kind}-nudge`);
+          if (kind === 'summary' || kind === 'unlock') { await hoverIsland(); await wait(1300); await check('L1', `hover opens the ${kind} card on Stretch`, s => s.mode === 'expanded' && s.view === 'stretch'); await shot(`L1-${kind}-page`); }
+          await js(`window.__rehattStretch.noticeAct('${kind === 'night' ? 'night-more' : 'notice-close'}'); return 1`); await wait(700);
+          await check('L1', `closing the ${kind} notice clears it`, s => s.kind !== 'notice' && !s.notice);
+        }
+      },
+
+      async L2() { // the golden kuih, and tapping your kuih (10 quick taps: the surprise)
+        await reset();
+        await js("window.__rehattStretch.test('golden'); return 1"); await wait(900);
+        await check('L2', 'a golden kuih comes as a stretch nudge', s => s.kind === 'stretchDue' && s.golden); await shot('L2-1-golden-nudge');
+        await reset();
+        await hoverIsland(); await wait(1200); await js("setView('home'); return 1"); await wait(800);
+        const k = await js('return hit.stretchKuih || null');
+        if (!k) errors.push('CHECK L2: no kuih to tap on Home');
+        else {
+          await clickHit('stretchKuih'); await wait(100); await shot('L2-2-kuih-squish');
+          for (let i = 0; i < 9; i++) await clickHit('stretchKuih');
+          await wait(2500);
+          const egg = findWin(/view=egg/);
+          if (!egg) errors.push('CHECK L2: ten taps did not start the surprise');
+          else {
+            checks.push({ flow: 'L2', what: 'ten taps on the kuih start the surprise', ok: true });
+            try { fs.writeFileSync(path.join(out, 'L2-3-surprise.png'), (await egg.webContents.capturePage()).toPNG()); } catch (e) { errors.push('shot egg: ' + e.message); }
+            await js("window.kopi.lapisAct('egg-done'); return 1"); await wait(800);
+            if (findWin(/view=egg/)) errors.push('CHECK L2: the surprise did not close');
+          }
+        }
+      },
+
+      async M1() { // Teh Tarik Meter on the island: the card, a sample peek, poking the glass, ten pokes for the show
+        await reset();
+        await hoverIsland(); await wait(1200); await js("setView('meter'); return 1"); await wait(1200);
+        await shot('M1-1-usage-card');
+        const card = await js("const h = document.getElementById('rehatt-meter'); return { there: !!h?.shadowRoot, css: !!h?.shadowRoot?.querySelector('link[rel=stylesheet]')?.sheet, w: h?.getBoundingClientRect().width || 0 }");
+        checks.push({ flow: 'M1', what: 'the Teh Tarik card is on the Usage page with its own styles', ok: !!(card?.there && card.css && card.w > 100), state: card });
+        if (!(card?.there && card.css && card.w > 100)) errors.push('CHECK M1: the Teh Tarik card did not load: ' + JSON.stringify(card));
+        await js("window.kopi.meterAction('peek'); return 1"); await wait(1500);
+        await check('M1', 'Peek at a sample shows a glass', s => s.meterData === true); await shot('M1-2-peek');
+        for (let i = 0; i < 4; i++) { await js('window.__rehattMeter.poke(); return 1'); await wait(200); }
+        await shot('M1-3-pokes-combo');
+        for (let i = 0; i < 6; i++) { await js('window.__rehattMeter.poke(); return 1'); await wait(150); }
+        await wait(2500);
+        const show = findWin(/view=show/);
+        if (!show) errors.push('CHECK M1: ten pokes did not start the surprise');
+        else {
+          checks.push({ flow: 'M1', what: 'ten pokes on the glass start the surprise', ok: true });
+          await wait(2000);
+          try { fs.writeFileSync(path.join(out, 'M1-4-surprise.png'), (await show.webContents.capturePage()).toPNG()); } catch (e) { errors.push('shot show: ' + e.message); }
+          await js("window.kopi.meterAction('show-done'); return 1"); await wait(1200);
+          if (findWin(/view=show/)) errors.push('CHECK M1: the surprise did not close');
+        }
+        await shot('M1-5-after-show');
+        await js("window.kopi.meterAction('peek-exit'); return 1"); await wait(600);
+      },
+
+      async U1() { // self-update: the "ready" nudge (pretend), Restart and Later
+        await reset();
+        const r = await js("return typeof window.__rehattDirector.debug === 'function'");
+        if (!r) errors.push('CHECK U1: no director debug');
+        const st = await js('return window.kopi.updateGet().then(s => s)');
+        fs.writeFileSync(path.join(out, 'update-state.json'), JSON.stringify(st, null, 1));
+        checks.push({ flow: 'U1', what: 'the updater answers (not packaged: nothing to install)', ok: !!st, state: st });
+      },
+
       async W11() { // dragging (free mode): press and move, it follows; no opening while the button is down
         await reset();
         app.rehattPlace?.set('free'); await wait(600);
@@ -224,8 +294,21 @@ module.exports = function smoke(getWindow, app) {
     if (settings) for (const tab of SETTINGS_TABS) {
       try {
         await settings.webContents.executeJavaScript(`document.querySelector('nav [data-tab="${tab}"]')?.click(); 1`);
-        await wait(1500);
+        await wait(tab === 'stretch' || tab === 'usage' ? 3500 : 1500);
         fs.writeFileSync(path.join(out, `settings-${tab}.png`), (await settings.webContents.capturePage()).toPNG());
+        // Stretch and Usage are Lapis's and Teh Tarik Meter's own pages, laid over the settings window
+        for (const v of settings.contentView?.children || []) {
+          const wc = v.webContents; if (!wc || !v.getVisible?.()) continue;
+          const u = wc.getURL(); if (!/^(lapis|tehtarik):/.test(u)) continue;
+          const bb = v.getBounds();
+          if (bb.width < 100 || bb.height < 100) errors.push(`CHECK settings ${tab}: the embedded page is too small ${JSON.stringify(bb)}`);
+          fs.writeFileSync(path.join(out, `settings-${tab}-embedded.png`), (await wc.capturePage()).toPNG());
+          checks.push({ flow: 'S', what: `${tab}: the original app's page is shown`, ok: true, state: { url: u, bounds: bb } });
+          if (tab === 'stretch') for (const sel of ['[data-page="progress"]', '[data-page="stretches"]', '[data-page="kuih"]', '[data-page="settings"]']) {
+            const ok = await wc.executeJavaScript(`(() => { const b = document.querySelector('${sel}'); if (!b) return false; b.click(); return true; })()`).catch(() => false);
+            if (ok) { await wait(800); fs.writeFileSync(path.join(out, `settings-stretch-${sel.match(/"(\w+)"/)[1]}.png`), (await wc.capturePage()).toPNG()); }
+          }
+        }
       } catch (e) { errors.push(`smoke settings ${tab}: ${e.message}`); }
     }
     else errors.push('smoke: the settings app did not open');

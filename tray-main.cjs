@@ -23,17 +23,84 @@ function loginOptions() { return app.isPackaged ? { args: ['--rehatt-login'] } :
 function startsWithWindows() { try { return app.getLoginItemSettings(loginOptions()).openAtLogin; } catch { return false; } }
 function setStartsWithWindows(on) { try { app.setLoginItemSettings({ ...loginOptions(), openAtLogin: !!on }); } catch {} buildMenu(); }
 
+// What the tray icon shows (Rehatt Settings → General): Kopi, your kuih with Lapis's countdown ring, or your glass of
+// teh tarik draining with your usage, as in Lapis and Teh Tarik Meter. The island draws the kuih and the glass.
+const fs = require('node:fs');
+const TRAY_FILE = () => path.join(app.getPath('userData'), 'rehatt-tray.json');
+let trayIcon = 'kopi';
+try { const v = JSON.parse(fs.readFileSync(TRAY_FILE(), 'utf8')).icon; if (['kopi', 'kuih', 'glass'].includes(v)) trayIcon = v; } catch {}
+const images = { kuih: null, glass: null };
+function imageFrom(list) {
+  if (!Array.isArray(list)) return null;
+  const img = nativeImage.createEmpty();
+  for (const it of list.slice(0, 4)) {
+    const url = it && typeof it.url === 'string' ? it.url : '', scale = Number(it && it.scale);
+    if (!url.startsWith('data:image/png;base64,') || url.length > 200000 || !(scale >= 1 && scale <= 4)) continue;
+    img.addRepresentation({ scaleFactor: scale, dataURL: url });
+  }
+  return img.isEmpty() ? null : img;
+}
+const kopiImage = () => nativeImage.createFromPath(path.join(__dirname, 'assets', 'tray.png'));
+function applyIcon() {
+  if (!tray) return;
+  const img = (trayIcon === 'kuih' && images.kuih) || (trayIcon === 'glass' && images.glass) || kopiImage();
+  try { tray.setImage(img); } catch {}
+}
+function setTrayIcon(kind) {
+  if (!['kopi', 'kuih', 'glass'].includes(kind)) return;
+  trayIcon = kind;
+  try { fs.writeFileSync(TRAY_FILE(), JSON.stringify({ icon: kind })); } catch {}
+  applyIcon();
+  island()?.webContents.send('rehatt:tray-want', kind);
+  buildMenu();
+}
+// The tooltip: your next stretch and what's left in your glass
+function tooltip() {
+  const e = app.rehattEngines, parts = ['Rehatt'];
+  try { if (e?.lapis) parts.push(e.lapis.statusLabel()); } catch {}
+  try { const t = e?.ttm?.trayText(); if (t) parts.push(t); } catch {}
+  return parts.join('\n').slice(0, 127);
+}
+let lastTip = '', menuKey = '';
+function refresh() {
+  if (!tray) return;
+  const tip = tooltip(); if (tip !== lastTip) { lastTip = tip; tray.setToolTip(tip); }
+  // the menu is rebuilt only when something in it changes (never every second: that would close an open menu)
+  const st = app.rehattEngines?.lapis?.publicState?.(), u = app.rehattUpdate?.state?.()?.update;
+  const key = [st?.paused, st?.mode, st?.resting, u?.state, u?.state === 'downloading' ? Math.floor((u.percent || 0) / 10) : ''].join('|');
+  if (key !== menuKey) { menuKey = key; buildMenu(); }
+}
+app.rehattTray = {
+  refresh,
+  setImages: (kind, list) => { const img = imageFrom(list); if (img && (kind === 'lapis' || kind === 'kuih')) images.kuih = img; if (img && kind === 'glass') images.glass = img; applyIcon(); },
+  icon: () => trayIcon, setIcon: setTrayIcon
+};
+app.rehattAutostart = { get: () => startsWithWindows(), set: on => setStartsWithWindows(on) };
+
 function quit() { app.quit(); } // main.js shows the goodbye first
 function restart() { app.relaunch(); app.quit(); }
 
 function buildMenu() {
   if (!tray) return;
+  const lapis = app.rehattEngines?.lapis, st = lapis?.publicState?.(), upd = app.rehattUpdate?.state?.() || {};
+  const pause = st?.paused
+    ? [{ label: 'Resume stretch reminders', click: () => lapis.act({ type: 'resume' }) }]
+    : [{ label: 'Pause stretch reminders', submenu: [['m30', '30 minutes'], ['h1', '1 hour'], ['h2', '2 hours'], ['tomorrow', 'Until tomorrow'], ['forever', 'Until I resume']].map(([kind, label]) => ({ label, click: () => lapis?.act({ type: 'pause', kind }) })) }];
+  const updates = upd.update?.state === 'ready' ? [{ label: `Restart to update (${upd.update.version})`, click: () => app.rehattUpdate.install() }, { type: 'separator' }]
+    : upd.update?.state === 'downloading' ? [{ label: `Downloading ${upd.update.version}… ${upd.update.percent || 0}%`, enabled: false }, { type: 'separator' }]
+    : upd.update?.state === 'available' ? [{ label: `Download Rehatt ${upd.update.version}`, click: () => app.rehattUpdate.install() }, { type: 'separator' }] : [];
   tray.setContextMenu(Menu.buildFromTemplate([
+    ...updates,
     { label: 'Rehatt', enabled: false },
+    ...(st ? [{ label: (() => { try { return lapis.statusLabel(); } catch { return ''; } })() || 'Stretch', enabled: false }] : []),
     { type: 'separator' },
     { label: 'Open the island', accelerator: 'Ctrl+Alt+K', registerAccelerator: false, click: openIsland },
-    { label: 'Stretch now', click: () => { app.rehattStretch?.action('now'); const win = island(); if (win) { win.showInactive(); win.webContents.send('extras:shortcut', 'stretch'); } } },
+    { label: 'Stretch now', click: () => { app.rehattEngines?.lapis.act({ type: 'now', start: true }); const win = island(); if (win) { win.showInactive(); win.webContents.send('extras:shortcut', 'stretch'); } } },
+    ...pause,
+    { label: 'Your Claude usage', click: () => { const win = island(); if (win) { win.showInactive(); win.webContents.send('extras:shortcut', 'meter'); } } },
     { label: 'Settings', click: () => app.emit('kopi-open-settings') },
+    { type: 'separator' },
+    { label: 'Tray icon', submenu: [['kopi', 'Kopi'], ['kuih', 'Your kuih (countdown ring)'], ['glass', 'Your glass of teh tarik']].map(([kind, label]) => ({ label, type: 'radio', checked: trayIcon === kind, click: () => setTrayIcon(kind) })) },
     { type: 'separator' },
     { label: 'Island: drag it anywhere', type: 'radio', checked: app.rehattPlace?.get() !== 'top', click: () => { app.rehattPlace?.set('free'); buildMenu(); } },
     { label: 'Island: fixed at the top', type: 'radio', checked: app.rehattPlace?.get() === 'top', click: () => { app.rehattPlace?.set('top'); buildMenu(); } },
@@ -103,7 +170,9 @@ if (!app.requestSingleInstanceLock()) {
     tray = new Tray(image);
     tray.setToolTip('Rehatt');
     tray.on('click', openIsland);
-    buildMenu();
+    buildMenu(); applyIcon();
+    const t = setInterval(refresh, 5000); t.unref?.();
+    app.rehattUpdate?.onChange(() => buildMenu());
   });
   // the icon stays during the goodbye and goes when the app really stops
   app.on('will-quit', () => { try { tray?.destroy(); } catch {} tray = null; });
@@ -113,6 +182,9 @@ if (!app.requestSingleInstanceLock()) {
   ipcMain.handle('app:login-get', e => fromIsland(e) ? { ok: true, on: startsWithWindows() } : { ok: false });
   ipcMain.handle('app:login-set', (e, on) => { if (!fromIsland(e)) return { ok: false }; setStartsWithWindows(on); return { ok: true, on: startsWithWindows() }; });
   ipcMain.on('app:restart', e => { if (fromIsland(e)) restart(); });
+  const fromApp = e => /^file:.*\/(mascot|settings-app)\.html/.test(e.senderFrame?.url || '');
+  ipcMain.on('rehatt:tray-images', (e, kind, list) => { if (fromIsland(e)) app.rehattTray.setImages(kind, list); });
+  ipcMain.handle('rehatt:tray-icon', (e, kind) => { if (!fromApp(e)) return null; if (kind) setTrayIcon(kind); return trayIcon; });
 }
 
 module.exports = { openIsland };

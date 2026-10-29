@@ -31,6 +31,19 @@
   const S = () => window.__rehattStretch?.state() || null;
   const stName = () => { const s = S(); return window.__rehattStretch?.name?.(s?.cur || s?.upNext) || ''; };
   const dueFolded = s => s?.mode === 'due' && s.dueAt && Date.now() - s.dueAt > DUE_FOLD;
+  const NOTICE_FOLD = 60e3;
+  let noticeKey = '', noticeSince = 0;
+  const noticeFolded = () => Boolean(window.__rehattStretch?.notice?.()) && Date.now() - noticeSince >= NOTICE_FOLD;
+  // Rehatt's own update: "ready, restart?" for 2 minutes in the island, then the tray and Settings keep saying it
+  let updateState = null, updateDismissed = '', updateSince = 0, updatedShown = false;
+  function onUpdate(u) {
+    if (!u) return;
+    if (u.update?.state === 'ready' && updateState?.update?.state !== 'ready') updateSince = Date.now();
+    updateState = u;
+    if (u.updated && !updatedShown) { updatedShown = true; setTimeout(() => flash({ key: 'updated:' + u.updated.v, tone: 'done', ms: 6000, view: 'news', text: T(`Rehatt dikemas kini ke ${u.updated.v} · apa yang baharu`, `Rehatt updated to ${u.updated.v} · what's new`) }), 4000); }
+  }
+  api.updateGet?.().then(onUpdate).catch(() => {});
+  api.onUpdate?.(onUpdate);
   function questions() {
     const out = [];
     for (const p of providers()) {
@@ -98,9 +111,26 @@
       return { kind: 'stretchDue', key: 'st-due:' + s.cur + ':' + s.reason, tone: 'st', view: 'stretch', kuih: 'wave', text,
         buttons: [{ label: T('Mula', 'Start'), act: () => { stretch('start'); open('stretch'); } }, { label: T('Nanti', 'Later'), act: () => stretch('snooze') }] };
     }
+    // Lapis's notices: a new kuih, the Friday summary, Balik rumah, teh tarik time, go to sleep, what's new.
+    // They wait on the Stretch page; the nudge folds to a pink dot on Kopi after a minute.
+    const n = window.__rehattStretch?.notice?.();
+    if (n) {
+      const key = 'lapis:' + JSON.stringify(n);
+      if (noticeKey !== key) { noticeKey = key; noticeSince = Date.now(); }
+      if (Date.now() - noticeSince < NOTICE_FOLD) {
+        const w = window.__rehattStretch.noticeText(n);
+        return { kind: 'notice', key, tone: 'st', view: 'stretch', kuih: w.pose, text: w.text,
+          buttons: w.buttons.map(([label, type]) => ({ label, act: () => window.__rehattStretch.noticeAct(type) })) };
+      }
+    } else noticeKey = '';
     if (s?.water === 'ask')
       return { kind: 'water', key: 'wa-ask', tone: 'wa', view: 'stretch', kuih: 'glass', text: T('Minum segelas air?', 'A glass of water?'),
         buttons: [{ label: T('Sudah', 'Drank'), act: () => stretch('water') }, { label: T('Nanti', 'Later'), act: () => stretch('waterLater') }] };
+    // Rehatt itself: a new version is downloaded and ready
+    const u = updateState?.update;
+    if (u?.state === 'ready' && updateDismissed !== u.version && Date.now() - (updateSince || 0) < 2 * 60e3)
+      return { kind: 'update', key: 'update:' + u.version, tone: 'done', view: 'news', text: T(`Rehatt ${u.version} sedia`, `Rehatt ${u.version} is ready`),
+        buttons: [{ label: T('Mula semula', 'Restart'), act: () => api.updateAct?.('install') }, { label: T('Nanti', 'Later'), act: () => { updateDismissed = u.version; } }] };
     const focus = window.__kopiFocus;
     if (focus?.active())
       return { kind: 'focus', key: 'focus', tone: 'fo', view: 'focus', text: T('Fokus', 'Focus'), right: focus.label(), ring: 1 - focus.left() / (focus.length() || 1) };
@@ -112,6 +142,7 @@
   let explicit = false, lastView = null, lastAt = -Infinity;
   function open(view, provider) {
     if (view === 'monitor') { window.__kopiMonitor?.open(provider || 'claudecode', Boolean(provider)); return; }
+    if (view === 'news') { api.settingsOpen?.('news'); return; } // Rehatt Settings → News: what's new
     setView(view); setMode('expanded');
   }
   // Where a hover or a click on the small island opens to.
@@ -128,7 +159,7 @@
     if (next === 'expanded' && mode !== 'expanded' && !explicit && currentView === 'home' && introFinished) {
       const d = destination();
       if (d.view === 'monitor') { open('monitor', d.provider); return; }
-      if (d.view && d.view !== 'home' && d.view !== 'settings') currentView = d.view;
+      if (d.view && !['home', 'settings', 'news'].includes(d.view)) currentView = d.view;
     }
     return baseSetMode(next, playSound);
   };
@@ -161,7 +192,7 @@
     if (mode !== 'compact') {
       baseDrawSmall();
       // the pill: a dot on Kopi for what waits quietly (a stretch you let pass, a nearly empty glass)
-      const s = S(), dot = dueFolded(s) ? TONE.st : window.__rehattMeterLow?.() ? TONE.us : null;
+      const s = S(), dot = dueFolded(s) || noticeFolded() ? TONE.st : window.__rehattMeterLow?.() ? TONE.us : null;
       if (dot && mode === 'rest') {
         const cx = islandBounds.x + islandBounds.width / 2 + 10;
         ctx.save(); ctx.beginPath(); ctx.arc(cx, 6, 3.2, 0, Math.PI * 2); ctx.fillStyle = dot; ctx.shadowColor = dot; ctx.shadowBlur = 6; ctx.fill(); ctx.restore();

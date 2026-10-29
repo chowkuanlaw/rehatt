@@ -6,8 +6,8 @@ const path = require('path');
 
 require('./agents-main.cjs'); // Claude Code and Codex: question and done nudges
 require('./extras-main.cjs');
-require('./stretch-main.cjs'); // Lapis: stretch breaks
-require('./meter-main.cjs'); // Teh Tarik Meter: your Claude usage
+require('./updater-main.cjs'); // Rehatt updates itself from its GitHub releases
+require('./engines-main.cjs'); // Lapis Stretch and Teh Tarik Meter, inside Rehatt
 require('./settings-app-main.cjs'); // Rehatt Settings: settings as their own app
 
 app.setAppUserModelId('com.chowkuanlaw.rehatt');
