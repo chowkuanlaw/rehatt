@@ -142,11 +142,11 @@
 #rehatt-stretch .st-ai{color:#ffb35c}
 #rehatt-stretch .st-name{margin:0;font-size:19px;font-weight:700;color:#fff;line-height:1.15}
 #rehatt-stretch .st-cue{margin:0;color:#c9d0c6;font-size:12px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-#rehatt-stretch .st-steps{margin:0;padding-left:17px;color:#aab4a5;font-size:11px;line-height:1.35;display:flex;flex-direction:column;gap:1px;overflow:hidden}
+#rehatt-stretch .st-steps{margin:0;padding-left:0;list-style-position:inside;color:#aab4a5;font-size:11px;line-height:1.35;display:flex;flex-direction:column;gap:1px;overflow:hidden}
 #rehatt-stretch .st-steps li{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #rehatt-stretch .st-row{display:flex;gap:7px;align-items:center;margin-top:auto;flex-wrap:nowrap}
 #rehatt-stretch .st-label{color:#7f8a7a;font-size:11px;margin-left:4px}
-#rehatt-stretch button{border:1px solid rgba(255,255,255,.1);border-radius:12px;background:#151715;color:#e8eee4;padding:8px 13px;font:600 11.5px "Segoe UI",sans-serif;cursor:pointer;transition:background .15s,transform .1s}
+#rehatt-stretch button{border:1px solid rgba(255,255,255,.1);border-radius:12px;background:#151715;color:#e8eee4;padding:8px 13px;font:600 11.5px "Segoe UI",sans-serif;cursor:pointer;white-space:nowrap;transition:background .15s,transform .1s}
 #rehatt-stretch button:hover{background:#1f231f;border-color:rgba(255,255,255,.2)}
 #rehatt-stretch button:active{transform:scale(.96)}
 #rehatt-stretch .st-go{background:#ff8fb1;border-color:#ff8fb1;color:#2a0b16;font-size:12.5px;padding:9px 18px;white-space:nowrap}

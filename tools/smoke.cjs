@@ -75,6 +75,33 @@ module.exports = function smoke(getWindow, app) {
         }
       } catch (e) { errors.push(`smoke ${name}: ${e.message}`); }
     }
+    // dragging the island: a pretend mouse presses the small island and moves it 300 px right and 200 px down
+    try {
+      const { screen } = require('electron');
+      const realCursor = screen.getCursorScreenPoint.bind(screen);
+      let cursor = null;
+      screen.getCursorScreenPoint = () => cursor || realCursor();
+      await island.webContents.executeJavaScript("currentView = 'home'; setMode('rest', false); 1");
+      await wait(1200);
+      const before = island.getBounds(), cx = before.x + before.width / 2, at = (x, y) => ({ x: Math.round(x - before.x), y: Math.round(y - before.y), globalX: Math.round(x), globalY: Math.round(y) });
+      const mouse = (type, x, y) => { cursor = { x: Math.round(x), y: Math.round(y) }; island.webContents.sendInputEvent({ type, button: 'left', clickCount: 1, ...at(x, y) }); };
+      mouse('mouseMove', cx, before.y + 12); await wait(300);
+      mouse('mouseDown', cx, before.y + 12); await wait(150);
+      for (let i = 1; i <= 10; i++) { mouse('mouseMove', cx + i * 30, before.y + 12 + i * 20); await wait(60); }
+      await wait(300);
+      const moving = island.getBounds();
+      mouse('mouseUp', cx + 300, before.y + 212); await wait(600);
+      const after = island.getBounds();
+      fs.writeFileSync(path.join(out, 'drag.json'), JSON.stringify({ before, moving, after }, null, 1));
+      if (after.x - before.x < 250 || after.y - before.y < 150) errors.push(`drag: the island did not follow the mouse (${JSON.stringify({ before, after })})`);
+      fs.writeFileSync(path.join(out, '19-after-drag-island.png'), (await island.webContents.capturePage()).toPNG());
+      // fixed at the top: back to the middle of the top edge, and dragging does nothing
+      island.webContents.send('island:place', { mode: 'top' }); app.rehattPlace?.set('top'); await wait(500);
+      const top = island.getBounds();
+      if (Math.abs(top.y - before.y) > 2 || Math.abs(top.x - before.x) > 2) errors.push(`drag: "fixed at the top" did not put it back (${JSON.stringify(top)})`);
+      app.rehattPlace?.set('free'); screen.getCursorScreenPoint = realCursor;
+    } catch (e) { errors.push('drag test: ' + e.message); }
+
     // the settings app: every tab
     const settings = BrowserWindow.getAllWindows().find(w => !w.isDestroyed() && /settings-app\.html/.test(w.webContents.getURL()));
     if (settings) for (const tab of SETTINGS_TABS) {
