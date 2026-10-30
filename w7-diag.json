@@ -1,0 +1,58 @@
+{
+ "before": {
+  "mode": "compact",
+  "view": "home",
+  "w": 320,
+  "island": {
+   "x": 270,
+   "y": 0,
+   "width": 320,
+   "height": 36
+  },
+  "el": "canvas",
+  "d": {
+   "buttons": [
+    "nudgeBtn1",
+    "nudgeBtn0"
+   ],
+   "pressed": false,
+   "current": "wa-ask",
+   "wantWidth": 320
+  }
+ },
+ "afterMove": {
+  "mode": "compact",
+  "d": {
+   "buttons": [
+    "nudgeBtn1",
+    "nudgeBtn0"
+   ],
+   "pressed": false,
+   "current": "wa-ask",
+   "wantWidth": 320
+  }
+ },
+ "afterDown": {
+  "mode": "compact",
+  "d": {
+   "buttons": [
+    "nudgeBtn1",
+    "nudgeBtn0"
+   ],
+   "pressed": true,
+   "current": "wa-ask",
+   "wantWidth": 320
+  }
+ },
+ "afterUp": {
+  "mode": "compact",
+  "view": "home",
+  "d": {
+   "buttons": [],
+   "pressed": false,
+   "current": "wa-ask",
+   "wantWidth": 320
+  },
+  "glasses": 1
+ }
+}

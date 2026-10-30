@@ -1,0 +1,922 @@
+[
+ {
+  "flow": "W1",
+  "what": "starts as the small pill at the top",
+  "ok": true,
+  "state": {
+   "mode": "rest",
+   "view": "home",
+   "kind": null,
+   "text": "",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 0,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "W2",
+  "what": "a question shows as a nudge",
+  "ok": true,
+  "state": {
+   "mode": "compact",
+   "view": "home",
+   "kind": "question",
+   "text": "Claude has a question for you",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 0,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "W2",
+  "what": "hover opens the Claude page, not Home",
+  "ok": true,
+  "state": {
+   "mode": "expanded",
+   "view": "monitor",
+   "kind": "question",
+   "text": "Claude has a question for you",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 0,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "W2",
+  "what": "folding keeps the question (looking is not answering)",
+  "ok": true,
+  "state": {
+   "mode": "compact",
+   "view": "home",
+   "kind": "question",
+   "text": "Claude has a question for you",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 0,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "W2",
+  "what": "answered in the terminal: the question is gone",
+  "ok": true,
+  "state": {
+   "mode": "rest",
+   "view": "home",
+   "kind": null,
+   "text": "",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 0,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "W3",
+  "what": "Claude is done shows as a short nudge",
+  "ok": true,
+  "state": {
+   "mode": "compact",
+   "view": "home",
+   "kind": "flash",
+   "text": "Claude is done · Add a stretch reminder",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 0,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "W3",
+  "what": "after 4 s back to the pill",
+  "ok": true,
+  "state": {
+   "mode": "rest",
+   "view": "home",
+   "kind": null,
+   "text": "",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 0,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "W5",
+  "what": "a due stretch shows as a nudge with Start and Later",
+  "ok": true,
+  "state": {
+   "mode": "compact",
+   "view": "home",
+   "kind": "stretchDue",
+   "text": "Time to stretch · Chin tucks",
+   "banner": false,
+   "stretch": "due",
+   "water": null,
+   "glasses": 0,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "W5",
+  "what": "Start opens the Stretch page with the timer",
+  "ok": true,
+  "state": {
+   "mode": "expanded",
+   "view": "stretch",
+   "kind": "stretchActive",
+   "text": "Chin tucks",
+   "banner": false,
+   "stretch": "active",
+   "water": null,
+   "glasses": 0,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "W5",
+  "what": "the page stays open while you stretch, mouse away",
+  "ok": true,
+  "state": {
+   "mode": "expanded",
+   "view": "stretch",
+   "kind": "stretchActive",
+   "text": "Chin tucks",
+   "banner": false,
+   "stretch": "active",
+   "water": null,
+   "glasses": 0,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "W5",
+  "what": "done: the page folds and the cheer shows",
+  "ok": true,
+  "state": {
+   "mode": "compact",
+   "view": "home",
+   "kind": "cheer",
+   "text": "Nice! 1/8 today · next 01:36",
+   "banner": false,
+   "stretch": "done",
+   "water": null,
+   "glasses": 0,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "W5",
+  "what": "then back to the pill",
+  "ok": true,
+  "state": {
+   "mode": "rest",
+   "view": "home",
+   "kind": null,
+   "text": "",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 0,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "W5",
+  "what": "Later snoozes and says until when",
+  "ok": true,
+  "state": {
+   "mode": "compact",
+   "view": "home",
+   "kind": "note",
+   "text": "Snoozed · back at 01:26",
+   "banner": false,
+   "stretch": "snoozed",
+   "water": null,
+   "glasses": 0,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "W5",
+  "what": "snoozed note goes away",
+  "ok": true,
+  "state": {
+   "mode": "rest",
+   "view": "home",
+   "kind": null,
+   "text": "",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 0,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "W6",
+  "what": "the nudge says your AI is working",
+  "ok": true,
+  "state": {
+   "mode": "compact",
+   "view": "home",
+   "kind": "stretchDue",
+   "text": "Your AI is working · Neck side stretch?",
+   "banner": false,
+   "stretch": "due",
+   "water": null,
+   "glasses": 0,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "W6",
+  "what": "a question during the stretch: the countdown keeps the island",
+  "ok": true,
+  "state": {
+   "mode": "compact",
+   "view": "home",
+   "kind": "stretchActive",
+   "text": "Neck side stretch",
+   "banner": false,
+   "stretch": "active",
+   "water": null,
+   "glasses": 0,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "W6",
+  "what": "the cheer first",
+  "ok": true,
+  "state": {
+   "mode": "compact",
+   "view": "home",
+   "kind": "cheer",
+   "text": "Nice! 2/8 today · next 01:37",
+   "banner": false,
+   "stretch": "done",
+   "water": null,
+   "glasses": 0,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "W6",
+  "what": "then the question",
+  "ok": true,
+  "state": {
+   "mode": "compact",
+   "view": "home",
+   "kind": "question",
+   "text": "Claude has a question for you",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 0,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "W7",
+  "what": "water asks with Drank and Later",
+  "ok": true,
+  "state": {
+   "mode": "compact",
+   "view": "home",
+   "kind": "water",
+   "text": "A glass of water?",
+   "banner": false,
+   "stretch": "waiting",
+   "water": "ask",
+   "glasses": 0,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "W7",
+  "what": "clicking the nudge opens Stretch and counts no glass",
+  "ok": true,
+  "state": {
+   "mode": "expanded",
+   "view": "stretch",
+   "kind": "water",
+   "text": "A glass of water?",
+   "banner": false,
+   "stretch": "waiting",
+   "water": "ask",
+   "glasses": 0,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "W7",
+  "what": "Drank counts one glass and says so",
+  "ok": true,
+  "state": {
+   "mode": "compact",
+   "view": "home",
+   "kind": "note",
+   "text": "1/8 glasses of water today",
+   "banner": false,
+   "stretch": "waiting",
+   "water": "done",
+   "glasses": 1,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "W9",
+  "what": "Focus shows its timer in the nudge",
+  "ok": true,
+  "state": {
+   "mode": "compact",
+   "view": "home",
+   "kind": "focus",
+   "text": "Focus",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 1,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "W9",
+  "what": "Focus done follows",
+  "ok": true,
+  "state": {
+   "mode": "compact",
+   "view": "home",
+   "kind": "flash",
+   "text": "Focus done. Take a short break.",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 1,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "W10",
+  "what": "the usage alert shows as a nudge",
+  "ok": true,
+  "state": {
+   "mode": "compact",
+   "view": "home",
+   "kind": "flash",
+   "text": "☕ 80% of 5-hour limit used · refills 14:20",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 1,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "W10",
+  "what": "hover opens Usage",
+  "ok": true,
+  "state": {
+   "mode": "expanded",
+   "view": "meter",
+   "kind": "flash",
+   "text": "☕ 80% of 5-hour limit used · refills 14:20",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 1,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "R8",
+  "what": "a stretch due while open on Home: banner, page stays",
+  "ok": true,
+  "state": {
+   "mode": "expanded",
+   "view": "home",
+   "kind": "stretchDue",
+   "text": "Time to stretch · Thoracic extension",
+   "banner": true,
+   "stretch": "due",
+   "water": null,
+   "glasses": 1,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "R8",
+  "what": "the banner opens Stretch",
+  "ok": true,
+  "state": {
+   "mode": "expanded",
+   "view": "stretch",
+   "kind": "stretchDue",
+   "text": "Time to stretch · Thoracic extension",
+   "banner": false,
+   "stretch": "due",
+   "water": null,
+   "glasses": 1,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "W12",
+  "what": "leaving folds it",
+  "ok": true,
+  "state": {
+   "mode": "rest",
+   "view": "home",
+   "kind": null,
+   "text": "",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 1,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "W12",
+  "what": "hovering again reopens the same page",
+  "ok": true,
+  "state": {
+   "mode": "expanded",
+   "view": "meter",
+   "kind": null,
+   "text": "",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 1,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "L1",
+  "what": "the summary notice shows as a nudge",
+  "ok": true,
+  "state": {
+   "mode": "compact",
+   "view": "home",
+   "kind": "notice",
+   "text": "Your week, done!",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 1,
+   "golden": false,
+   "notice": "summary",
+   "meterData": false
+  }
+ },
+ {
+  "flow": "L1",
+  "what": "hover opens the summary card on Stretch",
+  "ok": true,
+  "state": {
+   "mode": "expanded",
+   "view": "stretch",
+   "kind": "notice",
+   "text": "Your week, done!",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 1,
+   "golden": false,
+   "notice": "summary",
+   "meterData": false
+  }
+ },
+ {
+  "flow": "L1",
+  "what": "closing the summary notice clears it",
+  "ok": true,
+  "state": {
+   "mode": "expanded",
+   "view": "stretch",
+   "kind": null,
+   "text": "",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 1,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "L1",
+  "what": "the wrap notice shows as a nudge",
+  "ok": true,
+  "state": {
+   "mode": "compact",
+   "view": "home",
+   "kind": "notice",
+   "text": "Time to go home! · 2/8",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 1,
+   "golden": false,
+   "notice": "wrap",
+   "meterData": false
+  }
+ },
+ {
+  "flow": "L1",
+  "what": "closing the wrap notice clears it",
+  "ok": true,
+  "state": {
+   "mode": "rest",
+   "view": "home",
+   "kind": null,
+   "text": "",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 1,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "L1",
+  "what": "the teh notice shows as a nudge",
+  "ok": true,
+  "state": {
+   "mode": "compact",
+   "view": "home",
+   "kind": "notice",
+   "text": "Teh tarik time!",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 1,
+   "golden": false,
+   "notice": "teh",
+   "meterData": false
+  }
+ },
+ {
+  "flow": "L1",
+  "what": "closing the teh notice clears it",
+  "ok": true,
+  "state": {
+   "mode": "rest",
+   "view": "home",
+   "kind": null,
+   "text": "",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 1,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "L1",
+  "what": "the night notice shows as a nudge",
+  "ok": true,
+  "state": {
+   "mode": "compact",
+   "view": "home",
+   "kind": "notice",
+   "text": "Dah lewat, tidur lah.",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 1,
+   "golden": false,
+   "notice": "night",
+   "meterData": false
+  }
+ },
+ {
+  "flow": "L1",
+  "what": "closing the night notice clears it",
+  "ok": true,
+  "state": {
+   "mode": "rest",
+   "view": "home",
+   "kind": null,
+   "text": "",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 1,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "L1",
+  "what": "the unlock notice shows as a nudge",
+  "ok": true,
+  "state": {
+   "mode": "compact",
+   "view": "home",
+   "kind": "notice",
+   "text": "Onde-onde joined your collection!",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 1,
+   "golden": false,
+   "notice": "unlock",
+   "meterData": false
+  }
+ },
+ {
+  "flow": "L1",
+  "what": "hover opens the unlock card on Stretch",
+  "ok": true,
+  "state": {
+   "mode": "expanded",
+   "view": "stretch",
+   "kind": "notice",
+   "text": "Onde-onde joined your collection!",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 1,
+   "golden": false,
+   "notice": "unlock",
+   "meterData": false
+  }
+ },
+ {
+  "flow": "L1",
+  "what": "closing the unlock notice clears it",
+  "ok": true,
+  "state": {
+   "mode": "expanded",
+   "view": "stretch",
+   "kind": null,
+   "text": "",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 1,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "L1",
+  "what": "the restored notice shows as a nudge",
+  "ok": true,
+  "state": {
+   "mode": "compact",
+   "view": "home",
+   "kind": "notice",
+   "text": "Restored from your backup",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 1,
+   "golden": false,
+   "notice": "restored",
+   "meterData": false
+  }
+ },
+ {
+  "flow": "L1",
+  "what": "closing the restored notice clears it",
+  "ok": true,
+  "state": {
+   "mode": "rest",
+   "view": "home",
+   "kind": null,
+   "text": "",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 1,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "L2",
+  "what": "a golden kuih comes as a stretch nudge",
+  "ok": true,
+  "state": {
+   "mode": "compact",
+   "view": "home",
+   "kind": "stretchDue",
+   "text": "Time to stretch · Thoracic extension",
+   "banner": false,
+   "stretch": "due",
+   "water": null,
+   "glasses": 1,
+   "golden": true,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "L2",
+  "what": "ten taps on the kuih start the surprise",
+  "ok": true
+ },
+ {
+  "flow": "M1",
+  "what": "the Teh Tarik card is on the Usage page with its own styles",
+  "ok": true,
+  "state": {
+   "there": true,
+   "css": true,
+   "w": 664
+  }
+ },
+ {
+  "flow": "M1",
+  "what": "Peek at a sample shows a glass",
+  "ok": true,
+  "state": {
+   "mode": "expanded",
+   "view": "meter",
+   "kind": null,
+   "text": "",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 1,
+   "golden": false,
+   "notice": null,
+   "meterData": true
+  }
+ },
+ {
+  "flow": "M1",
+  "what": "the tile has both rings and both reset times",
+  "ok": true,
+  "state": {
+   "five": 38,
+   "week": 22,
+   "fiveAt": 1793331211535,
+   "weekAt": 1793600311535
+  }
+ },
+ {
+  "flow": "M1",
+  "what": "ten pokes on the glass start the surprise",
+  "ok": true
+ },
+ {
+  "flow": "U1",
+  "what": "the updater answers (not packaged: nothing to install)",
+  "ok": true,
+  "state": {
+   "installed": false,
+   "store": false,
+   "auto": true,
+   "update": null,
+   "updateMsg": null,
+   "checking": false,
+   "version": "0.2.0",
+   "updated": null
+  }
+ },
+ {
+  "flow": "W11",
+  "what": "pressing does not open the island",
+  "ok": true,
+  "state": {
+   "mode": "compact",
+   "view": "home",
+   "kind": null,
+   "text": "",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 1,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "W11",
+  "what": "dropped: it stays small",
+  "ok": true,
+  "state": {
+   "mode": "rest",
+   "view": "home",
+   "kind": null,
+   "text": "",
+   "banner": false,
+   "stretch": "waiting",
+   "water": null,
+   "glasses": 1,
+   "golden": false,
+   "notice": null,
+   "meterData": false
+  }
+ },
+ {
+  "flow": "S",
+  "what": "stretch: the original app's page is shown",
+  "ok": true,
+  "state": {
+   "url": "lapis://app/index.html?view=main&embedded=1",
+   "bounds": {
+    "x": 248,
+    "y": 145,
+    "width": 776,
+    "height": 575
+   }
+  }
+ },
+ {
+  "flow": "S",
+  "what": "usage: the original app's page is shown",
+  "ok": true,
+  "state": {
+   "url": "tehtarik://app/index.html?view=app&embedded=1&welcome=1",
+   "bounds": {
+    "x": 248,
+    "y": 125,
+    "width": 776,
+    "height": 595
+   }
+  }
+ }
+]
