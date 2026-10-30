@@ -363,10 +363,10 @@ svg .shine{opacity:.35}
       const x = r.x + 70, tw = r.x + r.width - x - 6;
       const dot = (y, u) => { ctx.save(); ctx.fillStyle = ringColour(u); ctx.beginPath(); ctx.arc(x + 3, y - 3.5, 3, 0, Math.PI * 2); ctx.fill(); ctx.restore(); };
       dot(my - 9, five); text(T2('5j', '5h'), x + 10, my - 9, 10, '#fff', 700);
-      text(fiveAt ? clockOf(fiveAt) + (dayWord(fiveAt) === T2('hari ini', 'today') ? '' : ' ' + T2('esok', 'tmrw')) : '—', x + 26, my - 9, 10, '#c9d0c6', 500, 'left', tw - 26);
+      text(fiveAt ? clockOf(fiveAt) + (dayWord(fiveAt) === T2('hari ini', 'today') ? '' : ' ' + T2('esok', 'tmrw')) : '—', x + 31, my - 9, 10, '#c9d0c6', 500, 'left', tw - 31);
       dot(my + 5, week); text(T2('Mg', 'Wk'), x + 10, my + 5, 10, '#fff', 700);
-      text(weekAt ? dateOf(weekAt) : '—', x + 26, my + 5, 10, '#c9d0c6', 500, 'left', tw - 26);
-      if (weekAt) text(clockOf(weekAt), x + 10, my + 19, 10, '#8f998d', 500, 'left', tw - 10);
+      text(weekAt ? dateOf(weekAt) : '—', x + 31, my + 5, 10, '#c9d0c6', 500, 'left', tw - 31);
+      if (weekAt) text(clockOf(weekAt), x + 31, my + 19, 10, '#8f998d', 500, 'left', tw - 31);
       return true;
     }
     if (w.size === 'W') { // C: two rings side by side, each with when it resets

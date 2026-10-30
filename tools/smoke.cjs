@@ -249,10 +249,10 @@ module.exports = function smoke(getWindow, app) {
         };
         const keep = await js("return localStorage.getItem('kopi:widgets')");
         for (const [size, list] of Object.entries(layouts)) {
-          await js(`localStorage.setItem('kopi:widgets', ${JSON.stringify(JSON.stringify(list))}); setView('home'); return 1`); await wait(1000);
+          await js(`localStorage.setItem('kopi:widgets', ${JSON.stringify(JSON.stringify(list))}); window.__kopiWidgetsReload?.(); setView('home'); return 1`); await wait(1000);
           await shot(`M1-tile-${size}`);
         }
-        await js(keep == null ? "localStorage.removeItem('kopi:widgets'); return 1" : `localStorage.setItem('kopi:widgets', ${JSON.stringify(keep)}); return 1`);
+        await js(keep == null ? "localStorage.removeItem('kopi:widgets'); window.__kopiWidgetsReload?.(); return 1" : `localStorage.setItem('kopi:widgets', ${JSON.stringify(keep)}); window.__kopiWidgetsReload?.(); return 1`);
         await js("setView('meter'); return 1"); await wait(800);
         for (let i = 0; i < 4; i++) { await js('window.__rehattMeter.poke(); return 1'); await wait(200); }
         await shot('M1-3-pokes-combo');
