@@ -237,6 +237,23 @@ module.exports = function smoke(getWindow, app) {
         if (!(card?.there && card.css && card.w > 100)) errors.push('CHECK M1: the Teh Tarik card did not load: ' + JSON.stringify(card));
         await js("window.kopi.meterAction('peek'); return 1"); await wait(1500);
         await check('M1', 'Peek at a sample shows a glass', s => s.meterData === true); await shot('M1-2-peek');
+        // the Home tile in its three sizes: rings of the share used, with when each resets
+        const rings = await js('return window.__rehattUsageRings?.()');
+        const ringsOk = !!(rings && rings.five != null && rings.week != null && rings.fiveAt && rings.weekAt);
+        checks.push({ flow: 'M1', what: 'the tile has both rings and both reset times', ok: ringsOk, state: rings });
+        if (!ringsOk) errors.push('CHECK M1: the usage rings have no numbers: ' + JSON.stringify(rings));
+        const layouts = {
+          S: [{ id: 'claude', size: 'L', c: 0, r: 0 }, { id: 'stretch', size: 'W', c: 2, r: 0 }, { id: 'meter', size: 'S', c: 2, r: 1 }, { id: 'focus', size: 'S', c: 3, r: 1 }],
+          W: [{ id: 'stretch', size: 'L', c: 0, r: 0 }, { id: 'meter', size: 'W', c: 2, r: 0 }, { id: 'claude', size: 'W', c: 2, r: 1 }],
+          L: [{ id: 'claude', size: 'L', c: 0, r: 0 }, { id: 'meter', size: 'L', c: 2, r: 0 }]
+        };
+        const keep = await js("return localStorage.getItem('kopi:widgets')");
+        for (const [size, list] of Object.entries(layouts)) {
+          await js(`localStorage.setItem('kopi:widgets', ${JSON.stringify(JSON.stringify(list))}); setView('home'); return 1`); await wait(1000);
+          await shot(`M1-tile-${size}`);
+        }
+        await js(keep == null ? "localStorage.removeItem('kopi:widgets'); return 1" : `localStorage.setItem('kopi:widgets', ${JSON.stringify(keep)}); return 1`);
+        await js("setView('meter'); return 1"); await wait(800);
         for (let i = 0; i < 4; i++) { await js('window.__rehattMeter.poke(); return 1'); await wait(200); }
         await shot('M1-3-pokes-combo');
         for (let i = 0; i < 6; i++) { await js('window.__rehattMeter.poke(); return 1'); await wait(150); }

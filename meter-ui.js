@@ -301,7 +301,6 @@ svg .shine{opacity:.35}
   }
 
   // ---------- the home widget: a small glass in your drink ----------
-  const colour = l => (l == null ? '#8f998d' : l <= 10 ? '#ff5c5c' : l <= 30 ? '#ffb35c' : '#c98a4b');
   let pokeAt = -1e9;
   function drawGlass(cx, bottom, h, l, face = true, c = ctx) {
     const w = h * 0.68, top = bottom - h, inset = w * 0.1, now = performance.now(), drink = TD.drink(st?.settings?.drink);
@@ -328,34 +327,77 @@ svg .shine{opacity:.35}
     c.restore();
   }
   window.__rehattDrawGlass = drawGlass;
-  const resetLabel = ts => { if (!ts) return ''; return t('w.nextIn', { t: F.countdown(ts - Date.now(), false, lang()), drink: TD.drink(st?.settings?.drink).say, Drink: TD.drink(st?.settings?.drink).name }); };
+  // ---------- the home tile: rings of the share used (5-hour and week, as claude.ai shows it), green to red, and when each resets ----------
+  const used = w => (w && w.pct != null ? Math.max(0, Math.min(100, Math.round(w.pct))) : null);
+  const ringColour = u => (u == null ? '#5a605a' : u < 50 ? '#4cc38a' : u < 70 ? '#e8c547' : u < 85 ? '#ff9a3c' : '#ff5252');
+  function ring(cx, cy, rad, lw, u) {
+    ctx.save(); ctx.lineWidth = lw; ctx.lineCap = 'round';
+    ctx.strokeStyle = 'rgba(255,255,255,.1)'; ctx.beginPath(); ctx.arc(cx, cy, rad, 0, Math.PI * 2); ctx.stroke();
+    if (u) { ctx.strokeStyle = ringColour(u); ctx.beginPath(); ctx.arc(cx, cy, rad, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * u / 100); ctx.stroke(); }
+    ctx.restore();
+  }
+  const pctText = u => (u == null ? '—' : `${u}%`);
+  const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  const clockOf = ts => new Date(ts).toLocaleTimeString(lang() === 'ms' ? 'ms-MY' : 'en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  const dateOf = ts => new Date(ts).toLocaleDateString(lang() === 'ms' ? 'ms-MY' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' }).replace(/,/g, '');
+  const dayWord = ts => { const d = new Date(ts), now = new Date(), tm = new Date(now); tm.setDate(now.getDate() + 1); return sameDay(d, now) ? T2('hari ini', 'today') : sameDay(d, tm) ? T2('esok', 'tomorrow') : dateOf(ts); };
+  const inWords = ts => (ts ? T2('dalam ', 'in ') + F.countdown(ts - Date.now(), false, lang()) : '');
+  window.__rehattUsageRings = () => { const v = st?.view; return v?.hasData ? { five: used(v.session), week: used(v.weekly), fiveAt: v.session?.resetsAt || null, weekAt: v.weekly?.resetsAt || null } : null; };
   window.__rehattMeterWidget = (w, r, live) => {
-    const v = st?.view, s = left(v?.session), k = left(v?.weekly), my = r.y + r.height / 2;
+    const v = st?.view, s = left(v?.session), my = r.y + r.height / 2;
     const glassAt = (x, bottom, h) => { if (live) hit.meterGlass = { x: x - h * 0.4, y: bottom - h, width: h * 0.8, height: h }; };
-    if (w.size === 'S') {
-      drawGlass(r.x + 26, r.y + r.height - 10, r.height - 22, s); glassAt(r.x + 26, r.y + r.height - 10, r.height - 22);
-      text(s == null ? T2('Penggunaan', 'Usage') : `${s}%`, r.x + 50, my - 1, s == null ? 13 : 15, '#fff', 700, 'left', r.width - 58);
-      text(s == null ? T2('Menunggu Claude Code', 'Waiting for Claude Code') : T2('lagi · 5 jam', 'left · 5 hr'), r.x + 50, my + 14, 10.5, '#8f998d', 500, 'left', r.width - 58);
+    if (!v?.hasData) { // nothing to show yet: the glass waits
+      const gh = w.size === 'S' ? r.height - 22 : Math.min(r.height - 18, w.size === 'L' ? 112 : 54), gx = w.size === 'S' ? r.x + 26 : r.x + 16 + gh * 0.34;
+      drawGlass(gx, r.y + r.height - (w.size === 'S' ? 10 : 9), gh, s); glassAt(gx, r.y + r.height - (w.size === 'S' ? 10 : 9), gh);
+      const tx = w.size === 'S' ? r.x + 50 : gx + gh * 0.34 + 14, tw = r.x + r.width - tx - 10;
+      text(w.size === 'S' ? T2('Penggunaan', 'Usage') : T2('Penggunaan Claude', 'Claude usage'), tx, my - 2, 13, '#fff', 700, 'left', tw);
+      text(w.size === 'S' ? T2('Menunggu Claude Code', 'Waiting for Claude Code') : T2('Guna Claude Code, atau log masuk ke claude.ai', 'Use Claude Code, or sign in to claude.ai'), tx, my + 13, 10.5, '#8f998d', 500, 'left', tw);
       return true;
     }
-    const gh = Math.min(r.height - 18, w.size === 'L' ? 112 : 54), gx = r.x + 16 + gh * 0.34;
-    drawGlass(gx, r.y + r.height - 9, gh, s); glassAt(gx, r.y + r.height - 9, gh);
-    const tx = gx + gh * 0.34 + 14, tw = r.x + r.width - tx - 14;
-    if (!v?.hasData) {
-      text(T2('Penggunaan Claude', 'Claude usage'), tx, my - 4, 13, '#fff', 700, 'left', tw);
-      text(T2('Guna Claude Code, atau log masuk ke claude.ai', 'Use Claude Code, or sign in to claude.ai'), tx, my + 12, 10.5, '#8f998d', 500, 'left', tw);
+    const five = used(v.session), week = used(v.weekly), fiveAt = v.session?.resetsAt, weekAt = v.weekly?.resetsAt;
+    if (w.size === 'S') { // A: the week round the outside, the 5 hours inside; both numbers in the middle
+      const cx = r.x + 8 + 27;
+      ring(cx, my, 24.5, 5, week); ring(cx, my, 17, 4.5, five);
+      text(pctText(five), cx, my + 2, 12, '#fff', 800, 'center');
+      text(pctText(week), cx, my + 12, 8.5, week == null ? '#8f998d' : ringColour(week), 700, 'center');
+      const x = r.x + 70, tw = r.x + r.width - x - 6;
+      const dot = (y, u) => { ctx.save(); ctx.fillStyle = ringColour(u); ctx.beginPath(); ctx.arc(x + 3, y - 3.5, 3, 0, Math.PI * 2); ctx.fill(); ctx.restore(); };
+      dot(my - 9, five); text(T2('5j', '5h'), x + 10, my - 9, 10, '#fff', 700);
+      text(fiveAt ? clockOf(fiveAt) + (dayWord(fiveAt) === T2('hari ini', 'today') ? '' : ' ' + T2('esok', 'tmrw')) : '—', x + 26, my - 9, 10, '#c9d0c6', 500, 'left', tw - 26);
+      dot(my + 5, week); text(T2('Mg', 'Wk'), x + 10, my + 5, 10, '#fff', 700);
+      text(weekAt ? dateOf(weekAt) : '—', x + 26, my + 5, 10, '#c9d0c6', 500, 'left', tw - 26);
+      if (weekAt) text(clockOf(weekAt), x + 10, my + 19, 10, '#8f998d', 500, 'left', tw - 10);
       return true;
     }
-    const bar = (y, label, l, sub) => {
-      text(label, tx, y, 11, '#c9d0c6', 600, 'left', tw * 0.6); text(l == null ? '—' : `${l}%`, tx + tw, y, 11, colour(l), 700, 'right');
-      ctx.save(); ctx.fillStyle = 'rgba(255,255,255,.1)'; ctx.beginPath(); ctx.roundRect(tx, y + 5, tw, 4, 2); ctx.fill();
-      if (l != null) { ctx.fillStyle = colour(l); ctx.beginPath(); ctx.roundRect(tx, y + 5, Math.max(4, tw * l / 100), 4, 2); ctx.fill(); }
-      ctx.restore(); if (sub) text(sub, tx, y + 21, 10, '#7d847f', 500, 'left', tw);
+    if (w.size === 'W') { // C: two rings side by side, each with when it resets
+      const pad = 12, halfW = (r.width - pad * 2 - 21) / 2;
+      const half = (hx, u, label, line, sub, warn) => {
+        ring(hx + 23, my, 20, 5, u); text(pctText(u), hx + 23, my + 4, 11.5, '#fff', 800, 'center');
+        const tx = hx + 54, tw = halfW - 54;
+        text(label, tx, my - 9, 10, '#8f998d', 600, 'left', tw);
+        text(line, tx, my + 5, 11.5, '#fff', 700, 'left', tw);
+        text(sub, tx, my + 18, 9.5, warn ? '#ff8a8a' : '#8f998d', 500, 'left', tw);
+      };
+      half(r.x + pad, five, T2('Had 5 jam', '5-hour limit'), fiveAt ? T2('Set semula ', 'Resets ') + clockOf(fiveAt) : '—',
+        fiveAt ? inWords(fiveAt) + ' · ' + dayWord(fiveAt) : '', five != null && five >= 85);
+      ctx.save(); ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.fillRect(r.x + pad + halfW + 10, r.y + 12, 1, r.height - 24); ctx.restore();
+      half(r.x + pad + halfW + 21, week, T2('Minggu ini', 'This week'), weekAt ? `${dateOf(weekAt)}, ${clockOf(weekAt)}` : '—', inWords(weekAt), week != null && week >= 85);
+      return true;
+    }
+    // L — D: the glass (still pokeable) and the two rings, each with its reset date, time and countdown
+    const gh = r.height - 46, gx = r.x + 12 + 36, gb = r.y + r.height - 26;
+    drawGlass(gx, gb, gh, s); glassAt(gx, gb, gh);
+    text(TD.drink(st?.settings?.drink).name, gx, r.y + r.height - 10, 9.5, '#8f998d', 500, 'center');
+    const x0 = r.x + 98, tw = r.x + r.width - (x0 + 60) - 12;
+    const row = (cy, u, label, line, sub) => {
+      ring(x0 + 25, cy, 21.5, 5.5, u); text(pctText(u), x0 + 25, cy + 4.5, 12.5, '#fff', 800, 'center');
+      text(label, x0 + 60, cy - 10, 10.5, '#8f998d', 600, 'left', tw);
+      text(line, x0 + 60, cy + 5, 12.5, '#fff', 700, 'left', tw);
+      text(sub, x0 + 60, cy + 19, 10, '#8f998d', 500, 'left', tw);
     };
-    if (w.size === 'W') { bar(my - 8, T2('5 jam lagi', '5 hours left'), s); bar(my + 16, T2('Minggu ini', 'This week'), k); return true; }
-    text(TD.drink(st?.settings?.drink).name, tx, r.y + 30, 15, '#fff', 700, 'left', tw);
-    bar(r.y + 56, T2('5 jam lagi', '5 hours left'), s, resetLabel(v.session?.resetsAt));
-    bar(r.y + 98, T2('Minggu ini', 'This week'), k, '');
+    row(r.y + 12 + 25, five, T2('Had 5 jam', '5-hour limit'), fiveAt ? `${T2('Set semula', 'Resets')} ${dayWord(fiveAt)}, ${clockOf(fiveAt)}` : '—', inWords(fiveAt));
+    ctx.save(); ctx.fillStyle = 'rgba(255,255,255,.07)'; ctx.fillRect(x0, my, r.x + r.width - x0 - 16, 1); ctx.restore();
+    row(r.y + r.height - 12 - 25, week, T2('Minggu ini', 'This week'), weekAt ? `${T2('Set semula', 'Resets')} ${dateOf(weekAt)}, ${clockOf(weekAt)}` : '—', inWords(weekAt));
     return true;
   };
   const T2 = (ms, en) => (lang() === 'ms' ? ms : en);
